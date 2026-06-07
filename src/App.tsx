@@ -330,6 +330,40 @@ function Fueling() {
   );
 }
 
+function Prep() {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="card prep">
+      <button className="prep-toggle" onClick={() => setOpen(!open)}>
+        {open ? "▾" : "▸"} {t("prep_title")}
+      </button>
+      {open && (
+        <div className="prep-body">
+          <h4>{t("warmup_h")}</h4>
+          <ul>
+            <li>{t("warmup_1")}</li>
+            <li>{t("warmup_2")}</li>
+            <li>{t("warmup_3")}</li>
+            <li>{t("warmup_4")}</li>
+          </ul>
+          <h4>{t("stretch_h")}</h4>
+          <ul>
+            <li>{t("stretch_1")}</li>
+            <li>{t("stretch_2")}</li>
+          </ul>
+          <h4>{t("meals_h")}</h4>
+          <ul>
+            <li>{t("meals_1")}</li>
+            <li>{t("meals_2")}</li>
+            <li>{t("meals_3")}</li>
+          </ul>
+          <p className="muted small">{t("prep_note")}</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Disclaimer() {
   const [hidden, setHidden] = useState(() => localStorage.getItem("dismiss-disclaimer") === "1");
   if (hidden) return null;
@@ -740,6 +774,7 @@ function Home(props: any) {
             </section>
           )}
           <Fueling />
+          <Prep />
           <div className="events-head">
             <h2 className="section-title">{t("meets", { n: meets.length })}</h2>
             <div className="seg">
