@@ -64,6 +64,7 @@ try {
   await page.evaluate(() => localStorage.setItem("view", "cards"));
   await page.reload({ waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 300));
+  ok(!!(await page.$(".fuel")), "parent mode still shows the fueling section");
   // click the first "add time" control
   for (const b of await page.$$(".result-entry button")) { await b.click(); break; }
   await page.waitForSelector("input.result-input", { timeout: 2000 });

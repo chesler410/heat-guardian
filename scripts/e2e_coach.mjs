@@ -78,6 +78,11 @@ try {
   ok(/Amy/.test(body2) && /Ben/.test(body2), "Coach home shows all PASA swimmers (Amy + Ben)");
   ok(!/Mia/.test(body2), "Other team's swimmer (Mia/DACA) is not shown");
 
+  // Simplified coach home: team stats shown, parent fueling/prep fluff hidden
+  ok(!!(await page.$(".teamstats")), "coach home shows the team-stats summary");
+  ok(!(await page.$(".fuel")), "fueling/hydration section hidden in coach mode");
+  ok(/Team at a glance/i.test(body2), "team-stats heading present");
+
   // Coach bar + tab set
   ok(/Coach · PASA/.test(body2) || /PASA/.test(body2), "Coach bar shows the chosen team");
   const tabNames = await page.$$eval(".tabs button", (bs) => bs.map((b) => b.textContent.trim()));

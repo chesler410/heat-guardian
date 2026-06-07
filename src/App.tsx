@@ -966,6 +966,7 @@ export function App() {
           setPacing={setPacing}
           liveOn={liveOn}
           liveStatus={liveStatus}
+          coach={coaching}
         />
       )}
       {gated && nav === "import" && (
@@ -1103,7 +1104,7 @@ function bySession(items: DE[]): { label: string; items: DE[] }[] {
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus, coach } = props;
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
   const [shareMsg, setShareMsg] = useState("");
   const [cols, setCols] = useState<{ pb: boolean; cut: boolean; champ: boolean }>(() => {
@@ -1127,6 +1128,20 @@ function Home(props: any) {
     .sort((a, b) => a.cut!.nextCut!.needed - b.cut!.nextCut!.needed)
     .slice(0, 3);
 
+  // Coach view: a quick team-stats summary instead of the parent fueling/prep sections.
+  const teamStats = coach
+    ? (() => {
+        let achieved = 0;
+        let champ = 0;
+        for (const d of all) {
+          const c = cutFor(d, resultOf(d));
+          if (c?.achieved) achieved++;
+          if (c?.champ?.met) champ++;
+        }
+        return { swimmers: new Set(all.map((d: DE) => d.swimmer)).size, events: all.length, achieved, champ };
+      })()
+    : null;
+
   return (
     <>
       {liveOn && (
@@ -1146,6 +1161,17 @@ function Home(props: any) {
       {meets.length > 0 && swimmers.length > 0 && (
         <>
           <Disclaimer />
+          {teamStats && (
+            <section className="card teamstats">
+              <h2>📊 {t("team_stats")}</h2>
+              <div className="stat-row">
+                <div className="stat"><span className="stat-n">{teamStats.swimmers}</span><span className="stat-l">{t("ts_swimmers")}</span></div>
+                <div className="stat"><span className="stat-n">{teamStats.events}</span><span className="stat-l">{t("ts_events")}</span></div>
+                <div className="stat"><span className="stat-n">{teamStats.achieved}</span><span className="stat-l">{t("ts_cuts")}</span></div>
+                <div className="stat"><span className="stat-n">{teamStats.champ}</span><span className="stat-l">🏆 {t("sechamp")}</span></div>
+              </div>
+            </section>
+          )}
           {swimmers.length > 1 && (
             <div className="chips">
               {swimmers.map((k: Swimmer) => {
@@ -1179,8 +1205,8 @@ function Home(props: any) {
               ))}
             </section>
           )}
-          <Fueling />
-          <Prep />
+          {!coach && <Fueling />}
+          {!coach && <Prep />}
           <div className="events-head">
             <h2 className="section-title">{t("meets", { n: meets.length })}</h2>
             <div className="seg">
