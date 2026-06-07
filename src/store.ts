@@ -33,6 +33,7 @@ export interface Swimmer {
   age?: number;
   gender?: "Girls" | "Boys";
   color: string;
+  watch?: boolean; // true = on the watch list (follow), false/undefined = your own swimmer
 }
 
 export interface RosterItem {
@@ -65,8 +66,21 @@ export const saveMeets = (m: Meet[]) => localStorage.setItem(MEETS, JSON.stringi
 export const loadProxy = () => localStorage.getItem(PROXY) || "";
 export const saveProxy = (u: string) => localStorage.setItem(PROXY, u.trim());
 
-export function makeSwimmer(name: string, team: string, index: number, age?: number, gender?: "Girls" | "Boys"): Swimmer {
-  return { id: uid(), name: name.trim(), team: team.trim() || undefined, age, gender, color: COLORS[index % COLORS.length] };
+export function makeSwimmer(name: string, team: string, index: number, age?: number, gender?: "Girls" | "Boys", watch?: boolean): Swimmer {
+  return { id: uid(), name: name.trim(), team: team.trim() || undefined, age, gender, color: COLORS[index % COLORS.length], watch };
+}
+
+// Roster grouped by team, for the Team browse view.
+export function buildTeams(meets: Meet[]): { team: string; swimmers: RosterItem[] }[] {
+  const map = new Map<string, RosterItem[]>();
+  for (const it of buildRoster(meets)) {
+    const t = it.team || "—";
+    if (!map.has(t)) map.set(t, []);
+    map.get(t)!.push(it);
+  }
+  return [...map.entries()]
+    .map(([team, swimmers]) => ({ team, swimmers }))
+    .sort((a, b) => a.team.localeCompare(b.team));
 }
 
 // Manual result times entered on deck, keyed by meet+event+swimmer.

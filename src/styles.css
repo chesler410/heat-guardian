@@ -230,9 +230,10 @@ footer { margin-top: 20px; text-align: center; }
   border-radius: 0 0 16px 16px;
 }
 .brand { font-size: 1.15rem; font-weight: 800; margin-bottom: 8px; }
-.tabs { display: flex; gap: 6px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
 .tabs button {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 58px;
   border: none;
   background: rgba(255, 255, 255, 0.14);
   color: #dce8f7;
@@ -459,3 +460,19 @@ footer { margin-top: 20px; text-align: center; }
 .splittable td { padding: 3px 16px 3px 0; border-top: 1px solid #eef2f6; }
 .theme-dark .splittable td { border-color: #202b36; }
 .splittable .actual { color: var(--close); font-weight: 600; }
+
+/* ---- teams view ---- */
+.teams-intro { margin: 0 4px 12px; }
+.team-card { padding: 0; overflow: hidden; }
+.team-row { width: 100%; display: flex; justify-content: space-between; align-items: center; background: none; border: none; font: inherit; padding: 14px; cursor: pointer; color: inherit; }
+.team-name { font-weight: 700; }
+.team-swimmers { border-top: 1px solid #eef2f6; padding: 2px 14px 8px; }
+.theme-dark .team-swimmers { border-color: #202b36; }
+.ts-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid #f4f7fa; }
+.ts-row:first-child { border-top: none; }
+.theme-dark .ts-row { border-color: #1a2530; }
+.ts-name { flex: 1; font-size: 0.92rem; }
+.ts-actions { display: flex; gap: 6px; }
+.ts-tag { font-size: 0.68rem; font-weight: 700; padding: 2px 9px; border-radius: 20px; color: #fff; white-space: nowrap; }
+.ts-tag.mine { background: var(--blue); }
+.ts-tag.watch { background: #7d4bd0; }

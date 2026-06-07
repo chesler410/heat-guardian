@@ -16,6 +16,7 @@ import {
   makeSwimmer,
   matchesName,
   buildRoster,
+  buildTeams,
   importFile,
   importUrl,
 } from "./store.ts";
@@ -25,7 +26,7 @@ import { getTheme, setTheme, Theme } from "./theme.ts";
 import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
 import day from "./day.json";
 
-type Nav = "home" | "import" | "swimmers" | "about";
+type Nav = "home" | "import" | "swimmers" | "teams" | "about";
 
 function displayName(n: string): string {
   if (n.includes(",")) {
@@ -302,7 +303,7 @@ function loadMap(key: string): Record<string, string> {
 export function App() {
   const [nav, setNav] = useState<Nav>(() => {
     const t = new URLSearchParams(location.search).get("tab");
-    return (["home", "import", "swimmers", "about"].includes(t || "") ? t : "home") as Nav;
+    return (["home", "import", "swimmers", "teams", "about"].includes(t || "") ? t : "home") as Nav;
   });
   const [swimmers, setSwimmers] = useState<Swimmer[]>(loadSwimmers);
   const [meets, setMeets] = useState<Meet[]>(loadMeets);
@@ -369,10 +370,10 @@ export function App() {
     setView(v);
     localStorage.setItem("view", v);
   }
-  function addSwimmer(name: string, team: string, age?: number, gender?: "Girls" | "Boys") {
+  function addSwimmer(name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean) {
     if (!name.trim()) return;
     if (swimmers.some((s) => matchesName(s.name, name) && (s.team || "") === (team || ""))) return;
-    persistSwimmers([...swimmers, makeSwimmer(name, team, swimmers.length, age, gender)]);
+    persistSwimmers([...swimmers, makeSwimmer(name, team, swimmers.length, age, gender, watch)]);
   }
   function removeSwimmer(id: string) {
     persistSwimmers(swimmers.filter((s) => s.id !== id));
@@ -431,7 +432,7 @@ export function App() {
             <select className="lang-sel" value={lang} onChange={(e) => changeLang(e.target.value as Lang)} aria-label={t("lang_label")}>
               {LANGS.map((l) => (
                 <option key={l.code} value={l.code}>
-                  🌐 {l.label}
+                  {l.flag} {l.label}
                 </option>
               ))}
             </select>
@@ -441,7 +442,7 @@ export function App() {
           </div>
         </div>
         <nav className="tabs">
-          {(["home", "import", "swimmers", "about"] as Nav[]).map((tb) => (
+          {(["home", "import", "swimmers", "teams", "about"] as Nav[]).map((tb) => (
             <button key={tb} className={nav === tb ? "on" : ""} onClick={() => setNav(tb)}>
               {t("nav_" + tb)}
             </button>
@@ -477,7 +478,71 @@ export function App() {
           goImport={() => setNav("import")}
         />
       )}
+      {nav === "teams" && (
+        <TeamsView
+          teams={buildTeams(meets)}
+          swimmers={swimmers}
+          addSwimmer={addSwimmer}
+          goImport={() => setNav("import")}
+        />
+      )}
       {nav === "about" && <About />}
+    </div>
+  );
+}
+
+function TeamsView(props: {
+  teams: { team: string; swimmers: RosterItem[] }[];
+  swimmers: Swimmer[];
+  addSwimmer: (name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean) => void;
+  goImport: () => void;
+}) {
+  const [open, setOpen] = useState<string | null>(null);
+  const status = (name: string) => {
+    const s = props.swimmers.find((x) => matchesName(x.name, name));
+    return s ? (s.watch ? "watch" : "mine") : null;
+  };
+  if (props.teams.length === 0) {
+    return <Empty title={t("nav_teams")} body={t("teams_none")} cta={t("sw_addmeet")} onCta={props.goImport} />;
+  }
+  return (
+    <div>
+      <p className="muted teams-intro">{t("teams_intro")}</p>
+      {props.teams.map(({ team, swimmers }) => (
+        <div className="card team-card" key={team}>
+          <button className="team-row" onClick={() => setOpen(open === team ? null : team)}>
+            <span className="team-name">{team}</span>
+            <span className="muted">{t("nswim", { n: swimmers.length })} {open === team ? "▾" : "▸"}</span>
+          </button>
+          {open === team && (
+            <div className="team-swimmers">
+              {swimmers.map((r, i) => {
+                const st = status(r.name);
+                return (
+                  <div className="ts-row" key={i}>
+                    <span className="ts-name">
+                      {displayName(r.name)}{" "}
+                      <span className="muted">{[r.gender, r.age].filter(Boolean).join(" · ")}</span>
+                    </span>
+                    {st ? (
+                      <span className={"ts-tag " + st}>{st === "watch" ? t("watchlist") : t("myswimmers")}</span>
+                    ) : (
+                      <span className="ts-actions">
+                        <button className="chip sm" onClick={() => props.addSwimmer(r.name, r.team, parseInt(r.age, 10) || undefined, r.gender, false)}>
+                          + {t("add_mine")}
+                        </button>
+                        <button className="chip sm" onClick={() => props.addSwimmer(r.name, r.team, parseInt(r.age, 10) || undefined, r.gender, true)}>
+                          + {t("add_watch")}
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -749,38 +814,30 @@ function SwimmersView(props: {
     : [];
   const isAdded = (name: string) => props.swimmers.some((s) => matchesName(s.name, name));
 
-  // group selected swimmers by team
-  const byTeam = new Map<string, Swimmer[]>();
-  for (const s of props.swimmers) {
-    const t = s.team || "—";
-    if (!byTeam.has(t)) byTeam.set(t, []);
-    byTeam.get(t)!.push(s);
-  }
+  const mine = props.swimmers.filter((s) => !s.watch);
+  const watch = props.swimmers.filter((s) => s.watch);
+  const row = (s: Swimmer) => (
+    <div className="kid-row" key={s.id}>
+      <span className="kid-dot" style={{ background: s.color }} />
+      <span className="kid-name">
+        {displayName(s.name)}{" "}
+        <span className="muted">{[s.gender, s.age, s.team].filter(Boolean).join(" · ")}</span>
+      </span>
+      <button className="remove" onClick={() => props.removeSwimmer(s.id)}>
+        ✕
+      </button>
+    </div>
+  );
 
   return (
     <div>
       <div className="card">
         <h2>{t("sw_your")}</h2>
         {props.swimmers.length === 0 && <p className="muted">{t("sw_none")}</p>}
-        {[...byTeam.keys()].sort().map((team) => (
-          <div key={team}>
-            {byTeam.size > 1 && <div className="team-head">{team}</div>}
-            {byTeam.get(team)!.map((s) => (
-              <div className="kid-row" key={s.id}>
-                <span className="kid-dot" style={{ background: s.color }} />
-                <span className="kid-name">
-                  {displayName(s.name)}{" "}
-                  <span className="muted">
-                    {[s.gender, s.age, s.team].filter(Boolean).join(" · ")}
-                  </span>
-                </span>
-                <button className="remove" onClick={() => props.removeSwimmer(s.id)}>
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        ))}
+        {mine.length > 0 && watch.length > 0 && <div className="team-head">{t("myswimmers")}</div>}
+        {mine.map(row)}
+        {watch.length > 0 && <div className="team-head">{t("watchlist")}</div>}
+        {watch.map(row)}
       </div>
 
       <div className="card">
