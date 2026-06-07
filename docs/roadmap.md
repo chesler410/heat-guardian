@@ -48,5 +48,18 @@ A rough phasing. Order matters: prove the risky part (PDF parsing) before polish
 - [ ] Offline-first / installable PWA hardening
 - [ ] Post-meet: auto-detect new PBs + cuts achieved → shareable card
 
+## Phase 5 — Family hub (the real product; user vision 2026-06-07)
+"I'm Dad A with 3 kids — consolidate all my kids' events on one simple page."
+- [ ] **Kid profiles** (name, age, team, LSC) stored on device; auto-match in any meet
+- [ ] **Multi-swimmer merged timeline** — all 3 kids' events in one view, by day/time
+- [ ] **Input: upload PDFs** (in-browser pdf.js parser) — the foundation, build first
+- [ ] **Input: link a meet** — paste a gomotion/meet URL → fetch its published heat-sheet
+      PDFs. Needs a tiny serverless proxy (browser CORS blocks cross-origin PDF fetch).
+- [ ] **Input: search nearby meets → live published data** — AMBITIOUS / UNCERTAIN: no
+      clean aggregated "meets near me" API exists (same wall as Data Hub/Meet Mobile).
+      Likely needs scraping (ToS care) or USA Swimming meet search (Sisense-gated).
+- [ ] **Cross-device sync of kid details** — needs a backend + accounts (cost). Local-only
+      first; cloud sync is a separate, bigger step.
+
 ## Ideas parking lot
 (Add freely — more coming from the user.)
