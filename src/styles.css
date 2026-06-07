@@ -476,6 +476,18 @@ footer { margin-top: 20px; text-align: center; }
 .note-actions .cancel { background: var(--bg); color: var(--muted); }
 .theme-dark .note-actions .cancel { background: #26313f; }
 
+/* ---- live results ---- */
+.live-card.on { border: 1.5px solid #e0245e; }
+.live-card h3 { display: flex; align-items: center; gap: 7px; }
+.live-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #e0245e; box-shadow: 0 0 0 0 rgba(224,36,94,0.6); animation: livepulse 1.6s infinite; }
+@keyframes livepulse { 0% { box-shadow: 0 0 0 0 rgba(224,36,94,0.55); } 70% { box-shadow: 0 0 0 8px rgba(224,36,94,0); } 100% { box-shadow: 0 0 0 0 rgba(224,36,94,0); } }
+.live-status { margin: 8px 0 0; font-size: 0.85rem; font-weight: 600; color: var(--blue); }
+.theme-dark .live-status { color: #9cc2ff; }
+.live-banner { display: flex; align-items: center; gap: 8px; width: 100%; border: none; cursor: pointer; font: inherit; text-align: left; background: linear-gradient(90deg, #e0245e, #b3174a); color: #fff; font-size: 0.85rem; font-weight: 700; padding: 9px 14px; border-radius: 12px; margin-bottom: 12px; }
+.live-banner .live-dot { background: #fff; box-shadow: 0 0 0 0 rgba(255,255,255,0.7); animation: livepulsew 1.6s infinite; }
+@keyframes livepulsew { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); } 70% { box-shadow: 0 0 0 8px rgba(255,255,255,0); } 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } }
+.live-banner-status { font-weight: 600; opacity: 0.95; }
+
 /* ---- role picker + coach mode ---- */
 .rolepick { text-align: center; }
 .role-opts { display: flex; gap: 12px; margin-top: 14px; }

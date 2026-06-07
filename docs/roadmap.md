@@ -17,6 +17,8 @@ A local-first PWA (React/TS, in-browser pdf.js parsing, data on-device):
 - **Parent / Coach mode** (on-device): first-run role prompt; a coach picks a team and their home
   screen shows every swimmer on it (the multi-device/cloud version is the backend step below)
 - **Imports**: Hy-Tek heat/psych **PDFs**, **results PDFs** (overlay actual times), and **SD3 (SDIF)** files
+- **Live results** (auto-refresh): poll a public results URL every minute; new times overlay onto
+  your swimmers automatically, with a LIVE banner + last-updated status
 - **Timed fueling** + between-races electrolyte guidance + **.ics reminders**; warm-up/stretch/meals
 - **8 languages**, light/dark theme, **team logo** (auto-derives a brand color), responsive desktop, refresh banner
 - Bundled standards (USA Swimming 2024–2028 motivational, all ages/genders/courses; SE champ)
@@ -54,14 +56,25 @@ crossing — weighed against privacy and cost.
   must be designed for it from day one.
 - Keep a **free tier**; never sell data; ad-free.
 
-## Data & "real-time" reality
+## Data & "real-time" reality  *(researched June 2026)*
 
-- **Meet Mobile (Active Network)** live results have **no public API** (proprietary/paywalled) —
-  we can't legally/reliably link to them. The realistic substitutes: **results-PDF import**
-  (near-real-time, within hours) and **on-deck manual entry** (live).
-- **USA Swimming Data Hub** (historical times/rankings) is **Sisense-locked** — no clean API.
-  We use the heat sheet's seed time as the best-time proxy; results PDFs improve on that.
-- **Heat/psych/results PDFs** (Hy-Tek) remain the reliable, ToS-safe backbone.
+- **Meet Mobile (Active Network) & BigFish "Live Results"** — both closed apps, **no public
+  results API**. Active's only dev API is "Activity Search" (event *registration*, not results).
+  Tapping their private feed would breach ToS and be brittle — out of scope on purpose.
+- **The same data is public two ways**, and we use both:
+  1. **Hy-Tek "Real-Time Results to the Web"** — a Meet Manager feature that publishes live,
+     auto-updating results to a public URL (host presses F12 each race). Our **Live results**
+     poller refreshes that URL every minute. *(Today it parses the PDF form; a flat-HTML parser
+     is the next add once we have a sample page.)*
+  2. **Results PDFs** posted during/after the meet — same parser, manual or live.
+- **On-deck manual entry** remains the always-works fallback (and feeds splits).
+- **Discovery ("meets near me")** has **no clean public API**. The real unlock is USA Swimming's
+  **SWIMS 3.0 vendor API** (real-time member/meet/results data) — but it requires becoming an
+  **approved 3rd-party vendor** (application + agreement via usaswimming.org 3rd-party vendor
+  resources). Worth pursuing now that the app is real and in use; until approved, discovery is
+  manual (saved meet/result URLs, team GoMotion/TeamUnify pages).
+- **USA Swimming Data Hub** (historical times/rankings) is still **Sisense-locked** for scraping;
+  the SWIMS API is the sanctioned route to that data.
 
 ## Native app
 

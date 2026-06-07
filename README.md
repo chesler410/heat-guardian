@@ -30,6 +30,8 @@ when do they eat."
   electrolyte guidance, and **calendar reminders (.ics)**; plus warm-up / stretching / meals
 - **Imports**: Hy-Tek heat/psych **PDFs**, **results PDFs** (overlays actual swum times → real
   PBs & cuts), and **SD3 (SDIF)** export files
+- **Live results** — paste a meet's public live-results link; while it runs, new times overlay
+  onto your swimmers automatically (~1 min refresh), with a LIVE banner and last-updated status
 - **8 languages** (EN/ES/ZH/PT/DE/VI/FR/RU — full parity), **light/dark theme**, **team logo**
   (auto-derives a brand color), responsive desktop layout, installable
 

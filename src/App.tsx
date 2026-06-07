@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Swimmer,
   Meet,
@@ -638,6 +638,18 @@ export function App() {
     () => (coaching ? teamSwimmers(meets, coachTeam) : swimmers),
     [coaching, coachTeam, meets, swimmers]
   );
+  // Live results: poll a public results URL on a timer and overlay new times as they post.
+  const [liveUrl, setLiveUrlState] = useState(() => localStorage.getItem("liveUrl") || "");
+  const [liveOn, setLiveOnState] = useState(() => localStorage.getItem("liveOn") === "1");
+  const [liveStatus, setLiveStatus] = useState("");
+  function setLiveUrl(v: string) {
+    setLiveUrlState(v);
+    localStorage.setItem("liveUrl", v);
+  }
+  function setLiveOn(v: boolean) {
+    setLiveOnState(v);
+    localStorage.setItem("liveOn", v ? "1" : "0");
+  }
 
   function setResult(meetId: string, event: number, name: string, val: string) {
     const next = { ...results };
@@ -760,6 +772,41 @@ export function App() {
     setBusy(false);
   }
 
+  // One live poll: fetch the results URL, overlay any new times, and report what changed.
+  const pollLive = useCallback(async () => {
+    if (!liveUrl.trim()) return;
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    try {
+      const outcome = await importUrl(liveUrl, loadProxy() || DEFAULT_PROXY);
+      if (outcome.kind === "results") {
+        const applied = applyResults(outcome.finishers, activeSwimmers, meets, results);
+        setResultsState(applied.results);
+        saveResults(applied.results);
+        setLiveStatus(applied.matched > 0 ? t("live_updated", { time: now, n: applied.matched }) : t("live_none", { time: now }));
+      } else {
+        // A heat sheet at the live URL: add it if it's new (lets events show up to overlay).
+        if (!meets.some((m) => m.title === outcome.meet.title)) persistMeets([outcome.meet, ...meets]);
+        setLiveStatus(t("live_none", { time: now }));
+      }
+    } catch {
+      setLiveStatus(t("live_err", { time: now }));
+    }
+  }, [liveUrl, activeSwimmers, meets, results]);
+
+  // Keep a stable 60s interval that always calls the latest pollLive (avoids resetting the
+  // timer every time results change, which would otherwise re-poll in a tight loop).
+  const pollRef = useRef(pollLive);
+  pollRef.current = pollLive;
+  useEffect(() => {
+    if (!liveOn || !liveUrl.trim()) {
+      if (!liveOn) setLiveStatus("");
+      return;
+    }
+    pollRef.current();
+    const id = setInterval(() => pollRef.current(), 60000);
+    return () => clearInterval(id);
+  }, [liveOn, liveUrl]);
+
   return (
     <div className="app">
       <UpdateBanner />
@@ -831,9 +878,24 @@ export function App() {
           setMap={setMap}
           pacing={pacing}
           setPacing={setPacing}
+          liveOn={liveOn}
+          liveStatus={liveStatus}
         />
       )}
-      {gated && nav === "import" && <ImportView busy={busy} msg={msg} onFiles={onFiles} onUrl={onUrl} goAbout={() => setNav("about")} />}
+      {gated && nav === "import" && (
+        <ImportView
+          busy={busy}
+          msg={msg}
+          onFiles={onFiles}
+          onUrl={onUrl}
+          goAbout={() => setNav("about")}
+          liveUrl={liveUrl}
+          liveOn={liveOn}
+          liveStatus={liveStatus}
+          setLiveUrl={setLiveUrl}
+          setLiveOn={setLiveOn}
+        />
+      )}
       {gated && !coaching && (nav === "swimmers" || nav === "watching") && (
         <SwimmersView
           swimmers={swimmers}
@@ -953,7 +1015,7 @@ function bySession(items: DE[]): { label: string; items: DE[] }[] {
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus } = props;
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
   const [cols, setCols] = useState<{ pb: boolean; cut: boolean; champ: boolean }>(() => {
     try {
@@ -978,6 +1040,12 @@ function Home(props: any) {
 
   return (
     <>
+      {liveOn && (
+        <button className="live-banner" onClick={props.goImport}>
+          <span className="live-dot" /> {t("live_badge")}
+          {liveStatus ? <span className="live-banner-status"> · {liveStatus}</span> : null}
+        </button>
+      )}
       {meets.length === 0 && swimmers.length === 0 && (
         <Empty title={t("em_welcome_t")} body={t("em_welcome_b")} cta={t("sw_addmeet")} onCta={props.goImport} />
       )}
@@ -1257,8 +1325,20 @@ function ProgressView(props: { progress: SwimmerProgress[]; goImport: () => void
   );
 }
 
-function ImportView(props: { busy: boolean; msg: string; onFiles: (f: FileList | null) => void; onUrl: (u: string) => void; goAbout: () => void }) {
+function ImportView(props: {
+  busy: boolean;
+  msg: string;
+  onFiles: (f: FileList | null) => void;
+  onUrl: (u: string) => void;
+  goAbout: () => void;
+  liveUrl: string;
+  liveOn: boolean;
+  liveStatus: string;
+  setLiveUrl: (v: string) => void;
+  setLiveOn: (v: boolean) => void;
+}) {
   const [url, setUrl] = useState("");
+  const [liveDraft, setLiveDraft] = useState(props.liveUrl);
   return (
     <div>
       <div className="card">
@@ -1270,6 +1350,37 @@ function ImportView(props: { busy: boolean; msg: string; onFiles: (f: FileList |
           {props.busy ? t("imp_opening") : t("imp_open")}
         </button>
         <p className="muted small">{t("imp_linktip")}</p>
+      </div>
+
+      <div className={"card live-card" + (props.liveOn ? " on" : "")}>
+        <h3>{props.liveOn && <span className="live-dot" />}{t("live_h")}</h3>
+        <p className="muted">{t("live_b")}</p>
+        <input
+          className="field"
+          placeholder="https://…/results.pdf"
+          value={liveDraft}
+          onChange={(e) => setLiveDraft(e.target.value)}
+          inputMode="url"
+          disabled={props.liveOn}
+        />
+        {props.liveOn ? (
+          <button className="secondary" onClick={() => props.setLiveOn(false)}>
+            {t("live_stop")}
+          </button>
+        ) : (
+          <button
+            className="primary"
+            disabled={!liveDraft.trim()}
+            onClick={() => {
+              props.setLiveUrl(liveDraft.trim());
+              props.setLiveOn(true);
+            }}
+          >
+            {t("live_start")}
+          </button>
+        )}
+        {props.liveStatus && <p className="live-status">{props.liveStatus}</p>}
+        <p className="muted small">{t("live_tip")}</p>
       </div>
 
       <div className="card">
