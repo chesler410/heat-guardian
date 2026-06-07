@@ -108,14 +108,12 @@ const isPdf = (buf: ArrayBuffer) => {
 };
 
 // Fetch a PDF by URL. Browsers block cross-origin fetches unless the host allows CORS,
-// so we try (in order): a user-configured fetch helper, a direct fetch, then public proxies.
+// so we try the shared fetch helper first, then a direct fetch (CORS-friendly hosts only).
 export async function fetchPdfBuffer(url: string, proxy: string): Promise<ArrayBuffer> {
   const enc = encodeURIComponent(url);
   const tries: string[] = [];
   if (proxy) tries.push(proxy.includes("{url}") ? proxy.replace("{url}", enc) : proxy + enc);
-  tries.push(url);
-  tries.push(`https://api.codetabs.com/v1/proxy/?quest=${url}`);
-  tries.push(`https://corsproxy.io/?url=${enc}`);
+  tries.push(url); // direct (works only if the host sends CORS headers)
   for (const t of tries) {
     try {
       const res = await fetch(t);
@@ -126,9 +124,7 @@ export async function fetchPdfBuffer(url: string, proxy: string): Promise<ArrayB
       /* try next */
     }
   }
-  throw new Error(
-    "Couldn't fetch that link automatically (the meet site blocks it). Set up the free fetch helper (About), or download the PDF and use Upload."
-  );
+  throw new Error("Couldn't open that link here — tap “Upload PDF” instead and pick the file.");
 }
 
 export async function importUrl(url: string, proxy: string): Promise<Meet> {

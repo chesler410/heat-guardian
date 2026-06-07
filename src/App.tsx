@@ -17,6 +17,7 @@ import {
   importUrl,
 } from "./store.ts";
 import { computeCut, CutResult } from "./cuts.ts";
+import { DEFAULT_PROXY } from "./config.ts";
 import day from "./day.json";
 
 type Nav = "home" | "import" | "swimmers" | "about";
@@ -226,7 +227,7 @@ export function App() {
     setBusy(true);
     setMsg("");
     try {
-      finishImport([await importUrl(url, loadProxy())], "");
+      finishImport([await importUrl(url, loadProxy() || DEFAULT_PROXY)], "");
     } catch (e: any) {
       finishImport([], e?.message || "Couldn't fetch that link.");
     }
@@ -470,18 +471,12 @@ function ImportView(props: { busy: boolean; msg: string; onFiles: (f: FileList |
 
       <div className="card">
         <h2>…or paste a link</h2>
-        <p className="muted">Paste a direct link to the meet's heat-sheet PDF (no download needed).</p>
+        <p className="muted">Paste the meet's heat-sheet PDF link — no download needed.</p>
         <input className="field" placeholder="https://…/heatsheet.pdf" value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" />
         <button className="primary" disabled={props.busy || !url.trim()} onClick={() => props.onUrl(url)}>
-          {props.busy ? "Fetching…" : "Fetch & add"}
+          {props.busy ? "Opening…" : "Open link"}
         </button>
-        <p className="muted small">
-          Some meet sites block direct fetching. If it fails, set up the free fetch helper (
-          <button className="inline-link" onClick={props.goAbout}>
-            About
-          </button>
-          ) or use Upload.
-        </p>
+        <p className="muted small">If a link won't open, just tap “Upload PDF” above instead.</p>
       </div>
 
       {props.msg && <p className="importmsg">{props.msg}</p>}
@@ -596,10 +591,11 @@ function SwimmersView(props: {
 
 function About() {
   const [proxy, setProxy] = useState(loadProxy);
+  const [adv, setAdv] = useState(false);
   return (
     <div className="card about">
       <h2>About my-swimmer</h2>
-      <p>A free, ad-free meet-day companion for swim families. Import a meet's published heat sheet, see all your swimmers' events on one page, the next motivational cut to beat, and fueling tips.</p>
+      <p>A free, ad-free meet-day companion for swim families. Import a meet's published heat sheet, see all your swimmers' events on one page, the next cut to beat, and fueling tips.</p>
 
       <h3>Your privacy</h3>
       <p>Everything runs on your device. Your swimmers' names and meet data are stored only in this browser and are never uploaded to a server. Clearing your browser data removes them.</p>
@@ -607,20 +603,25 @@ function About() {
       <h3>Please double-check</h3>
       <p>Events are auto-read from PDF heat sheets, which isn't perfect. Always verify event, heat, and lane against the official posted heat sheet before a race.</p>
 
-      <h3>Paste-a-link fetch helper (optional)</h3>
-      <p className="muted">
-        Many meet sites block apps from fetching their PDFs directly. To use “paste a link,” deploy a tiny free
-        proxy (see <code>proxy/</code> in the project) and paste its URL here. Use <code>{"{url}"}</code> where the
-        link goes, e.g. <code>https://you.workers.dev/?url={"{url}"}</code>.
-      </p>
-      <input className="field" placeholder="Fetch helper URL (optional)" value={proxy} onChange={(e) => setProxy(e.target.value)} />
-      <button className="primary" onClick={() => saveProxy(proxy)}>
-        Save helper
-      </button>
-
       <h3>Not affiliated</h3>
-      <p className="muted">Not affiliated with or endorsed by USA Swimming, Meet Mobile, or any meet host. It simply reads heat sheets you provide. Time standards are USA Swimming 2024–2028 motivational standards.</p>
+      <p className="muted">Not affiliated with or endorsed by USA Swimming, Meet Mobile, or any meet host. It simply reads heat sheets you provide. Time standards are USA Swimming 2024–2028 motivational standards plus Southeastern championship cuts.</p>
       <p className="muted">Made by a swim parent. Feedback welcome.</p>
+
+      <button className="inline-link" onClick={() => setAdv(!adv)} style={{ marginTop: 12 }}>
+        {adv ? "– hide advanced" : "Advanced"}
+      </button>
+      {adv && (
+        <div className="manual">
+          <p className="muted small">
+            Custom fetch helper for “paste a link” (optional; only if you self-host one). Use{" "}
+            <code>{"{url}"}</code> for the link.
+          </p>
+          <input className="field" placeholder="https://you.workers.dev/?url={url}" value={proxy} onChange={(e) => setProxy(e.target.value)} />
+          <button className="primary" onClick={() => saveProxy(proxy)}>
+            Save
+          </button>
+        </div>
+      )}
     </div>
   );
 }
