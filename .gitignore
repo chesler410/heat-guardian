@@ -1,0 +1,28 @@
+# Real meet sheets contain minors' PII — never commit them (pdf + any extracts).
+samples/*
+!samples/README.md
+!samples/*.fixture.pdf
+
+# Node / build (for when app scaffolding lands)
+node_modules/
+dist/
+build/
+.vite/
+*.local
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# local screenshots
+preview*.png
+
+# python
+__pycache__/
+*.pyc

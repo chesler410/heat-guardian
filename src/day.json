@@ -1,0 +1,232 @@
+{
+  "meet": "Sample Spring Invitational",
+  "swimmer": {
+    "name": "Sample Swimmer",
+    "age": "10",
+    "team": "DEMO-SE"
+  },
+  "course": "LCM",
+  "standardsSet": "USA Swimming 2024-2028 Motivational (Girls 10&U, LCM)",
+  "events": [
+    {
+      "event": 17,
+      "race": "100 Fly",
+      "desc": "Girls 10 & Under 100 LC Meter Butterfly",
+      "heat": "Heat 1 of 1 Finals",
+      "lane": 4,
+      "seed": "1:39.17",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "1:37.99",
+        "needed": 1.18
+      },
+      "ladder": {
+        "B": "2:12.79",
+        "BB": "1:55.39",
+        "A": "1:37.99",
+        "AA": "1:32.19",
+        "AAA": "1:26.39",
+        "AAAA": "1:20.59"
+      }
+    },
+    {
+      "event": 21,
+      "race": "50 Breast",
+      "desc": "Girls 10 & Under 50 LC Meter Breaststroke",
+      "heat": "Heat 3 of 3 Finals",
+      "lane": 5,
+      "seed": "54.24",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "48.79",
+        "needed": 5.45
+      },
+      "ladder": {
+        "B": "1:02.19",
+        "BB": "55.49",
+        "A": "48.79",
+        "AA": "46.49",
+        "AAA": "44.29",
+        "AAAA": "42.09"
+      }
+    },
+    {
+      "event": 25,
+      "race": "100 Back",
+      "desc": "Girls 10 & Under 100 LC Meter Backstroke",
+      "heat": "Heat 3 of 3 Finals",
+      "lane": 3,
+      "seed": "1:39.73",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "1:34.59",
+        "needed": 5.14
+      },
+      "ladder": {
+        "B": "2:01.59",
+        "BB": "1:48.09",
+        "A": "1:34.59",
+        "AA": "1:30.09",
+        "AAA": "1:25.59",
+        "AAAA": "1:21.09"
+      }
+    },
+    {
+      "event": 49,
+      "race": "100 Free",
+      "desc": "Girls 10 & Under 100 LC Meter Freestyle",
+      "heat": "Heat 3 of 3 Finals",
+      "lane": 2,
+      "seed": "1:30.74",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "1:21.89",
+        "needed": 8.85
+      },
+      "ladder": {
+        "B": "1:44.09",
+        "BB": "1:32.99",
+        "A": "1:21.89",
+        "AA": "1:18.19",
+        "AAA": "1:14.49",
+        "AAAA": "1:10.79"
+      }
+    },
+    {
+      "event": 53,
+      "race": "50 Fly",
+      "desc": "Girls 10 & Under 50 LC Meter Butterfly",
+      "heat": "Heat 3 of 3 Finals",
+      "lane": 4,
+      "seed": "42.06",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "41.59",
+        "needed": 0.47
+      },
+      "ladder": {
+        "B": "54.49",
+        "BB": "48.09",
+        "A": "41.59",
+        "AA": "39.49",
+        "AAA": "37.29",
+        "AAAA": "35.19"
+      }
+    },
+    {
+      "event": 57,
+      "race": "200 IM",
+      "desc": "Girls 10 & Under 200 LC Meter IM",
+      "heat": "Heat 1 of 1 Finals",
+      "lane": 3,
+      "seed": "3:43.06",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "3:22.09",
+        "needed": 20.97
+      },
+      "ladder": {
+        "B": "4:15.69",
+        "BB": "3:48.89",
+        "A": "3:22.09",
+        "AA": "3:13.09",
+        "AAA": "3:04.19",
+        "AAAA": "2:55.29"
+      }
+    },
+    {
+      "event": 71,
+      "race": "200 Free",
+      "desc": "Girls 10 & Under 200 LC Meter Freestyle",
+      "heat": "Heat 2 of 2 Finals",
+      "lane": 6,
+      "seed": "3:20.99",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "3:00.39",
+        "needed": 20.6
+      },
+      "ladder": {
+        "B": "3:50.99",
+        "BB": "3:25.69",
+        "A": "3:00.39",
+        "AA": "2:51.99",
+        "AAA": "2:43.49",
+        "AAAA": "2:35.09"
+      }
+    },
+    {
+      "event": 75,
+      "race": "50 Back",
+      "desc": "Girls 10 & Under 50 LC Meter Backstroke",
+      "heat": "Heat 3 of 3 Finals",
+      "lane": 6,
+      "seed": "46.24",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "43.59",
+        "needed": 2.65
+      },
+      "ladder": {
+        "B": "55.79",
+        "BB": "49.69",
+        "A": "43.59",
+        "AA": "41.59",
+        "AAA": "39.49",
+        "AAAA": "37.49"
+      }
+    },
+    {
+      "event": 79,
+      "race": "100 Breast",
+      "desc": "Girls 10 & Under 100 LC Meter Breaststroke",
+      "heat": "Heat 2 of 2 Finals",
+      "lane": 6,
+      "seed": "1:55.74",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "1:48.39",
+        "needed": 7.35
+      },
+      "ladder": {
+        "B": "2:19.39",
+        "BB": "2:03.89",
+        "A": "1:48.39",
+        "AA": "1:43.29",
+        "AAA": "1:38.09",
+        "AAAA": "1:32.99"
+      }
+    },
+    {
+      "event": 83,
+      "race": "50 Free",
+      "desc": "Girls 10 & Under 50 LC Meter Freestyle",
+      "heat": "Heat 3 of 3 Finals",
+      "lane": 3,
+      "seed": "39.99",
+      "achieved": "BB",
+      "nextCut": {
+        "level": "A",
+        "time": "36.59",
+        "needed": 3.4
+      },
+      "ladder": {
+        "B": "45.29",
+        "BB": "40.89",
+        "A": "36.59",
+        "AA": "35.09",
+        "AAA": "33.69",
+        "AAAA": "32.19"
+      }
+    }
+  ]
+}
