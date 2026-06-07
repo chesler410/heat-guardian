@@ -5,3 +5,8 @@
 // When set, "paste a link" works for everyone with no setup. When empty, the app falls
 // back to a direct fetch (works only for CORS-friendly hosts) and nudges users to Upload.
 export const DEFAULT_PROXY: string = import.meta.env.VITE_PROXY_URL ?? "";
+
+// Where the in-app "Feedback" button sends people. Set repo variable FEEDBACK_URL to a
+// Google Form (or Tally/Typeform) link. Falls back to the GitHub issues page.
+export const FEEDBACK_URL: string =
+  import.meta.env.VITE_FEEDBACK_URL || "https://github.com/chesler410/my-swimmer/issues";

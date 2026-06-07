@@ -20,7 +20,7 @@ import {
   importUrl,
 } from "./store.ts";
 import { computeCut, CutResult } from "./cuts.ts";
-import { DEFAULT_PROXY } from "./config.ts";
+import { DEFAULT_PROXY, FEEDBACK_URL } from "./config.ts";
 import { getTheme, setTheme, Theme } from "./theme.ts";
 import day from "./day.json";
 
@@ -532,6 +532,13 @@ function Home(props: any) {
       )}
 
       <SampleBlock open={showSample} setOpen={setShowSample} />
+
+      <p className="feedback-foot">
+        Got feedback?{" "}
+        <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">
+          💬 Tell us
+        </a>
+      </p>
     </>
   );
 }
@@ -730,6 +737,10 @@ function About() {
     <div className="card about">
       <h2>About my-swimmer</h2>
       <p>A free, ad-free meet-day companion for swim families. Import a meet's published heat sheet, see all your swimmers' events on one page, the next cut to beat, and fueling tips.</p>
+
+      <a className="primary feedback-btn" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">
+        💬 Send feedback
+      </a>
 
       <h3>How to use it</h3>
       <ol className="howto">

@@ -430,3 +430,8 @@ footer { margin-top: 20px; text-align: center; }
 /* ---- how-to list ---- */
 .howto { margin: 0; padding-left: 20px; }
 .howto li { margin: 7px 0; font-size: 0.9rem; line-height: 1.45; }
+
+/* ---- feedback ---- */
+.feedback-btn { text-decoration: none; margin-bottom: 6px; }
+.feedback-foot { text-align: center; margin: 22px 0 0; font-size: 0.85rem; color: var(--muted); }
+.feedback-foot a { color: var(--blue); font-weight: 600; text-decoration: none; }

@@ -30,6 +30,8 @@ jobs:
           # Shared "paste a link" fetch helper for ALL users (set once, no per-user setup).
           # Set repo variable PROXY_URL to your Worker, e.g. https://x.workers.dev/?url={url}
           VITE_PROXY_URL: ${{ vars.PROXY_URL }}
+          # In-app Feedback button target (a Google Form, etc.). Falls back to GitHub issues.
+          VITE_FEEDBACK_URL: ${{ vars.FEEDBACK_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
