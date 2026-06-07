@@ -37,11 +37,18 @@ function displayName(n: string): string {
 }
 const firstName = (n: string) => displayName(n).split(" ")[0];
 
-const STROKE_ABBR: Record<string, string> = { Free: "FR", Back: "BK", Breast: "BR", Fly: "FL", IM: "IM" };
-const swimAbbr = (race: string) => {
-  const [d, ...r] = race.split(" ");
-  return `${d} ${STROKE_ABBR[r.join(" ")] ?? r.join(" ")}`;
+const STROKE_ABBR: Record<string, string> = {
+  Free: "FR", Freestyle: "FR", Back: "BK", Backstroke: "BK",
+  Breast: "BR", Breaststroke: "BR", Brst: "BR", Fly: "FL", Butterfly: "FL", IM: "IM", Medley: "IM",
 };
+// Abbreviate the first stroke word; keep any suffix (e.g. "Relay"). Robust to full or short names.
+const swimAbbr = (race: string) => {
+  const [d, w, ...rest] = race.split(" ");
+  return `${d} ${STROKE_ABBR[w] ?? w}${rest.length ? " " + rest.join(" ") : ""}`;
+};
+// Always derive the short race label from the description (fixes meets imported before the
+// nickname fix, whose stored race may still read "Butterfly").
+const raceOf = (e: Entry) => eventMeta(e.desc).race + (e.relay ? " Relay" : "");
 const heatNum = (h: string | null) => h?.match(/Heat\s+(\d+)/)?.[1] ?? "—";
 const levelClass = (l?: string | null) => "lvl lvl-" + (l ? l.toLowerCase() : "none");
 
@@ -98,7 +105,7 @@ function EntryCard({
           </span>
         )}
         <span className="ev-num">#{e.event}</span>
-        <span className="ev-race">{e.race}</span>
+        <span className="ev-race">{raceOf(e)}</span>
         {cut?.achieved && <span className={levelClass(cut.achieved)}>{cut.achieved}</span>}
       </div>
       <div className="ev-meta">
@@ -269,6 +276,7 @@ function ArmTable({
   };
   return (
     <div className="card">
+      <div className="arm-wrap">
       <table className="arm">
         <thead>
           <tr>
@@ -289,7 +297,7 @@ function ArmTable({
               <td className="mono">{d.e.event}</td>
               <td className="mono">{heatNum(d.e.heat)}</td>
               <td className="mono">{d.e.lane}</td>
-              <td>{swimAbbr(d.e.race)}</td>
+              <td>{swimAbbr(raceOf(d.e))}</td>
               {cols.pb && <td className="mono">{pbOf(d)}</td>}
               {cols.cut && <td className="mono">{cutOf(d)}</td>}
               {cols.champ && <td className="mono">{champOf(d)}</td>}
@@ -297,6 +305,7 @@ function ArmTable({
           ))}
         </tbody>
       </table>
+      </div>
       <p className="muted arm-note">{t("armlegend")}</p>
     </div>
   );
@@ -874,14 +883,14 @@ function Home(props: any) {
           {view === "table" && (
             <div className="colchips">
               {t("columns")}
-              <button className={"chip sm" + (cols.pb ? " on" : "")} onClick={() => toggleCol("pb")}>
-                {t("c_pb")}
+              <button className={"chip sm colpb" + (cols.pb ? " on" : "")} onClick={() => toggleCol("pb")}>
+                {cols.pb ? "✓ " : ""}{t("c_pb")}
               </button>
-              <button className={"chip sm" + (cols.cut ? " on" : "")} onClick={() => toggleCol("cut")}>
-                {t("c_cut")}
+              <button className={"chip sm colcut" + (cols.cut ? " on" : "")} onClick={() => toggleCol("cut")}>
+                {cols.cut ? "✓ " : ""}{t("c_cut")}
               </button>
-              <button className={"chip sm" + (cols.champ ? " on" : "")} onClick={() => toggleCol("champ")}>
-                {t("sechamp")}
+              <button className={"chip sm colchamp" + (cols.champ ? " on" : "")} onClick={() => toggleCol("champ")}>
+                {cols.champ ? "✓ " : ""}🏆 {t("sechamp")}
               </button>
             </div>
           )}

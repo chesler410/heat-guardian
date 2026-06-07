@@ -503,3 +503,12 @@ footer { margin-top: 20px; text-align: center; }
 .between-h { margin: 14px 0 4px; font-size: 0.9rem; color: var(--blue); }
 .pace-seg { margin: 8px 0; align-items: center; }
 .pace-label { font-size: 0.75rem; color: var(--muted); padding: 0 8px 0 4px; }
+
+/* ---- column toggles: clear on/off + color-coded ---- */
+.colpb.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.colcut.on { background: var(--close); border-color: var(--close); color: #fff; }
+.colchamp.on { background: var(--gold); border-color: var(--gold); color: #3a2c00; }
+/* ---- arm table mobile spacing ---- */
+.arm-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.arm { white-space: nowrap; }
+table.arm th, table.arm td { padding-right: 14px; }
