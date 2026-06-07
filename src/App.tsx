@@ -462,21 +462,21 @@ function ImportView(props: { busy: boolean; msg: string; onFiles: (f: FileList |
     <div>
       <div className="card">
         <h2>Add a meet</h2>
-        <p className="muted">Many meets post one PDF per session — add them all; each becomes a section. Everything is read on your phone; nothing is uploaded.</p>
-        <label className="primary filelabel">
-          {props.busy ? "Reading…" : "📄 Upload PDF(s)"}
-          <input type="file" accept="application/pdf" multiple disabled={props.busy} onChange={(e) => props.onFiles(e.target.files)} hidden />
-        </label>
-      </div>
-
-      <div className="card">
-        <h2>…or paste a link</h2>
         <p className="muted">Paste the meet's heat-sheet PDF link — no download needed.</p>
-        <input className="field" placeholder="https://…/heatsheet.pdf" value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" />
+        <input className="field" placeholder="https://…/heatsheet.pdf" value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" autoFocus />
         <button className="primary" disabled={props.busy || !url.trim()} onClick={() => props.onUrl(url)}>
           {props.busy ? "Opening…" : "Open link"}
         </button>
-        <p className="muted small">If a link won't open, just tap “Upload PDF” above instead.</p>
+        <p className="muted small">Tip: most meet sites have a “Heat Sheet (PDF)” link you can copy. Many meets post one per session — add each.</p>
+      </div>
+
+      <div className="card">
+        <h3>Backup: upload a PDF</h3>
+        <p className="muted">If a link won't open, download the PDF and pick it here. Everything is read on your phone; nothing is uploaded.</p>
+        <label className="secondary filelabel">
+          {props.busy ? "Reading…" : "📄 Upload PDF(s)"}
+          <input type="file" accept="application/pdf" multiple disabled={props.busy} onChange={(e) => props.onFiles(e.target.files)} hidden />
+        </label>
       </div>
 
       {props.msg && <p className="importmsg">{props.msg}</p>}
