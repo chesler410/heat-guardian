@@ -35,6 +35,8 @@ when do they eat."
 - **Find a meet near you** — a community meet directory on the Add-meet screen: filter by state or
   tap "Near me" (geolocation), then open/import a listed meet. The list is bundled and refreshed
   from the repo, so meets can be added by PR without an app release
+- **Share a meet** — a Share button makes a link that imports the meet on a teammate's device in
+  one tap (carries the public PDF/results URLs, not your data). Post it in the team chat or site
 - **8 languages** (EN/ES/ZH/PT/DE/VI/FR/RU — full parity), **light/dark theme**, **team logo**
   (auto-derives a brand color), responsive desktop layout, installable
 

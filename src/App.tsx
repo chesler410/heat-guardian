@@ -77,6 +77,31 @@ const raceOf = (e: Entry) => eventMeta(e.desc).race + (e.relay ? " Relay" : "");
 const heatNum = (h: string | null) => h?.match(/Heat\s+(\d+)/)?.[1] ?? "—";
 const levelClass = (l?: string | null) => "lvl lvl-" + (l ? l.toLowerCase() : "none");
 
+// Shareable meet link: encode the meet's public import URL(s) so a teammate who opens the
+// link imports the same meet on their own device (no backend). u = import URL, r = results.
+interface SharePayload { t?: string; u: string; r?: string }
+function buildShareUrl(p: SharePayload): string {
+  return `${location.origin}${location.pathname}?add=${encodeURIComponent(JSON.stringify(p))}`;
+}
+function readSharePayload(): SharePayload | null {
+  try {
+    const s = new URLSearchParams(location.search).get("add");
+    if (!s) return null;
+    const o = JSON.parse(decodeURIComponent(s));
+    return o && typeof o.u === "string" && o.u ? o : null;
+  } catch {
+    return null;
+  }
+}
+async function shareMeet(p: SharePayload): Promise<"shared" | "copied" | "fail"> {
+  const url = buildShareUrl(p);
+  if (navigator.share) {
+    try { await navigator.share({ title: p.t || "Swim meet", url }); return "shared"; }
+    catch (e: any) { if (e?.name === "AbortError") return "shared"; }
+  }
+  try { await navigator.clipboard.writeText(url); return "copied"; } catch { return "fail"; }
+}
+
 interface DE {
   e: Entry;
   color: string;
@@ -677,6 +702,12 @@ export function App() {
       .then((d) => { if (Array.isArray(d) && d.length) setDirectory(d); })
       .catch(() => { /* keep bundled */ });
   }, []);
+  // A meet shared via link (?add=...) — offer to import it.
+  const [pendingShare, setPendingShare] = useState<SharePayload | null>(readSharePayload);
+  function clearShare() {
+    setPendingShare(null);
+    history.replaceState({}, "", location.pathname + location.hash);
+  }
 
   function setResult(meetId: string, event: number, name: string, val: string) {
     const next = { ...results };
@@ -886,6 +917,19 @@ export function App() {
         />
       )}
 
+      {gated && pendingShare && (
+        <div className="card share-import">
+          <h3>📥 {t("share_got")}</h3>
+          <p className="disc-title">{pendingShare.t || t("share_meet")}</p>
+          <div className="disc-actions">
+            <button className="primary" onClick={() => { onUrl(pendingShare.u); clearShare(); }}>{t("share_import")}</button>
+            {pendingShare.r && (
+              <button className="chip golive" onClick={() => { setLiveUrl(pendingShare.r!); setLiveOn(true); clearShare(); setNav("home"); }}>🔴 {t("disc_golive")}</button>
+            )}
+            <button className="inline-link" onClick={clearShare}>{t("share_dismiss")}</button>
+          </div>
+        </div>
+      )}
       {gated && nav === "home" && (
         <Home
           swimmers={activeSwimmers}
@@ -1046,6 +1090,7 @@ function bySession(items: DE[]): { label: string; items: DE[] }[] {
 function Home(props: any) {
   const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus } = props;
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
+  const [shareMsg, setShareMsg] = useState("");
   const [cols, setCols] = useState<{ pb: boolean; cut: boolean; champ: boolean }>(() => {
     try {
       return { pb: true, cut: false, champ: false, ...JSON.parse(localStorage.getItem("armcols") || "{}") };
@@ -1075,6 +1120,7 @@ function Home(props: any) {
           {liveStatus ? <span className="live-banner-status"> · {liveStatus}</span> : null}
         </button>
       )}
+      {shareMsg && <p className="share-toast">{shareMsg}</p>}
       {meets.length === 0 && swimmers.length === 0 && (
         <Empty title={t("em_welcome_t")} body={t("em_welcome_b")} cta={t("sw_addmeet")} onCta={props.goImport} />
       )}
@@ -1150,6 +1196,19 @@ function Home(props: any) {
               <div className="meet-head">
                 <h3>{meet.title}</h3>
                 {courseLabel(meet) && <span className="course-badge">{courseLabel(meet)}</span>}
+                {meet.sourceUrl && (
+                  <button
+                    className="meet-share"
+                    title={t("share_btn")}
+                    onClick={async () => {
+                      const r = await shareMeet({ t: meet.title, u: meet.sourceUrl });
+                      setShareMsg(r === "copied" ? t("share_copied") : r === "shared" ? "" : t("share_fail"));
+                      setTimeout(() => setShareMsg(""), 2500);
+                    }}
+                  >
+                    🔗
+                  </button>
+                )}
                 <button className="remove" onClick={() => props.removeMeet(meet.id)}>
                   ✕
                 </button>
@@ -1334,6 +1393,7 @@ function DiscoverView(props: {
   const [stateFilter, setStateFilter] = useState("");
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
   const [geoMsg, setGeoMsg] = useState("");
+  const [shareMsg, setShareMsg] = useState("");
   const states = [...new Set(props.meets.map((m) => m.state).filter(Boolean))].sort() as string[];
 
   function findNearMe() {
@@ -1368,6 +1428,7 @@ function DiscoverView(props: {
         <button className={"chip" + (here ? " on" : "")} onClick={findNearMe}>{t("disc_near")}</button>
       </div>
       {geoMsg && <p className="muted small">{geoMsg}</p>}
+      {shareMsg && <p className="share-toast">{shareMsg}</p>}
 
       {list.length === 0 ? (
         <div className="disc-empty">
@@ -1390,6 +1451,9 @@ function DiscoverView(props: {
                   {m.heatUrl && <button className="chip sm" onClick={() => props.onImport(m.heatUrl!)}>{t("disc_import")}</button>}
                   {m.resultsUrl && <button className="chip sm" onClick={() => props.onImport(m.resultsUrl!)}>{t("disc_results")}</button>}
                   {m.resultsUrl && <button className="chip sm golive" onClick={() => props.onGoLive(m.resultsUrl!)}>🔴 {t("disc_golive")}</button>}
+                  {(m.heatUrl || m.resultsUrl) && (
+                    <button className="chip sm" onClick={async () => { const r = await shareMeet({ t: m.title, u: m.heatUrl || m.resultsUrl!, r: m.resultsUrl }); setShareMsg(r === "copied" ? t("share_copied") : ""); setTimeout(() => setShareMsg(""), 2500); }}>🔗 {t("share_btn")}</button>
+                  )}
                   {m.infoUrl && <a className="chip sm" href={m.infoUrl} target="_blank" rel="noopener noreferrer">{t("disc_open")}</a>}
                 </div>
               </div>

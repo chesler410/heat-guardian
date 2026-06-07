@@ -476,6 +476,12 @@ footer { margin-top: 20px; text-align: center; }
 .note-actions .cancel { background: var(--bg); color: var(--muted); }
 .theme-dark .note-actions .cancel { background: #26313f; }
 
+/* ---- share a meet ---- */
+.share-import { border: 1.5px solid var(--blue); }
+.meet-share { border: none; background: none; cursor: pointer; font-size: 1rem; padding: 0 4px; opacity: 0.7; }
+.meet-share:hover { opacity: 1; }
+.share-toast { background: var(--made, #1f9d57); color: #fff; font-size: 0.85rem; font-weight: 600; padding: 8px 12px; border-radius: 10px; margin: 0 0 12px; text-align: center; }
+
 /* ---- discover (meet directory) ---- */
 .disc-filters { display: flex; gap: 8px; align-items: center; margin: 10px 0 4px; }
 .disc-state { flex: 1; max-width: 220px; }

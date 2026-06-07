@@ -25,6 +25,7 @@ export interface Meet {
   importedAt: number;
   entries: Entry[];
   source: "upload" | "url";
+  sourceUrl?: string; // the link it came from (url imports), so the meet can be re-shared
 }
 
 export interface Swimmer {
@@ -137,26 +138,26 @@ export function buildRoster(meets: Meet[]): RosterItem[] {
   return [...map.values()].sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name));
 }
 
-function toMeet(title: string, entries: any[], fallback: string, source: "upload" | "url"): Meet {
+function toMeet(title: string, entries: any[], fallback: string, source: "upload" | "url", sourceUrl?: string): Meet {
   const mapped: Entry[] = entries.map((r) => ({
     ...r,
     race: eventMeta(r.desc).race + (r.relay ? " Relay" : ""),
   }));
-  return { id: uid(), title: title || fallback, importedAt: Date.now(), entries: mapped, source };
+  return { id: uid(), title: title || fallback, importedAt: Date.now(), entries: mapped, source, sourceUrl };
 }
 
 export type ImportOutcome =
   | { kind: "meet"; meet: Meet }
   | { kind: "results"; title: string; finishers: Finisher[] };
 
-export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "upload" | "url"): Promise<ImportOutcome> {
+export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "upload" | "url", sourceUrl?: string): Promise<ImportOutcome> {
   // SD3 / SDIF is plain text (not a PDF). Detect and parse it into a meet.
   if (!isPdf(buf)) {
     const text = new TextDecoder("utf-8").decode(buf);
     if (looksLikeSdif(text)) {
       const s = parseSdif(text);
       if (!s.entries.length) throw new Error("No events found in this SD3 file.");
-      return { kind: "meet", meet: toMeet(s.title, s.entries, fallback, source) };
+      return { kind: "meet", meet: toMeet(s.title, s.entries, fallback, source, sourceUrl) };
     }
   }
   const r = await parsePdf(buf);
@@ -165,7 +166,7 @@ export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "
     return { kind: "results", title: r.title, finishers: r.finishers };
   }
   if (!r.entries.length) throw new Error("No events found — is this a Hy-Tek heat sheet or results PDF?");
-  return { kind: "meet", meet: toMeet(r.title, r.entries, fallback, source) };
+  return { kind: "meet", meet: toMeet(r.title, r.entries, fallback, source, sourceUrl) };
 }
 
 export async function importFile(file: File): Promise<ImportOutcome> {
@@ -305,5 +306,5 @@ export async function fetchPdfBuffer(url: string, proxy: string): Promise<ArrayB
 export async function importUrl(url: string, proxy: string): Promise<ImportOutcome> {
   const buf = await fetchPdfBuffer(url.trim(), proxy);
   const fallback = url.split("/").pop()?.replace(/\.pdf.*$/i, "") || "Meet";
-  return importBuffer(buf, fallback, "url");
+  return importBuffer(buf, fallback, "url", url.trim());
 }
