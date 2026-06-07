@@ -1206,7 +1206,24 @@ function Home(props: any) {
               </button>
             </div>
           )}
-          {groups.map(({ meet, items }: any) => (
+          {groups.map(({ meet, items }: any) => {
+            const secs = bySession(items);
+            const dmap = dayDateMap(meet.start);
+            const dayOrder: string[] = [];
+            for (const s of secs) {
+              const wd = s.label.split(" ")[0];
+              if (s.label !== "Events" && !dayOrder.includes(wd)) dayOrder.push(wd);
+            }
+            // "Day 1 · Friday, Jun 5 — Morning" from a session like "Friday Morning".
+            const sessionHead = (raw: string): string => {
+              const wd = raw.split(" ")[0];
+              const part = raw.slice(wd.length).trim();
+              const n = dayOrder.indexOf(wd);
+              const dayPart = dayOrder.length > 1 && n >= 0 ? t("day_n", { n: n + 1 }) + " · " : "";
+              const datePart = dmap[wd] ? ", " + dmap[wd] : "";
+              return `${dayPart}${wd}${datePart}${part ? " — " + part : ""}`;
+            };
+            return (
             <div className="meet-block" key={meet.id}>
               <div className="meet-head">
                 <h3>{meet.title}</h3>
@@ -1231,9 +1248,9 @@ function Home(props: any) {
               {items.length === 0 ? (
                 <p className="muted meet-empty">{t("em_none_meet")}</p>
               ) : (
-                bySession(items).map((sec) => (
+                secs.map((sec) => (
                   <div className={"session-block" + (view === "cards" ? " grid" : "")} key={sec.label}>
-                    {sec.label !== "Events" && <div className="session-head">📅 {sec.label}</div>}
+                    {sec.label !== "Events" && <div className="session-head">📅 {sessionHead(sec.label)}</div>}
                     {view === "cards" ? (
                       sec.items.map((d, i) => {
                         const k = resultKey(d.meetId, d.e.event, d.swimmer);
@@ -1262,7 +1279,8 @@ function Home(props: any) {
                 ))
               )}
             </div>
-          ))}
+            );
+          })}
         </>
       )}
 
@@ -1374,6 +1392,22 @@ function CoachTeamPicker(props: {
       )}
     </div>
   );
+}
+
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+// Map each weekday name in the meet's week → a short date (e.g. {Friday: "Jun 5"}), from
+// the meet's ISO start day, so session headers can show the actual date.
+function dayDateMap(start?: string): Record<string, string> {
+  if (!start) return {};
+  const d0 = new Date(start + "T00:00:00");
+  if (isNaN(+d0)) return {};
+  const map: Record<string, string> = {};
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(d0);
+    d.setDate(d0.getDate() + i);
+    map[WEEKDAYS[d.getDay()]] = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  return map;
 }
 
 function fmtDateRange(start?: string, end?: string): string {

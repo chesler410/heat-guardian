@@ -155,8 +155,19 @@ export interface Finisher {
   finals: string;
 }
 export type ParsedPdf =
-  | { kind: "heat"; title: string; entries: RawEntry[] }
+  | { kind: "heat"; title: string; entries: RawEntry[]; start?: string }
   | { kind: "results"; title: string; finishers: Finisher[] };
+
+// The meet's first day, from a "M/D/YYYY to M/D/YYYY" range in the running header (ISO).
+// (Anchored on "to" so we don't grab the Hy-Tek print date.)
+function findMeetStart(pages: Word[][]): string | undefined {
+  for (const words of pages) {
+    const txt = words.map((w) => w.s).join(" ");
+    const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})\s+to\s+\d{1,2}\/\d{1,2}\/\d{4}/.exec(txt);
+    if (m) return `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+  }
+  return undefined;
+}
 
 function pageWords(tc: any): Word[] {
   return tc.items
@@ -203,7 +214,7 @@ export async function parsePdf(data: ArrayBuffer): Promise<ParsedPdf> {
   }
   const entries: RawEntry[] = [];
   parseLines(ordered, entries);
-  return { kind: "heat", title, entries };
+  return { kind: "heat", title, entries, start: findMeetStart(pages) };
 }
 
 // Pick, per finisher row, the time nearest the "Finals" column (vs the Seed column).

@@ -26,6 +26,7 @@ export interface Meet {
   entries: Entry[];
   source: "upload" | "url";
   sourceUrl?: string; // the link it came from (url imports), so the meet can be re-shared
+  start?: string; // meet's first day (ISO), for Day-N / dated session headers
 }
 
 export interface Swimmer {
@@ -138,12 +139,12 @@ export function buildRoster(meets: Meet[]): RosterItem[] {
   return [...map.values()].sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name));
 }
 
-function toMeet(title: string, entries: any[], fallback: string, source: "upload" | "url", sourceUrl?: string): Meet {
+function toMeet(title: string, entries: any[], fallback: string, source: "upload" | "url", sourceUrl?: string, start?: string): Meet {
   const mapped: Entry[] = entries.map((r) => ({
     ...r,
     race: eventMeta(r.desc).race + (r.relay ? " Relay" : ""),
   }));
-  return { id: uid(), title: title || fallback, importedAt: Date.now(), entries: mapped, source, sourceUrl };
+  return { id: uid(), title: title || fallback, importedAt: Date.now(), entries: mapped, source, sourceUrl, start };
 }
 
 export type ImportOutcome =
@@ -166,7 +167,7 @@ export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "
     return { kind: "results", title: r.title, finishers: r.finishers };
   }
   if (!r.entries.length) throw new Error("No events found — is this a Hy-Tek heat sheet or results PDF?");
-  return { kind: "meet", meet: toMeet(r.title, r.entries, fallback, source, sourceUrl) };
+  return { kind: "meet", meet: toMeet(r.title, r.entries, fallback, source, sourceUrl, r.start) };
 }
 
 export async function importFile(file: File): Promise<ImportOutcome> {
