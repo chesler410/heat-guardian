@@ -53,7 +53,7 @@ interface DE {
 }
 
 const cutFor = (d: DE, result?: string): CutResult | null =>
-  computeCut(d.e.desc, result || d.e.seed, { age: d.age, gender: d.gender });
+  d.e.relay ? null : computeCut(d.e.desc, result || d.e.seed, { age: d.age, gender: d.gender });
 
 function EntryCard({
   d,
@@ -87,9 +87,10 @@ function EntryCard({
         <span>{e.heat ?? "Heat TBD"}</span>
         <span className="lane">Lane {e.lane}</span>
         <span>
-          {result ? "Swam" : "Seed"} <strong>{time}</strong>
+          {e.relay ? "Team" : result ? "Swam" : "Seed"} <strong>{time}</strong>
         </span>
       </div>
+      {e.relay && <div className="cut muted">🏁 Relay — {e.team}</div>}
       {/* SE championship cut shown first — it's the priority target */}
       {cut?.champ && (
         <div className="champ">
@@ -112,9 +113,10 @@ function EntryCard({
         </div>
       ) : cut ? (
         <div className="cut muted">Top standard reached 🏆</div>
-      ) : (
+      ) : e.relay ? null : (
         <div className="cut muted">No standard for this event</div>
       )}
+      {!e.relay && (
       <div className="result-entry">
         {editing ? (
           <input
@@ -137,6 +139,7 @@ function EntryCard({
           </button>
         )}
       </div>
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ export interface Entry {
   team: string;
   seed: string;
   session: string | null; // e.g. "Friday Morning", from the heat sheet
+  relay?: boolean;
 }
 
 export interface Meet {
@@ -106,7 +107,10 @@ export function buildRoster(meets: Meet[]): RosterItem[] {
 }
 
 function toMeet(title: string, entries: any[], fallback: string, source: "upload" | "url"): Meet {
-  const mapped: Entry[] = entries.map((r) => ({ ...r, race: eventMeta(r.desc).race }));
+  const mapped: Entry[] = entries.map((r) => ({
+    ...r,
+    race: eventMeta(r.desc).race + (r.relay ? " Relay" : ""),
+  }));
   return { id: uid(), title: title || fallback, importedAt: Date.now(), entries: mapped, source };
 }
 

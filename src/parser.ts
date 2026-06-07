@@ -22,10 +22,15 @@ export interface RawEntry {
   team: string;
   seed: string;
   session: string | null;
+  relay?: boolean;
 }
 
 const HEADER = /^#(\d+)\s+(.+?)\s*$/;
 const HEAT = /Heat\s+(\d+)\s+of\s+(\d+)\s+(\w+)/;
+// Relay team row: "4 PAC-LA W109 A 2:04.11" -> lane, team, (code), letter, seed
+const RELAY_TEAM = /^(\d{1,2})\s+([A-Z0-9\-]+)\s+[A-Z0-9]+\s+[A-Z]\s+([\d:]+\.\d{2}|NT)$/;
+// Relay member(s): "Smith, Amelia A 16 Lard, Kinlee G 16" (two per line)
+const RELAY_MEMBER = /([A-Za-z'.\-]+,\s*[A-Za-z'.\-]+(?:\s+[A-Za-z])?)\s+(\d{1,2})/g;
 const SESSION_MARK = "@@SESSION@@";
 // "Meet Program - Friday Morning" running header → the day/session for that page.
 const SESSION_HDR =
@@ -77,6 +82,8 @@ function parseLines(lines: string[], out: RawEntry[]) {
   let desc = "";
   let heat: string | null = null;
   let session: string | null = null;
+  let isRelay = false;
+  let relayTeam: { lane: number; team: string; seed: string } | null = null;
   for (let line of lines) {
     line = line.trim();
     if (!line) continue;
@@ -89,11 +96,39 @@ function parseLines(lines: string[], out: RawEntry[]) {
       ev = h[1];
       desc = h[2].trim();
       heat = null;
+      isRelay = /relay/i.test(desc);
+      relayTeam = null;
       continue;
     }
     const hm = HEAT.exec(line);
     if (hm) {
       heat = `Heat ${hm[1]} of ${hm[2]} ${hm[3]}`;
+      continue;
+    }
+    if (isRelay && ev) {
+      const rt = RELAY_TEAM.exec(line);
+      if (rt) {
+        relayTeam = { lane: parseInt(rt[1], 10), team: rt[2], seed: rt[3] };
+        continue;
+      }
+      if (relayTeam) {
+        let m: RegExpExecArray | null;
+        RELAY_MEMBER.lastIndex = 0;
+        while ((m = RELAY_MEMBER.exec(line))) {
+          out.push({
+            event: parseInt(ev, 10),
+            desc,
+            heat,
+            lane: relayTeam.lane,
+            name: m[1].trim(),
+            age: m[2],
+            team: relayTeam.team,
+            seed: relayTeam.seed,
+            session,
+            relay: true,
+          });
+        }
+      }
       continue;
     }
     const e = ENTRY.exec(line);
