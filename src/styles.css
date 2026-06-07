@@ -354,3 +354,38 @@ footer { margin-top: 20px; text-align: center; }
 .sample-body { position: relative; opacity: 0.92; }
 .sample-body h3 { color: var(--muted); font-size: 0.95rem; margin: 6px 4px 10px; text-transform: capitalize; }
 .sample-badge { display: inline-block; background: #9aa7b3; color: #fff; font-size: 0.65rem; font-weight: 800; letter-spacing: 1px; padding: 2px 8px; border-radius: 6px; margin: 0 4px 8px; }
+
+/* ---- SE championship line ---- */
+.champ { margin-top: 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.85rem; }
+.champ > span:first-child { font-weight: 600; }
+.champ-met { color: var(--close); font-weight: 700; white-space: nowrap; }
+.champ-need { color: #b3501f; font-weight: 600; white-space: nowrap; }
+
+/* ---- session (date) sections ---- */
+.session-block { margin-bottom: 8px; }
+.session-head { font-weight: 700; color: var(--blue); font-size: 0.9rem; margin: 12px 4px 8px; }
+
+/* ---- dark mode ---- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d141c; --card: #161f2a; --ink: #e7eef5; --muted: #93a3b3;
+    --blue: #5b9bff; --close: #34d07f;
+  }
+  .card { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); }
+  .disclaimer { background: #3a300f; border-color: #6a560f; color: #f3e3a0; }
+  .seg { background: #26313f; }
+  .seg button.on { background: #0d141c; color: #cfe0ff; }
+  .highlight { background: linear-gradient(160deg, #15293a, #161f2a); border-color: #234058; }
+  .lane { background: #26313f; color: #bcd3ff; }
+  .field, .result { background: #0f1822; border-color: #2a3744; color: var(--ink); }
+  .field::placeholder { color: #6b7c8c; }
+  .chip { background: #161f2a; border-color: #33414f; color: var(--muted); }
+  table.arm th { border-color: #2a3744; }
+  table.arm td { border-color: #202b36; }
+  .cut, .kid-row, .hl-row { border-color: #202b36; }
+  .importmsg { background: #13283d; border-color: #244a6b; color: #cfe6ff; }
+  .about code { background: #26313f; }
+  .sample { border-color: #2a3744; }
+  .champ-need { color: #ff9d6b; }
+  .result-meta, .ev-meta { color: var(--muted); }
+}

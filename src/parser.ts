@@ -21,10 +21,15 @@ export interface RawEntry {
   age: string;
   team: string;
   seed: string;
+  session: string | null;
 }
 
 const HEADER = /^#(\d+)\s+(.+?)\s*$/;
 const HEAT = /Heat\s+(\d+)\s+of\s+(\d+)\s+(\w+)/;
+const SESSION_MARK = "@@SESSION@@";
+// "Meet Program - Friday Morning" running header → the day/session for that page.
+const SESSION_HDR =
+  /Meet Program\s*-\s*((?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\s+(?:Morning|Afternoon|Evening|AM|PM))/i;
 const ENTRY =
   /^(\d{1,2})\s+([A-Za-z'.\- ]+?,\s*[A-Za-z'.\-]+(?:\s+[A-Za-z])?)\s+(\d{1,2})\s+([A-Z0-9\-]+)\s+([\d:]+\.\d{2}|NT)$/;
 
@@ -71,9 +76,14 @@ function parseLines(lines: string[], out: RawEntry[]) {
   let ev: string | null = null;
   let desc = "";
   let heat: string | null = null;
+  let session: string | null = null;
   for (let line of lines) {
     line = line.trim();
     if (!line) continue;
+    if (line.startsWith(SESSION_MARK)) {
+      session = line.slice(SESSION_MARK.length) || null;
+      continue;
+    }
     const h = HEADER.exec(line);
     if (h) {
       ev = h[1];
@@ -97,6 +107,7 @@ function parseLines(lines: string[], out: RawEntry[]) {
         age: e[3],
         team: e[4],
         seed: e[5],
+        session,
       });
     }
   }
@@ -129,6 +140,10 @@ export async function parseHeatSheet(data: ArrayBuffer): Promise<ParseResult> {
         title = row.map((w) => w.s).join(" ").trim().replace(/(\d)\s+(\d)/g, "$1$2");
       }
     }
+    // Tag this page's events with their session from the "Meet Program - <day>" header.
+    const pageText = [...words].sort((a, b) => b.y - a.y || a.x - b.x).map((w) => w.s).join(" ");
+    const sm = SESSION_HDR.exec(pageText);
+    if (sm) ordered.push(SESSION_MARK + sm[1].replace(/\s+/g, " ").trim());
     const lefts = columnLefts(words);
     for (let c = 0; c < lefts.length; c++) ordered.push(...linesForColumn(words, c, lefts));
   }

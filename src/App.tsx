@@ -79,6 +79,16 @@ function EntryCard({ d, showSwimmer }: { d: DE; showSwimmer: boolean }) {
       ) : (
         <div className="cut muted">No standard for this event</div>
       )}
+      {cut?.champ && (
+        <div className="champ">
+          <span>🏆 SE Champ {cut.champ.time}</span>
+          {cut.champ.met ? (
+            <span className="champ-met">qualified ✓</span>
+          ) : (
+            <span className="champ-need">need {cut.champ.needed.toFixed(2)}s</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -288,6 +298,20 @@ function buildDisplay(meets: Meet[], swimmers: Swimmer[], filter: Set<string>) {
   });
 }
 
+function bySession(items: DE[]): { label: string; items: DE[] }[] {
+  const order: string[] = [];
+  const map = new Map<string, DE[]>();
+  for (const d of items) {
+    const s = d.e.session || "Events";
+    if (!map.has(s)) {
+      map.set(s, []);
+      order.push(s);
+    }
+    map.get(s)!.push(d);
+  }
+  return order.map((s) => ({ label: s, items: map.get(s)! }));
+}
+
 function Home(props: any) {
   const { swimmers, meets, view, pickView, filter, toggleFilter } = props;
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
@@ -365,10 +389,17 @@ function Home(props: any) {
               </div>
               {items.length === 0 ? (
                 <p className="muted meet-empty">None of your swimmers are in this meet.</p>
-              ) : view === "cards" ? (
-                items.map((d: DE, i: number) => <EntryCard key={i} d={d} showSwimmer={swimmers.length > 1} />)
               ) : (
-                <ArmTable items={items} />
+                bySession(items).map((sec) => (
+                  <div className="session-block" key={sec.label}>
+                    {sec.label !== "Events" && <div className="session-head">📅 {sec.label}</div>}
+                    {view === "cards" ? (
+                      sec.items.map((d, i) => <EntryCard key={i} d={d} showSwimmer={swimmers.length > 1} />)
+                    ) : (
+                      <ArmTable items={sec.items} />
+                    )}
+                  </div>
+                ))
               )}
             </div>
           ))}
@@ -391,12 +422,20 @@ function SampleBlock({ open, setOpen }: { open: boolean; setOpen: (b: boolean) =
         <div className="sample-body">
           <div className="sample-badge">SAMPLE</div>
           <h3>{d.meet}</h3>
-          {d.events.map((e: any, i: number) => (
-            <EntryCard
-              key={i}
-              d={{ e: { ...e, name: "Sample Swimmer", team: "DEMO-SE" }, color: "#9aa7b3", swimmer: "Sample Swimmer", cut: computeCut(e.desc, e.seed) }}
-              showSwimmer={false}
-            />
+          {bySession(
+            d.events.map((e: any) => ({
+              e: { ...e, name: "Sample Swimmer", team: "DEMO-SE", session: `Day ${e.day}` },
+              color: "#9aa7b3",
+              swimmer: "Sample Swimmer",
+              cut: computeCut(e.desc, e.seed),
+            }))
+          ).map((sec) => (
+            <div className="session-block" key={sec.label}>
+              <div className="session-head">📅 {sec.label}</div>
+              {sec.items.map((d2, i) => (
+                <EntryCard key={i} d={d2} showSwimmer={false} />
+              ))}
+            </div>
           ))}
         </div>
       )}

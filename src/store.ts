@@ -14,6 +14,7 @@ export interface Entry {
   age: string;
   team: string;
   seed: string;
+  session: string | null; // e.g. "Friday Morning", from the heat sheet
 }
 
 export interface Meet {

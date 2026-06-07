@@ -1,10 +1,13 @@
 // Derive a swimmer's age-group/gender/course/event from the event description and
 // compute the next USA Swimming motivational cut to beat from the bundled standards.
 import standardsData from "./standards.json";
+import seChampsData from "./se_champs.json";
 
 type Ladder = Record<string, string>;
 type Standards = Record<string, Record<string, Record<string, Record<string, Ladder>>>>;
 const standards = standardsData as Standards;
+// se_champs: course -> gender -> age -> "50 FR" -> qualifying time
+const seChamps = seChampsData as Record<string, Record<string, Record<string, Record<string, string>>>>;
 
 export const LEVELS = ["B", "BB", "A", "AA", "AAA", "AAAA"];
 
@@ -73,6 +76,7 @@ export interface CutResult {
   achieved: string | null;
   nextCut: { level: string; time: string; needed: number } | null;
   ladder: Ladder | null;
+  champ: { time: string; met: boolean; needed: number } | null; // Southeastern champ cut
 }
 
 export function computeCut(desc: string, seed: string): CutResult | null {
@@ -83,6 +87,14 @@ export function computeCut(desc: string, seed: string): CutResult | null {
   if (!ladder) return null;
 
   const seedSec = toSec(seed);
+
+  // Southeastern championship qualifying cut (single time per event), if available.
+  let champ: CutResult["champ"] = null;
+  const champStr = seChamps[m.course]?.[m.gender]?.[m.ageGroup]?.[m.key];
+  if (champStr) {
+    const t = toSec(champStr);
+    champ = { time: fmt(t), met: seedSec <= t, needed: +(seedSec - t).toFixed(2) };
+  }
   let achieved: string | null = null;
   let nextLevel: string | null = null;
   let nextTime: number | null = null;
@@ -114,5 +126,6 @@ export function computeCut(desc: string, seed: string): CutResult | null {
         ? { level: nextLevel, time: fmt(nextTime), needed: +(seedSec - nextTime).toFixed(2) }
         : null,
     ladder: fmtLadder,
+    champ,
   };
 }
