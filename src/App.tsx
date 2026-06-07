@@ -1045,7 +1045,7 @@ function ImportView(props: { busy: boolean; msg: string; onFiles: (f: FileList |
       <div className="card">
         <h2>{t("imp_title")}</h2>
         <p className="muted">{t("imp_tip")}</p>
-        <p className="muted small">{t("imp_results")}</p>
+        <p className="imp-note">📄 {t("imp_results")}</p>
         <input className="field" placeholder="https://…/heatsheet.pdf" value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" autoFocus />
         <button className="primary" disabled={props.busy || !url.trim()} onClick={() => props.onUrl(url)}>
           {props.busy ? t("imp_opening") : t("imp_open")}

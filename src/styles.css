@@ -532,3 +532,7 @@ table.arm th, table.arm td { padding-right: 14px; }
 .src-links { margin: 4px 0 0; padding-left: 18px; }
 .src-links li { margin: 6px 0; font-size: 0.9rem; }
 .src-links a { color: var(--blue); }
+
+/* import note callout */
+.imp-note { background: #eaf4ff; border: 1px solid #cfe5fb; border-radius: 10px; padding: 8px 10px; font-size: 0.85rem; margin: 0 0 6px; color: #134; }
+.theme-dark .imp-note { background: #13283d; border-color: #244a6b; color: #cfe6ff; }
