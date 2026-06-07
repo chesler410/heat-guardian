@@ -32,13 +32,17 @@ when do they eat."
   PBs & cuts), and **SD3 (SDIF)** export files
 - **Live results** — paste a meet's public live-results link; while it runs, new times overlay
   onto your swimmers automatically (~1 min refresh), with a LIVE banner and last-updated status
+- **Find a meet near you** — a community meet directory on the Add-meet screen: filter by state or
+  tap "Near me" (geolocation), then open/import a listed meet. The list is bundled and refreshed
+  from the repo, so meets can be added by PR without an app release
 - **8 languages** (EN/ES/ZH/PT/DE/VI/FR/RU — full parity), **light/dark theme**, **team logo**
   (auto-derives a brand color), responsive desktop layout, installable
 
 ## How to use
 
 1. **Pick your role** the first time — Parent or Coach (changeable anytime in About).
-2. **Add meet** → upload the heat-sheet PDF(s) or `.sd3` file, or paste a direct PDF link.
+2. **Add meet** → pick a meet from "Find a meet near you," or upload the heat-sheet PDF(s) /
+   `.sd3` file, or paste a direct PDF link. (To follow live, paste the results link under Live results.)
 3. **Swimmers** (parents) → search the meet roster and tap your kids; or, as a **coach**, pick
    your team. Watch teammates/rivals in the **Watching** tab.
 4. **Home** → everyone's events, by date, with cuts and fueling. Toggle **Cards / Arm table**.
@@ -78,6 +82,22 @@ npm run build    # production build (CI sets APP_BASE=/my-swimmer/ for GitHub Pa
 ```
 
 Deploys to GitHub Pages on push to `main` via `.github/workflows/deploy.yml`.
+
+### Add a meet to the directory
+
+Append an entry to [`src/meets.json`](src/meets.json) and open a PR — it appears in
+"Find a meet near you" for everyone (the app refreshes the list from `main` at runtime):
+
+```json
+{ "id": "unique-slug", "title": "2026 Spring Invitational", "city": "Pensacola",
+  "state": "FL", "lsc": "SE", "start": "2026-06-05", "end": "2026-06-07",
+  "lat": 30.42, "lng": -87.22,
+  "heatUrl": "https://…/heatsheet.pdf", "resultsUrl": "https://…/results.pdf",
+  "infoUrl": "https://…/meet-page" }
+```
+
+`heatUrl`/`resultsUrl` are optional (give a one-tap import / Go-live when present); `infoUrl`
+is the public meet page. No personal data — just public meet links.
 
 ## Status
 

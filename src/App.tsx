@@ -30,8 +30,27 @@ import { DEFAULT_PROXY, FEEDBACK_URL } from "./config.ts";
 import { getTheme, setTheme, Theme } from "./theme.ts";
 import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
 import day from "./day.json";
+import meetsDirectory from "./meets.json";
 
 type Nav = "home" | "import" | "swimmers" | "watching" | "progress" | "teams" | "about";
+
+// A meet listed in the community directory (bundled, and refreshed from the repo at runtime).
+interface DirMeet {
+  id: string;
+  title: string;
+  city?: string;
+  state?: string;
+  lsc?: string;
+  start?: string;
+  end?: string;
+  lat?: number;
+  lng?: number;
+  heatUrl?: string;
+  resultsUrl?: string;
+  infoUrl?: string;
+}
+// Raw copy in the repo so the community can add meets via PR without an app release.
+const DIRECTORY_URL = "https://raw.githubusercontent.com/chesler410/my-swimmer/main/src/meets.json";
 type Role = "parent" | "coach";
 
 function displayName(n: string): string {
@@ -650,6 +669,14 @@ export function App() {
     setLiveOnState(v);
     localStorage.setItem("liveOn", v ? "1" : "0");
   }
+  // Community meet directory: start with the bundled copy, then refresh from the repo.
+  const [directory, setDirectory] = useState<DirMeet[]>(meetsDirectory as DirMeet[]);
+  useEffect(() => {
+    fetch(DIRECTORY_URL)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (Array.isArray(d) && d.length) setDirectory(d); })
+      .catch(() => { /* keep bundled */ });
+  }, []);
 
   function setResult(meetId: string, event: number, name: string, val: string) {
     const next = { ...results };
@@ -894,6 +921,8 @@ export function App() {
           liveStatus={liveStatus}
           setLiveUrl={setLiveUrl}
           setLiveOn={setLiveOn}
+          directory={directory}
+          onGoLive={(u: string) => { setLiveUrl(u); setLiveOn(true); setNav("home"); }}
         />
       )}
       {gated && !coaching && (nav === "swimmers" || nav === "watching") && (
@@ -1273,6 +1302,108 @@ function CoachTeamPicker(props: {
   );
 }
 
+function fmtDateRange(start?: string, end?: string): string {
+  if (!start) return "";
+  const opt: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  const s = new Date(start + "T00:00:00");
+  const sStr = s.toLocaleDateString(undefined, opt);
+  if (!end || end === start) return `${sStr}, ${s.getFullYear()}`;
+  const e = new Date(end + "T00:00:00");
+  // Same month → "Jun 5–7, 2026"; otherwise "Jun 28 – Jul 2, 2026".
+  const eStr = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()
+    ? e.getDate().toString()
+    : e.toLocaleDateString(undefined, opt);
+  return `${sStr}–${eStr}, ${e.getFullYear()}`;
+}
+// Great-circle distance in miles (for the "near me" sort).
+function miBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 3958.8;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const la1 = (a.lat * Math.PI) / 180, la2 = (b.lat * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
+  return Math.round(R * 2 * Math.asin(Math.sqrt(h)));
+}
+
+function DiscoverView(props: {
+  meets: DirMeet[];
+  onImport: (url: string) => void;
+  onGoLive: (url: string) => void;
+  suggestUrl: string;
+}) {
+  const [stateFilter, setStateFilter] = useState("");
+  const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoMsg, setGeoMsg] = useState("");
+  const states = [...new Set(props.meets.map((m) => m.state).filter(Boolean))].sort() as string[];
+
+  function findNearMe() {
+    if (!navigator.geolocation) { setGeoMsg(t("disc_geoerr")); return; }
+    setGeoMsg(t("disc_locating"));
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setHere({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoMsg(""); setStateFilter(""); },
+      () => setGeoMsg(t("disc_geoerr"))
+    );
+  }
+
+  let list = props.meets.filter((m) => !stateFilter || m.state === stateFilter);
+  if (here) {
+    list = [...list].sort((a, b) => {
+      const da = a.lat != null && a.lng != null ? miBetween(here, { lat: a.lat, lng: a.lng }) : 1e9;
+      const db = b.lat != null && b.lng != null ? miBetween(here, { lat: b.lat, lng: b.lng }) : 1e9;
+      return da - db;
+    });
+  } else {
+    list = [...list].sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+  }
+
+  return (
+    <div className="card discover">
+      <h2>📍 {t("disc_h")}</h2>
+      <p className="muted">{t("disc_intro")}</p>
+      <div className="disc-filters">
+        <select className="field disc-state" value={stateFilter} onChange={(e) => { setStateFilter(e.target.value); setHere(null); }}>
+          <option value="">{t("disc_all_states")}</option>
+          {states.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <button className={"chip" + (here ? " on" : "")} onClick={findNearMe}>{t("disc_near")}</button>
+      </div>
+      {geoMsg && <p className="muted small">{geoMsg}</p>}
+
+      {list.length === 0 ? (
+        <div className="disc-empty">
+          <p className="muted">{t("disc_none")}</p>
+          <a className="secondary" href={props.suggestUrl} target="_blank" rel="noopener noreferrer">{t("disc_suggest")}</a>
+        </div>
+      ) : (
+        <>
+          {list.map((m) => {
+            const dist = here && m.lat != null && m.lng != null ? miBetween(here, { lat: m.lat, lng: m.lng }) : null;
+            return (
+              <div className="disc-card" key={m.id}>
+                <div className="disc-date">📅 {fmtDateRange(m.start, m.end)}</div>
+                <div className="disc-title">{m.title}</div>
+                <div className="disc-loc muted">
+                  {[m.city, m.state].filter(Boolean).join(", ")}{m.lsc ? ` · ${m.lsc}` : ""}
+                  {dist != null ? <span className="disc-dist"> · {t("disc_mi", { n: dist })}</span> : null}
+                </div>
+                <div className="disc-actions">
+                  {m.heatUrl && <button className="chip sm" onClick={() => props.onImport(m.heatUrl!)}>{t("disc_import")}</button>}
+                  {m.resultsUrl && <button className="chip sm" onClick={() => props.onImport(m.resultsUrl!)}>{t("disc_results")}</button>}
+                  {m.resultsUrl && <button className="chip sm golive" onClick={() => props.onGoLive(m.resultsUrl!)}>🔴 {t("disc_golive")}</button>}
+                  {m.infoUrl && <a className="chip sm" href={m.infoUrl} target="_blank" rel="noopener noreferrer">{t("disc_open")}</a>}
+                </div>
+              </div>
+            );
+          })}
+          <p className="feedback-foot">
+            <a href={props.suggestUrl} target="_blank" rel="noopener noreferrer">{t("disc_suggest")}</a>
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ProgressView(props: { progress: SwimmerProgress[]; goImport: () => void; goSwimmers: () => void }) {
   if (!props.progress.length)
     return <Empty title={t("prog_empty_t")} body={t("prog_empty_b")} cta={t("prog_empty_cta")} onCta={props.goSwimmers} />;
@@ -1336,11 +1467,20 @@ function ImportView(props: {
   liveStatus: string;
   setLiveUrl: (v: string) => void;
   setLiveOn: (v: boolean) => void;
+  directory: DirMeet[];
+  onGoLive: (url: string) => void;
 }) {
   const [url, setUrl] = useState("");
   const [liveDraft, setLiveDraft] = useState(props.liveUrl);
   return (
     <div>
+      <DiscoverView
+        meets={props.directory}
+        onImport={(u: string) => props.onUrl(u)}
+        onGoLive={props.onGoLive}
+        suggestUrl={FEEDBACK_URL}
+      />
+
       <div className="card">
         <h2>{t("imp_title")}</h2>
         <p className="muted">{t("imp_tip")}</p>

@@ -68,11 +68,13 @@ crossing — weighed against privacy and cost.
      is the next add once we have a sample page.)*
   2. **Results PDFs** posted during/after the meet — same parser, manual or live.
 - **On-deck manual entry** remains the always-works fallback (and feeds splits).
-- **Discovery ("meets near me")** has **no clean public API**. The real unlock is USA Swimming's
-  **SWIMS 3.0 vendor API** (real-time member/meet/results data) — but it requires becoming an
-  **approved 3rd-party vendor** (application + agreement via usaswimming.org 3rd-party vendor
-  resources). Worth pursuing now that the app is real and in use; until approved, discovery is
-  manual (saved meet/result URLs, team GoMotion/TeamUnify pages).
+- **Discovery ("meets near me")** has **no clean public API** — and SWIMS 3.0 does NOT provide one
+  (its third-party API is *membership/registration only*: getMemberDetails / getVendorClubs /
+  registration-link + member-lifecycle events; **no meets, times, or results**, confirmed against
+  thirdparty-api-documentation.swimsmember.org). So the vendor program does **not** unlock this.
+  Shipped instead: a **community meet directory** (bundled `src/meets.json`, refreshed from the
+  repo at runtime, filter by state + geolocation "near me") on the Add-meet screen — zero backend,
+  grows by PR/feedback. Next: seed more LSCs; optional opt-in crowd submissions.
 - **USA Swimming Data Hub** (historical times/rankings) is still **Sisense-locked** for scraping;
   the SWIMS API is the sanctioned route to that data.
 

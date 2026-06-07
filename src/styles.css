@@ -476,6 +476,22 @@ footer { margin-top: 20px; text-align: center; }
 .note-actions .cancel { background: var(--bg); color: var(--muted); }
 .theme-dark .note-actions .cancel { background: #26313f; }
 
+/* ---- discover (meet directory) ---- */
+.disc-filters { display: flex; gap: 8px; align-items: center; margin: 10px 0 4px; }
+.disc-state { flex: 1; max-width: 220px; }
+.disc-card { padding: 12px 0; border-top: 1px solid #eef2f6; }
+.theme-dark .disc-card { border-color: #202b36; }
+.disc-date { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+.disc-title { font-size: 1.02rem; font-weight: 800; margin: 2px 0; }
+.disc-loc { font-size: 0.85rem; }
+.disc-dist { color: var(--blue); font-weight: 700; }
+.theme-dark .disc-dist { color: #9cc2ff; }
+.disc-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.disc-actions .chip.golive { background: #fdeaf0; color: #c2185b; border-color: #f4c4d4; }
+.theme-dark .disc-actions .chip.golive { background: #3a1422; color: #ffabc6; border-color: #5c2238; }
+.disc-empty { text-align: center; padding: 10px 0 4px; }
+.disc-empty .secondary { display: inline-block; margin-top: 8px; }
+
 /* ---- live results ---- */
 .live-card.on { border: 1.5px solid #e0245e; }
 .live-card h3 { display: flex; align-items: center; gap: 7px; }
