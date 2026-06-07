@@ -9,6 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: false, // we register manually (below) so the scope respects base
       includeAssets: ["favicon.svg"],
       manifest: {
         name: "my-swimmer",
