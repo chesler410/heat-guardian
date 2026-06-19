@@ -8,7 +8,7 @@ name: iOS TestFlight
 #   APPSTORE_CONNECT_KEY_BASE64   base64 of the .p8 key file
 #   APPLE_TEAM_ID                 Apple Developer team ID (10 chars)
 # One-time per app: create the app record in App Store Connect with bundle id
-#   com.chesler410.myswimmer  (matches capacitor.config.ts)
+#   com.chesler410.nextheat  (matches capacitor.config.ts)
 # Signing is automatic (-allowProvisioningUpdates) — Apple mints the profile via
 # the API key, so there are no cert/profile secrets to manage. If that ever churns,
 # switch to the manual-keychain approach used in health-rpg's testflight.yml.

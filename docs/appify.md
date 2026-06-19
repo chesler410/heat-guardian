@@ -1,24 +1,24 @@
-# Appify my-swimmer (iOS + Android)
+# Appify Heat Guardian (iOS + Android)
 
 Goal: ship the current PWA to the App Store and Google Play with the least work,
 reusing the Apple pipeline already proven in the **health-rpg** repo.
 
 ## Why this is easy here
-my-swimmer is a **web app (React/Vite PWA)**. Unlike health-rpg (native SwiftUI →
+Heat Guardian is a **web app (React/Vite PWA)**. Unlike health-rpg (native SwiftUI →
 needs a separate Kotlin app for Android), we wrap the *same* web build with
 **Capacitor** to get **both** an iOS and an Android app from one codebase. No UI
 rebuild, no backend, no health APIs.
 
 ## What we reuse from health-rpg (the hard part — already done)
-- **Apple Developer Program membership** (team prefix `com.chesler410`). my-swimmer
-  becomes `com.chesler410.myswimmer`.
+- **Apple Developer Program membership** (team prefix `com.chesler410`). Heat Guardian
+  becomes `com.chesler410.nextheat`.
 - **Mac-less iOS builds.** health-rpg's `.github/workflows/testflight.yml` builds on
   a **`macos-15` GitHub Actions runner** and uploads to TestFlight using an
   **App Store Connect API key** (`-allowProvisioningUpdates`, automatic signing).
   Those secrets are **account-level and reusable**:
   - `APPSTORE_CONNECT_KEY_ID`, `APPSTORE_CONNECT_ISSUER_ID`, `APPSTORE_CONNECT_KEY_BASE64`
   - `APPLE_TEAM_ID`
-  Copy those four secrets into the my-swimmer repo and the iOS upload "just works"
+  Copy those four secrets into the heat-guardian repo and the iOS upload "just works"
   from CI — **no Mac required.**
 - Reference docs in health-rpg: `testflight-setup.md`, `signing-durable-fix.md`,
   `appstore-listing.md`, `mac-quickstart.md`, `adhoc-kid-device.md`.
@@ -40,7 +40,7 @@ rebuild, no backend, no health APIs.
 1. CI step `npx cap add ios` + `npx cap sync` on the macOS runner.
 2. `xcodebuild archive` → export `.ipa` → upload via the App Store Connect API key
    (mirror health-rpg's `testflight.yml`, minus the Supabase/Sentry xcconfig bits).
-3. Create the app record in App Store Connect (bundle `com.chesler410.myswimmer`).
+3. Create the app record in App Store Connect (bundle `com.chesler410.nextheat`).
 4. TestFlight → internal testers (your phone, wife, parents).
 - Local Mac work is optional; only needed if you want to run the iOS Simulator.
 
@@ -51,7 +51,7 @@ rebuild, no backend, no health APIs.
 - **App icons + splash** — one 1024² master → `@capacitor/assets` generates all sizes.
 - **Privacy policy URL** — see `docs/privacy.md` (local-first: nothing is collected),
   host it (GitHub Pages) and link it in both store listings.
-- **Store listing** — name ("My Swimmer — Meet Day"), short/long description,
+- **Store listing** — name ("Heat Guardian — Meet Day"), short/long description,
   screenshots (phone + tablet), category Sports, age rating 4+.
 
 ## Recommended order
@@ -64,13 +64,13 @@ rebuild, no backend, no health APIs.
 
 ## Your one-time setup checklist (the parts only you can do)
 
-Code/CI is in place: `capacitor.config.ts` (appId `com.chesler410.myswimmer`),
+Code/CI is in place: `capacitor.config.ts` (appId `com.chesler410.nextheat`),
 `.github/workflows/ios-testflight.yml`, `.github/workflows/android-release.yml`,
 icon source `assets/logo.svg`. Native folders (`ios/`, `android/`) are generated in CI.
 
 **iOS (no Mac):**
-1. App Store Connect → **create the app** (bundle `com.chesler410.myswimmer`, name "My Swimmer").
-2. In the my-swimmer GitHub repo → Settings → Secrets → Actions, **copy these 4 from the
+1. App Store Connect → **create the app** (bundle `com.chesler410.nextheat`, name "Heat Guardian").
+2. In the heat-guardian GitHub repo → Settings → Secrets → Actions, **copy these 4 from the
    health-rpg repo** (account-level, reusable): `APPSTORE_CONNECT_KEY_ID`,
    `APPSTORE_CONNECT_ISSUER_ID`, `APPSTORE_CONNECT_KEY_BASE64`, `APPLE_TEAM_ID`.
 3. Run the **iOS TestFlight** workflow (Actions tab → Run workflow). It builds + uploads.

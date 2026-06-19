@@ -511,6 +511,16 @@ footer { margin-top: 20px; text-align: center; }
 .meet-share:hover, .meet-pack:hover { opacity: 1; }
 .share-toast { background: var(--made, #1f9d57); color: #fff; font-size: 0.85rem; font-weight: 600; padding: 8px 12px; border-radius: 10px; margin: 0 0 12px; text-align: center; }
 
+/* 🫧 taunt easter egg toast (tap the logo 5×) */
+.taunt-pop {
+  position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
+  z-index: 9999; max-width: 86vw; text-align: center; cursor: pointer;
+  background: linear-gradient(135deg, #19b3e6, #0b3d91); color: #fff;
+  font-size: 1.15rem; font-weight: 800; padding: 14px 22px; border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.3); animation: tauntPop .35s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes tauntPop { from { opacity: 0; transform: translateX(-50%) scale(.6) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); } }
+
 /* ---- discover (meet directory) ---- */
 .disc-filters { display: flex; gap: 8px; align-items: center; margin: 10px 0 4px; }
 .disc-state { flex: 1; max-width: 220px; }
@@ -644,3 +654,48 @@ table.arm th, table.arm td { padding-right: 14px; }
 /* import note callout */
 .imp-note { background: #eaf4ff; border: 1px solid #cfe5fb; border-radius: 10px; padding: 8px 10px; font-size: 0.85rem; margin: 0 0 6px; color: #134; }
 .theme-dark .imp-note { background: #13283d; border-color: #244a6b; color: #cfe6ff; }
+
+/* ---- header gear + back link (simplified nav) ---- */
+.gear-btn {
+  border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.12); color: #fff;
+  font-size: 1.05rem; line-height: 1; padding: 5px 9px; border-radius: 8px; cursor: pointer;
+}
+.gear-btn.on { background: rgba(255,255,255,0.28); }
+.back-link { background: none; border: none; color: var(--blue); font: inherit; font-weight: 600; cursor: pointer; padding: 4px 0; margin: 2px 0 6px; }
+
+/* ---- settings screen ---- */
+.settings { display: flex; flex-direction: column; gap: 12px; }
+.settings-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--card); border: 1px solid var(--line, #e6edf4); border-radius: 14px;
+  padding: 14px 16px; cursor: pointer; font: inherit; color: var(--ink);
+}
+.theme-dark .settings-row { border-color: #243340; }
+.settings-row.primary-row { background: linear-gradient(135deg, #19b3e6, #0b3d91); color: #fff; border: none; }
+.settings-row.primary-row .muted { color: rgba(255,255,255,0.85); }
+.settings-ico { font-size: 1.4rem; line-height: 1; }
+.settings-tx { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.settings-tx strong { font-size: 1rem; }
+.settings-tx .muted { font-size: 0.82rem; }
+.settings-chev { font-size: 1.3rem; opacity: 0.6; }
+.set-label { display: block; font-size: 0.82rem; color: var(--muted); font-weight: 600; margin: 12px 0 5px; }
+.seg.full { display: flex; width: 100%; }
+.seg.full button { flex: 1; text-align: center; }
+
+/* ---- progress section (folded into Home) ---- */
+.prep-caret { color: var(--muted); font-weight: 400; }
+.prog-body { margin-top: 10px; }
+.prog-card { padding: 10px 0; border-top: 1px solid var(--line, #eef2f6); }
+.prog-card:first-child { border-top: none; }
+.theme-dark .prog-card { border-color: #202b36; }
+
+/* ---- swimmer hub: roster rows with +Mine / Watch ---- */
+.roster-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line, #f0f4f8); }
+.roster-row:first-child { border-top: none; }
+.theme-dark .roster-row { border-color: #202b36; }
+.roster-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.roster-info .result-meta { margin-left: 0; }
+.add-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.add-btns .chip.sm:disabled { opacity: 0.5; cursor: default; }
+.teams .team-card { border: 1px solid var(--line, #e6edf4); border-radius: 12px; padding: 6px 12px; margin-top: 8px; }
+.theme-dark .teams .team-card { border-color: #243340; }

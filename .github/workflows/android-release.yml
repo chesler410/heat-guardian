@@ -10,7 +10,7 @@ name: Android build (.aab)
 #   ANDROID_KEY_ALIAS          key alias
 #   ANDROID_KEY_PASSWORD       key password
 # Generate a keystore (any machine with the JDK):
-#   keytool -genkeypair -v -keystore upload-keystore.jks -alias myswimmer \
+#   keytool -genkeypair -v -keystore upload-keystore.jks -alias heatguardian \
 #     -keyalg RSA -keysize 2048 -validity 9125
 #   base64 -w0 upload-keystore.jks   (Linux) / certutil on Windows
 # Keep the .jks safe — Play ties your app to it (or enroll in Play App Signing).
@@ -70,6 +70,6 @@ jobs:
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: my-swimmer-release-aab
+          name: heat-guardian-release-aab
           path: android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error

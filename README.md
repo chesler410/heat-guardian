@@ -1,9 +1,9 @@
-# my-swimmer 🏊
+# Heat Guardian 🏊
 
 A free, ad-free **meet-day companion** for swim families. Add your swimmers once, import a
 meet's heat sheet, and see all your kids' events on one page — sectioned by date.
 
-### ▶️ Live app: https://chesler410.github.io/my-swimmer/  ·  Demo: [?demo](https://chesler410.github.io/my-swimmer/?demo)
+### ▶️ Live app: https://chesler410.github.io/heat-guardian/  ·  Demo: [?demo](https://chesler410.github.io/heat-guardian/?demo)
 
 It's *not* another stats database (myswimio / SwimCloud already do history). It's built for
 the cold pool deck at 6am: "what's my kid swimming, when, what do they need to beat, and
@@ -16,10 +16,12 @@ when do they eat."
   their own kids; **coaches pick a team and see every swimmer on it** on the home screen.
 - **Per event:** heat, lane, seed (best), the **next motivational cut** (+delta, ≈ per length),
   and the **🏆 Southeastern championship cut** (qualified ✓ or how much to drop)
-- **Live roster search** + **Teams** browser — pick swimmers by name or by team; a separate
-  **Watching** tab for following teammates/rivals apart from your own kids
-- **Per-swimmer Progress** — best time per event across every meet, with the **improvement drop**
-  and the cut level reached
+- **Calm two-tab layout** — **Home** and **Swimmers**, with Add-meet, theme, language, and
+  About tucked behind a **⚙ Settings** gear so meet day stays uncluttered
+- **One Swimmers hub** — your **My swimmers** and your **Watch list** in one place; find a
+  swimmer by **search** *or* by **browsing teams**, then add as yours or to watch
+- **Per-swimmer Progress** — best time per event across every meet (with the **improvement drop**
+  and cut level reached), folded right into Home
 - **Per-event private notes** — jot coaching feedback on any event card
 - **Relays** included (swimmer shown as a leg, with the team time)
 - **Goal & splits** — target splits to hit a goal or a specific cut (even or realistic pacing),
@@ -40,7 +42,7 @@ when do they eat."
   Sharing in **coach mode** adds your team to the link — the recipient gets a "Coach this team"
   button that sets up an assistant coach's or team parent's device in one tap
 - **Meet packs** — the 📤 button saves any meet (even one imported from an uploaded PDF) as a
-  small `.myswimmer.json` file with its entries and logged times; teammates import it under
+  small `.heatguardian.json` file with its entries and logged times; teammates import it under
   Add meet, no re-parsing. Note: the pack carries the same roster info as the heat sheet —
   it's meant for your own team's chat
 - **8 languages** (EN/ES/ZH/PT/DE/VI/FR/RU — full parity), **light/dark theme**, **team logo**
@@ -48,14 +50,15 @@ when do they eat."
 
 ## How to use
 
-1. **Pick your role** the first time — Parent or Coach (changeable anytime in About).
-2. **Add meet** → pick a meet from "Find a meet near you," or upload the heat-sheet PDF(s) /
-   `.sd3` file / a teammate's `.myswimmer.json` meet pack, or paste a direct PDF link.
-   (To follow live, paste the results link under Live results.)
-3. **Swimmers** (parents) → search the meet roster and tap your kids; or, as a **coach**, pick
-   your team. Watch teammates/rivals in the **Watching** tab.
-4. **Home** → everyone's events, by date, with cuts and fueling. Toggle **Cards / Arm table**.
-   **Progress** shows each swimmer's best time per event over time.
+1. **Pick your role** the first time — Parent or Coach (changeable anytime in Settings).
+2. **Add a meet** — open **⚙ Settings → Add a meet**: pick one from "Find a meet near you," or
+   upload the heat-sheet PDF(s) / `.sd3` file / a teammate's `.heatguardian.json` meet pack, or paste
+   a direct PDF link. (Saved a sheet from a team email? Tap Upload and look under "Recents." To
+   follow live, paste the results link under Live results.)
+3. **Swimmers** (parents) → find your kids by **search** or by **browsing teams**, then add them as
+   yours or to your **Watch list** (both live on this one screen); or, as a **coach**, pick your team.
+4. **Home** → everyone's events, by date, with cuts and fueling. Toggle **Cards / Arm table**, and
+   expand **📈 Progress** for each swimmer's best time per event over time.
 
 ## Design & privacy
 
@@ -87,7 +90,7 @@ when do they eat."
 ```bash
 npm install
 npm run dev      # local dev
-npm run build    # production build (CI sets APP_BASE=/my-swimmer/ for GitHub Pages)
+npm run build    # production build (CI sets APP_BASE=/heat-guardian/ for GitHub Pages)
 ```
 
 Deploys to GitHub Pages on push to `main` via `.github/workflows/deploy.yml`.
@@ -110,9 +113,10 @@ is the public meet page. No personal data — just public meet links.
 
 ## Status
 
-Live and in active use by swim families, iterating on their feedback. Offline support is
-temporarily off (the service worker is self-destroying while we stabilize rapid releases);
-an in-app **"new version — refresh"** banner covers updates meanwhile.
+Live and in active use by swim families, iterating on their feedback. The **native (app-store)
+build runs fully offline** via a precaching service worker; the **web build** keeps a
+self-destroying worker (offline off) to avoid stale-cache issues from rapid releases. Either
+way, an in-app **"new version — refresh"** banner covers updates.
 
 **Where it's headed** — turning this into a shared tool for the whole swim community: richer
 Hy-Tek imports (HY3/CL2 with per-length splits), accounts + cloud sync, cloud-shared team pages,

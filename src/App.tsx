@@ -32,7 +32,44 @@ import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
 import day from "./day.json";
 import meetsDirectory from "./meets.json";
 
-type Nav = "home" | "import" | "swimmers" | "watching" | "progress" | "teams" | "about";
+type Nav = "home" | "import" | "swimmers" | "watching" | "progress" | "teams" | "about" | "settings";
+
+// 🫧 Easter egg: tap the 🏊 logo 5× fast for a random pre-race taunt to psych yourself up.
+// Tiered by edge: "mild" is wholesome (safe for the 8-and-unders and the default), "medium"
+// is classic playground cheek, "savage" is opt-in only. The "keep it kind" setting (Settings)
+// caps which tiers can appear — a stressed parent shouldn't stumble onto "back of the pack."
+// English on purpose — it's a bit, not UI text. ("Smell my bubbles" retired with honors.)
+type TauntTier = "mild" | "medium" | "savage";
+const TIER_RANK: Record<TauntTier, number> = { mild: 0, medium: 1, savage: 2 };
+const TAUNTS: { text: string; tier: TauntTier }[] = [
+  // mild — wholesome
+  { text: "See you at the wall", tier: "mild" },
+  { text: "Catch me if you can (you can't)", tier: "mild" },
+  { text: "Blink and I'm gone", tier: "mild" },
+  { text: "Negative split, positive vibes, see ya never", tier: "mild" },
+  { text: "I came to drop times, not friends", tier: "mild" },
+  { text: "Kick harder, it's cute when you try", tier: "mild" },
+  { text: "Save some lane lines for the rest of us", tier: "mild" },
+  { text: "My warm-up is your race pace", tier: "mild" },
+  // medium — cheeky
+  { text: "Eat my bubbles 🫧", tier: "medium" },
+  { text: "Eat my wake", tier: "medium" },
+  { text: "I'll be dry before you finish", tier: "medium" },
+  { text: "Lane 4 don't lose", tier: "medium" },
+  { text: "My splits called — they said you're not invited", tier: "medium" },
+  { text: "I left you a postcard at the 50", tier: "medium" },
+  { text: "That wasn't a flip turn, that was a goodbye wave", tier: "medium" },
+  { text: "Less splashing, more passing", tier: "medium" },
+  { text: "The wall and I have an understanding", tier: "medium" },
+  { text: "Taper'd up and ready to embarrass you", tier: "medium" },
+  // savage — opt-in
+  { text: "Touch the wall and weep", tier: "savage" },
+  { text: "Hope you packed a snack for the back of the pack", tier: "savage" },
+  { text: "Your streamline is more of a stream-decline", tier: "savage" },
+  { text: "I'm not fast, you're just chronologically delayed", tier: "savage" },
+  { text: "DQ stands for Definitely Quicker (than you)", tier: "savage" },
+  { text: "Bring a towel — for the tears", tier: "savage" },
+];
 
 // A meet listed in the community directory (bundled, and refreshed from the repo at runtime).
 interface DirMeet {
@@ -50,7 +87,7 @@ interface DirMeet {
   infoUrl?: string;
 }
 // Raw copy in the repo so the community can add meets via PR without an app release.
-const DIRECTORY_URL = "https://raw.githubusercontent.com/chesler410/my-swimmer/main/src/meets.json";
+const DIRECTORY_URL = "https://raw.githubusercontent.com/chesler410/heat-guardian/main/src/meets.json";
 type Role = "parent" | "coach";
 
 function displayName(n: string): string {
@@ -451,11 +488,11 @@ function buildIcs(dateStr: string, start: number): string {
     [start - 20, t("ics_warm")],
   ];
   const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
-  let s = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//my-swimmer//EN\r\nCALSCALE:GREGORIAN\r\n";
+  let s = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//heat-guardian//EN\r\nCALSCALE:GREGORIAN\r\n";
   events.forEach(([mins, title], i) => {
     s +=
       "BEGIN:VEVENT\r\n" +
-      `UID:ms-${dateStr}-${i}-${Math.random().toString(36).slice(2)}@my-swimmer\r\n` +
+      `UID:hg-${dateStr}-${i}-${Math.random().toString(36).slice(2)}@heat-guardian\r\n` +
       `DTSTAMP:${stamp}\r\nDTSTART:${icsDateTime(dateStr, mins)}\r\nDURATION:PT5M\r\n` +
       `SUMMARY:🏊 ${title}\r\n` +
       `BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:${title}\r\nTRIGGER:-PT5M\r\nEND:VALARM\r\n` +
@@ -473,14 +510,14 @@ function downloadFile(name: string, blob: Blob) {
 }
 
 function downloadIcs(text: string) {
-  downloadFile("my-swimmer-fuel.ics", new Blob([text], { type: "text/calendar" }));
+  downloadFile("heat-guardian-fuel.ics", new Blob([text], { type: "text/calendar" }));
 }
 
-// Save the parsed meet (+ its result overlay) as a .myswimmer.json pack to post in the
+// Save the parsed meet (+ its result overlay) as a .heatguardian.json pack to post in the
 // team chat — works for uploaded PDFs too, which the URL share link can't carry.
 function downloadPack(meet: Meet, results: Record<string, string>) {
   const slug = meet.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "meet";
-  downloadFile(`${slug}.myswimmer.json`, new Blob([JSON.stringify(buildMeetPack(meet, results))], { type: "application/json" }));
+  downloadFile(`${slug}.heatguardian.json`, new Blob([JSON.stringify(buildMeetPack(meet, results))], { type: "application/json" }));
 }
 
 function Fueling() {
@@ -665,6 +702,23 @@ export function App() {
   const [pacing, setPacing] = useStored<"even" | "realistic">("pacing", "even");
   const [logo, setLogo] = useStored("teamLogo", "");
   const [brand, setBrand] = useStored("brandColor", "");
+  // 🫧 taunt easter egg: 5 quick taps on the logo → a random taunt toast (see TAUNTS).
+  // tauntTier caps the edge: "mild" (default) keeps it kind; "savage" unlocks all tiers.
+  const [tauntTier, setTauntTier] = useStored<TauntTier>("tauntTier", "mild");
+  const [taunt, setTaunt] = useState("");
+  const tapRef = useRef<{ n: number; at: number }>({ n: 0, at: 0 });
+  function bumpLogo() {
+    const now = Date.now();
+    const r = tapRef.current;
+    r.n = now - r.at < 1500 ? r.n + 1 : 1;
+    r.at = now;
+    if (r.n >= 5) {
+      r.n = 0;
+      const pool = TAUNTS.filter((x) => TIER_RANK[x.tier] <= TIER_RANK[tauntTier]);
+      setTaunt(pool[Math.floor(Math.random() * pool.length)].text);
+      setTimeout(() => setTaunt(""), 2600);
+    }
+  }
   useEffect(() => {
     const el = document.documentElement;
     if (brand) {
@@ -738,12 +792,6 @@ export function App() {
     else delete next[k];
     setter(next);
     localStorage.setItem(storeKey, JSON.stringify(next));
-  }
-  function cycleTheme() {
-    const order: Theme[] = ["auto", "light", "dark"];
-    const next = order[(order.indexOf(theme) + 1) % 3];
-    setThemeState(next);
-    setTheme(next);
   }
 
   function persistSwimmers(s: Swimmer[]) {
@@ -888,29 +936,34 @@ export function App() {
   return (
     <div className="app">
       <UpdateBanner />
+      {taunt && <div className="taunt-pop" onClick={() => setTaunt("")}>{taunt}</div>}
       <header className="apphead">
         <div className="brandrow">
-          <div className="brand">
-            {logo && <img className="team-logo" src={logo} alt="" />}🏊 my-swimmer
+          <div className="brand" onClick={bumpLogo} title="Heat Guardian">
+            {logo && <img className="team-logo" src={logo} alt="" />}🏊 Heat Guardian
           </div>
           <div className="head-ctrls">
-            <select className="lang-sel" value={lang} onChange={(e) => changeLang(e.target.value as Lang)} aria-label={t("lang_label")}>
-              {LANGS.map((l) => (
-                <option key={l.code} value={l.code}>
-                  {l.flag} {l.label}
-                </option>
-              ))}
-            </select>
-            <button className="theme-btn" onClick={cycleTheme} aria-label="Theme">
-              {theme === "auto" ? "🅰 " + t("th_auto") : theme === "light" ? "☀ " + t("th_light") : "🌙 " + t("th_dark")}
-            </button>
+            {/* Language stays reachable on first run (before Settings exists); once you're
+                in, language + theme live in Settings to keep the header calm. */}
+            {!gated && (
+              <select className="lang-sel" value={lang} onChange={(e) => changeLang(e.target.value as Lang)} aria-label={t("lang_label")}>
+                {LANGS.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.flag} {l.label}
+                  </option>
+                ))}
+              </select>
+            )}
+            {gated && (
+              <button className={"gear-btn" + (nav === "settings" || nav === "import" || nav === "about" ? " on" : "")} onClick={() => setNav("settings")} aria-label={t("nav_settings")}>
+                ⚙
+              </button>
+            )}
           </div>
         </div>
         {role && !(role === "coach" && !coachTeam) && (
           <nav className="tabs">
-            {((coaching
-              ? ["home", "import", "progress", "teams", "about"]
-              : ["home", "import", "swimmers", "watching", "progress", "teams", "about"]) as Nav[]).map((tb) => (
+            {((coaching ? ["home"] : ["home", "swimmers"]) as Nav[]).map((tb) => (
               <button key={tb} className={nav === tb ? "on" : ""} onClick={() => setNav(tb)}>
                 {t("nav_" + tb)}
               </button>
@@ -975,6 +1028,7 @@ export function App() {
           toggleFilter={toggleFilter}
           goImport={() => setNav("import")}
           goSwimmers={() => setNav("swimmers")}
+          progress={buildProgress(activeSwimmers, meets, results)}
           removeMeet={(id: string) => persistMeets(meets.filter((m) => m.id !== id))}
           results={results}
           setResult={setResult}
@@ -991,103 +1045,52 @@ export function App() {
         />
       )}
       {gated && nav === "import" && (
-        <ImportView
-          busy={busy}
-          msg={msg}
-          onFiles={onFiles}
-          onUrl={onUrl}
-          goAbout={() => setNav("about")}
-          liveUrl={liveUrl}
-          liveOn={liveOn}
-          liveStatus={liveStatus}
-          setLiveUrl={setLiveUrl}
-          setLiveOn={setLiveOn}
-          directory={directory}
-          onGoLive={(u: string) => { setLiveUrl(u); setLiveOn(true); setNav("home"); }}
-        />
+        <>
+          <button className="back-link" onClick={() => setNav("settings")}>‹ {t("nav_settings")}</button>
+          <ImportView
+            busy={busy}
+            msg={msg}
+            onFiles={onFiles}
+            onUrl={onUrl}
+            goAbout={() => setNav("about")}
+            liveUrl={liveUrl}
+            liveOn={liveOn}
+            liveStatus={liveStatus}
+            setLiveUrl={setLiveUrl}
+            setLiveOn={setLiveOn}
+            directory={directory}
+            onGoLive={(u: string) => { setLiveUrl(u); setLiveOn(true); setNav("home"); }}
+          />
+        </>
       )}
-      {gated && !coaching && (nav === "swimmers" || nav === "watching") && (
+      {gated && !coaching && nav === "swimmers" && (
         <SwimmersView
           swimmers={swimmers}
           roster={roster}
+          teams={buildTeams(meets)}
           addSwimmer={addSwimmer}
           removeSwimmer={removeSwimmer}
           goImport={() => setNav("import")}
-          mode={nav === "watching" ? "watch" : "mine"}
         />
       )}
-      {gated && nav === "progress" && (
-        <ProgressView
-          progress={buildProgress(activeSwimmers, meets, results)}
+      {gated && nav === "settings" && (
+        <SettingsView
           goImport={() => setNav("import")}
-          goSwimmers={() => setNav(coaching ? "import" : "swimmers")}
+          goAbout={() => setNav("about")}
+          theme={theme}
+          setTheme={(v: Theme) => { setTheme(v); setThemeState(v); }}
+          lang={lang}
+          changeLang={changeLang}
+          tauntTier={tauntTier}
+          setTauntTier={setTauntTier}
         />
       )}
-      {gated && nav === "teams" && (
-        <TeamsView
-          teams={buildTeams(meets)}
-          swimmers={swimmers}
-          addSwimmer={addSwimmer}
-          goImport={() => setNav("import")}
-        />
+      {gated && nav === "about" && (
+        <>
+          <button className="back-link" onClick={() => setNav("settings")}>‹ {t("nav_settings")}</button>
+          <About logo={logo} setLogo={setLogo} setBrand={setBrand} role={role} onChangeRole={() => setRole(null)} />
+        </>
       )}
-      {gated && nav === "about" && <About logo={logo} setLogo={setLogo} setBrand={setBrand} role={role} onChangeRole={() => setRole(null)} />}
-    </div>
-  );
-}
-
-function TeamsView(props: {
-  teams: { team: string; swimmers: RosterItem[] }[];
-  swimmers: Swimmer[];
-  addSwimmer: (name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean) => void;
-  goImport: () => void;
-}) {
-  const [open, setOpen] = useState<string | null>(null);
-  const status = (name: string) => {
-    const s = props.swimmers.find((x) => matchesName(x.name, name));
-    return s ? (s.watch ? "watch" : "mine") : null;
-  };
-  if (props.teams.length === 0) {
-    return <Empty title={t("nav_teams")} body={t("teams_none")} cta={t("sw_addmeet")} onCta={props.goImport} />;
-  }
-  return (
-    <div>
-      <p className="muted teams-intro">{t("teams_intro")}</p>
-      {props.teams.map(({ team, swimmers }) => (
-        <div className="card team-card" key={team}>
-          <button className="team-row" onClick={() => setOpen(open === team ? null : team)}>
-            <span className="team-name">{team}</span>
-            <span className="muted">{t("nswim", { n: swimmers.length })} {open === team ? "▾" : "▸"}</span>
-          </button>
-          {open === team && (
-            <div className="team-swimmers">
-              {swimmers.map((r, i) => {
-                const st = status(r.name);
-                return (
-                  <div className="ts-row" key={i}>
-                    <span className="ts-name">
-                      {displayName(r.name)}{" "}
-                      <span className="muted">{[r.gender, r.age].filter(Boolean).join(" · ")}</span>
-                    </span>
-                    {st ? (
-                      <span className={"ts-tag " + st}>{st === "watch" ? t("watchlist") : t("myswimmers")}</span>
-                    ) : (
-                      <span className="ts-actions">
-                        <button className="chip sm" onClick={() => props.addSwimmer(r.name, r.team, ageNum(r.age), r.gender, false)}>
-                          + {t("add_mine")}
-                        </button>
-                        <button className="chip sm" onClick={() => props.addSwimmer(r.name, r.team, ageNum(r.age), r.gender, true)}>
-                          + {t("add_watch")}
-                        </button>
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      ))}
     </div>
   );
 }
@@ -1125,7 +1128,7 @@ function bySession(items: DE[]): { label: string; items: DE[] }[] {
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam, progress } = props;
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
   const [shareMsg, showToast] = useToast();
   const [cols, setCols] = useState<{ pb: boolean; cut: boolean; champ: boolean }>(() => {
@@ -1337,6 +1340,7 @@ function Home(props: any) {
             </div>
             );
           })}
+          <ProgressSection progress={progress || []} />
         </>
       )}
 
@@ -1573,14 +1577,20 @@ function DiscoverView(props: {
   );
 }
 
-function ProgressView(props: { progress: SwimmerProgress[]; goImport: () => void; goSwimmers: () => void }) {
-  if (!props.progress.length)
-    return <Empty title={t("prog_empty_t")} body={t("prog_empty_b")} cta={t("prog_empty_cta")} onCta={props.goSwimmers} />;
+// Per-swimmer best-time progress, folded into Home as a collapsible section (default closed
+// so meet day stays calm). Was its own tab; now lives under Home.
+function ProgressSection({ progress }: { progress: SwimmerProgress[] }) {
+  const [open, setOpen] = useState(false);
+  if (!progress.length) return null;
   return (
-    <div>
-      <p className="teams-intro muted">{t("prog_intro")}</p>
-      {props.progress.map((sp) => (
-        <div className="card" key={sp.swimmer.id}>
+    <section className="card prep">
+      <button className="prep-toggle" onClick={() => setOpen(!open)}>
+        📈 {t("nav_progress")} <span className="prep-caret">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <div className="prog-body">
+      {progress.map((sp) => (
+        <div className="prog-card" key={sp.swimmer.id}>
           <div className="prog-head">
             <span className="kid-tag" style={{ background: sp.swimmer.color }}>
               {firstName(sp.swimmer.name)}
@@ -1621,7 +1631,9 @@ function ProgressView(props: { progress: SwimmerProgress[]; goImport: () => void
           </table>
         </div>
       ))}
-    </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1697,8 +1709,9 @@ function ImportView(props: {
         <p className="muted">{t("imp_backuptip")}</p>
         <label className="secondary filelabel">
           {props.busy ? t("imp_reading") : t("imp_upload")}
-          <input type="file" accept="application/pdf,.sd3,.txt,.json,.myswimmer.json" multiple disabled={props.busy} onChange={(e) => props.onFiles(e.target.files)} hidden />
+          <input type="file" accept="application/pdf,.sd3,.txt,.json,.heatguardian.json,.myswimmer.json" multiple disabled={props.busy} onChange={(e) => props.onFiles(e.target.files)} hidden />
         </label>
+        <p className="imp-note">💡 {t("imp_findfile")}</p>
         <p className="muted small">{t("imp_sd3")}</p>
         <p className="muted small">{t("imp_pack")}</p>
       </div>
@@ -1718,78 +1731,113 @@ function ImportView(props: {
   );
 }
 
+// The people hub: My swimmers + Watch list in one place, and one "Find a swimmer" card that
+// works two ways — search by name, or browse by team (the old Teams tab, folded in: pick a
+// team to find a swimmer). Each match adds as "mine" or "watch". Replaces SwimmersView +
+// Watching + TeamsView.
 function SwimmersView(props: {
   swimmers: Swimmer[];
   roster: RosterItem[];
+  teams: { team: string; swimmers: RosterItem[] }[];
   addSwimmer: (name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean) => void;
   removeSwimmer: (id: string) => void;
   goImport: () => void;
-  mode: "mine" | "watch";
 }) {
+  const [find, setFind] = useState<"search" | "teams">("search");
   const [q, setQ] = useState("");
+  const [openTeam, setOpenTeam] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
   const [mName, setMName] = useState("");
   const [mTeam, setMTeam] = useState("");
-  const watchMode = props.mode === "watch";
 
   const ql = q.trim().toLowerCase();
   const results = ql
-    ? props.roster
-        .filter((r) => r.name.toLowerCase().includes(ql) || r.team.toLowerCase().includes(ql))
-        .slice(0, 12)
+    ? props.roster.filter((r) => r.name.toLowerCase().includes(ql) || r.team.toLowerCase().includes(ql)).slice(0, 12)
     : [];
-  const isAdded = (name: string) => props.swimmers.some((s) => matchesName(s.name, name));
-  const list = props.swimmers.filter((s) => (watchMode ? s.watch : !s.watch));
+  const statusOf = (name: string) => {
+    const s = props.swimmers.find((x) => matchesName(x.name, name));
+    return s ? (s.watch ? "watch" : "mine") : null;
+  };
+  const mine = props.swimmers.filter((s) => !s.watch);
+  const watch = props.swimmers.filter((s) => s.watch);
+
+  const kidRow = (s: Swimmer) => (
+    <div className="kid-row" key={s.id}>
+      <span className="kid-dot" style={{ background: s.color }} />
+      <span className="kid-name">
+        {displayName(s.name)} <span className="muted">{[s.gender, s.age, s.team].filter(Boolean).join(" · ")}</span>
+      </span>
+      <button className="remove" onClick={() => props.removeSwimmer(s.id)}>✕</button>
+    </div>
+  );
+
+  const rosterRow = (r: RosterItem, key: number | string) => {
+    const st = statusOf(r.name);
+    return (
+      <div className="roster-row" key={key}>
+        <span className="roster-info">
+          <span className="result-name">{displayName(r.name)}</span>
+          <span className="result-meta">{[r.gender, r.age, r.team].filter(Boolean).join(" · ")}</span>
+        </span>
+        <span className="add-btns">
+          <button className="chip sm" disabled={st === "mine"} onClick={() => props.addSwimmer(r.name, r.team, ageNum(r.age), r.gender, false)}>
+            {st === "mine" ? "✓ " : "+ "}{t("sw_mine")}
+          </button>
+          <button className="chip sm" disabled={st === "watch"} onClick={() => props.addSwimmer(r.name, r.team, ageNum(r.age), r.gender, true)}>
+            {st === "watch" ? "✓ " : "👁 "}{t("sw_watch")}
+          </button>
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div>
       <div className="card">
-        <h2>{watchMode ? t("watchlist") : t("myswimmers")}</h2>
-        {list.length === 0 && <p className="muted">{t("sw_none")}</p>}
-        {list.map((s) => (
-          <div className="kid-row" key={s.id}>
-            <span className="kid-dot" style={{ background: s.color }} />
-            <span className="kid-name">
-              {displayName(s.name)}{" "}
-              <span className="muted">{[s.gender, s.age, s.team].filter(Boolean).join(" · ")}</span>
-            </span>
-            <button className="remove" onClick={() => props.removeSwimmer(s.id)}>
-              ✕
-            </button>
-          </div>
-        ))}
+        <h2>{t("myswimmers")}</h2>
+        {mine.length === 0 && <p className="muted">{t("sw_none")}</p>}
+        {mine.map(kidRow)}
       </div>
+
+      {watch.length > 0 && (
+        <div className="card">
+          <h2>👁 {t("watchlist")}</h2>
+          {watch.map(kidRow)}
+        </div>
+      )}
 
       <div className="card">
         <h2>{t("sw_find")}</h2>
         {props.roster.length === 0 ? (
           <>
             <p className="muted">{t("sw_importfirst")}</p>
-            <button className="primary" onClick={props.goImport}>
-              {t("sw_addmeet")}
-            </button>
+            <button className="primary" onClick={props.goImport}>{t("sw_addmeet")}</button>
           </>
         ) : (
           <>
-            <input className="field" placeholder={t("sw_search")} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
-            {ql && results.length === 0 && <p className="muted">{t("sw_nomatch", { q })}</p>}
-            <div className="results">
-              {results.map((r, i) => {
-                const added = isAdded(r.name);
-                return (
-                  <button
-                    key={i}
-                    className="result"
-                    disabled={added}
-                    onClick={() => props.addSwimmer(r.name, r.team, ageNum(r.age), r.gender, watchMode)}
-                  >
-                    <span className="result-name">{displayName(r.name)}</span>
-                    <span className="result-meta">{[r.gender, r.age, r.team].filter(Boolean).join(" · ")}</span>
-                    <span className="result-add">{added ? "✓" : "+"}</span>
-                  </button>
-                );
-              })}
+            <div className="seg full">
+              <button className={find === "search" ? "on" : ""} onClick={() => setFind("search")}>🔎 {t("sw_bysearch")}</button>
+              <button className={find === "teams" ? "on" : ""} onClick={() => setFind("teams")}>👥 {t("sw_byteam")}</button>
             </div>
+            {find === "search" ? (
+              <>
+                <input className="field" placeholder={t("sw_search")} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+                {ql && results.length === 0 && <p className="muted">{t("sw_nomatch", { q })}</p>}
+                <div className="results">{results.map((r, i) => rosterRow(r, i))}</div>
+              </>
+            ) : (
+              <div className="teams">
+                {props.teams.map(({ team, swimmers }) => (
+                  <div className="team-card" key={team}>
+                    <button className="team-row" onClick={() => setOpenTeam(openTeam === team ? null : team)}>
+                      <span className="team-name">{team}</span>
+                      <span className="muted">{t("nswim", { n: swimmers.length })} {openTeam === team ? "▾" : "▸"}</span>
+                    </button>
+                    {openTeam === team && <div className="team-swimmers">{swimmers.map((r, i) => rosterRow(r, i))}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
         <button className="inline-link manual-toggle" onClick={() => setManual(!manual)}>
@@ -1802,7 +1850,7 @@ function SwimmersView(props: {
             <button
               className="primary"
               onClick={() => {
-                props.addSwimmer(mName, mTeam, undefined, undefined, watchMode);
+                props.addSwimmer(mName, mTeam, undefined, undefined, false);
                 setMName("");
                 setMTeam("");
                 setManual(false);
@@ -1854,6 +1902,73 @@ function processLogo(file: File, cb: (dataUrl: string, color: string | null) => 
     URL.revokeObjectURL(img.src);
   };
   img.src = URL.createObjectURL(file);
+}
+
+// Settings: the "out of the way" home for Add-a-meet, appearance (theme + language), the
+// taunt edge setting, and a link into About/help. Reached via the ⚙ in the header.
+function SettingsView(props: {
+  goImport: () => void;
+  goAbout: () => void;
+  theme: Theme;
+  setTheme: (v: Theme) => void;
+  lang: Lang;
+  changeLang: (l: Lang) => void;
+  tauntTier: TauntTier;
+  setTauntTier: (v: TauntTier) => void;
+}) {
+  const themes: Theme[] = ["auto", "light", "dark"];
+  const tiers: TauntTier[] = ["mild", "medium", "savage"];
+  return (
+    <div className="settings">
+      <button className="settings-row primary-row" onClick={props.goImport}>
+        <span className="settings-ico">➕</span>
+        <span className="settings-tx">
+          <strong>{t("set_addmeet")}</strong>
+          <span className="muted">{t("set_addmeet_b")}</span>
+        </span>
+        <span className="settings-chev">›</span>
+      </button>
+
+      <div className="card">
+        <h3>{t("set_appearance")}</h3>
+        <label className="set-label">{t("set_theme")}</label>
+        <div className="seg full">
+          {themes.map((th) => (
+            <button key={th} className={props.theme === th ? "on" : ""} onClick={() => props.setTheme(th)}>
+              {th === "auto" ? "🅰 " + t("th_auto") : th === "light" ? "☀ " + t("th_light") : "🌙 " + t("th_dark")}
+            </button>
+          ))}
+        </div>
+        <label className="set-label">{t("lang_label")}</label>
+        <select className="field" value={props.lang} onChange={(e) => props.changeLang(e.target.value as Lang)}>
+          {LANGS.map((l) => (
+            <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="card">
+        <h3>🫧 {t("set_taunts")}</h3>
+        <p className="muted small">{t("set_taunts_b")}</p>
+        <div className="seg full">
+          {tiers.map((ti) => (
+            <button key={ti} className={props.tauntTier === ti ? "on" : ""} onClick={() => props.setTauntTier(ti)}>
+              {t("taunt_" + ti)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button className="settings-row" onClick={props.goAbout}>
+        <span className="settings-ico">ℹ️</span>
+        <span className="settings-tx">
+          <strong>{t("set_about")}</strong>
+          <span className="muted">{t("set_about_b")}</span>
+        </span>
+        <span className="settings-chev">›</span>
+      </button>
+    </div>
+  );
 }
 
 function About({ logo, setLogo, setBrand, role, onChangeRole }: { logo: string; setLogo: (v: string) => void; setBrand: (v: string) => void; role: Role | null; onChangeRole: () => void }) {

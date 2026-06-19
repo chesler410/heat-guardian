@@ -23,5 +23,5 @@ Newest first. Each entry: what we decided, and why.
 
 - Exact USA Swimming Data Hub times endpoint (needs a swimmer name or a network capture).
 - Hydration/snack model — generic heuristics vs. configurable per swimmer.
-- Product name (repo is `my-swimmer`; product name TBD).
+- Product name (repo is `Heat Guardian`; product name TBD).
 - Tech stack specifics (likely Vite + React + TS PWA; confirm after parser decision).

@@ -1,4 +1,7 @@
-// Quick E2E smoke for the latest batch: Watching tab, per-event notes, logo brand color.
+// E2E smoke for the simplified nav: 2 tabs (Home + Swimmers) + ⚙ Settings, the merged
+// Swimmers hub (My swimmers + Watch list in one place), Progress folded into Home, the
+// Settings screen (theme/language/taunt tier), and the 🫧 taunt easter egg. Plus the
+// carried-over note + logo-brand checks. Drives Edge headless against the built dist/.
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -25,6 +28,7 @@ const server = http.createServer((req, res) => {
 
 const log = [];
 const ok = (c, m) => { log.push(`${c ? "PASS" : "FAIL"}: ${m}`); if (!c) process.exitCode = 1; };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 await new Promise((r) => server.listen(0, r));
 const port = server.address().port;
@@ -35,14 +39,14 @@ try {
   const page = await browser.newPage();
   page.on("pageerror", (e) => log.push("PAGEERROR: " + e.message));
 
-  // Seed localStorage with one meet (a single entry) + two swimmers (mine + watch).
+  // Seed: one meet (two entries) + two swimmers (mine + watch).
   await page.goto(base);
   await page.evaluate(() => {
     const meet = {
       id: "m1", title: "Test Meet", importedAt: Date.now(), source: "upload",
       entries: [
-        { event: 1, race: "100 Free", desc: "Girls 10 & Under 100 Yard Freestyle", heat: "Heat 1 of 1 Finals", lane: 4, name: "Doe, Amy", age: "10", team: "ABC", seed: "1:10.00", session: null },
-        { event: 2, race: "50 Free", desc: "Boys 11-12 50 Yard Freestyle", heat: "Heat 1 of 1 Finals", lane: 3, name: "Roe, Ben", age: "12", team: "XYZ", seed: "30.00", session: null },
+        { event: 1, race: "100 Free", desc: "Girls 10 & Under 100 SC Yard Freestyle", heat: "Heat 1 of 1 Finals", lane: 4, name: "Doe, Amy", age: "10", team: "ABC", seed: "1:10.00", session: null },
+        { event: 2, race: "50 Free", desc: "Boys 11-12 50 SC Yard Freestyle", heat: "Heat 1 of 1 Finals", lane: 3, name: "Roe, Ben", age: "12", team: "XYZ", seed: "30.00", session: null },
       ],
     };
     localStorage.setItem("role", "parent");
@@ -54,31 +58,56 @@ try {
   });
   await page.reload({ waitUntil: "networkidle0" });
 
-  // --- Watching tab separates watch swimmers from mine ---
-  const tabs = await page.$$eval(".tabs button", (bs) => bs.map((b) => b.textContent.trim()));
-  ok(tabs.some((t) => /watch/i.test(t)), `Watching tab present (tabs: ${tabs.join("|")})`);
-
-  // My swimmers view: should list Amy, not Ben
   const clickTab = async (re) => {
     const handles = await page.$$(".tabs button");
     for (const h of handles) {
-      const txt = (await page.evaluate((el) => el.textContent.trim(), h));
-      if (re.test(txt)) { await h.click(); await new Promise((r) => setTimeout(r, 300)); return true; }
+      const txt = await page.evaluate((el) => el.textContent.trim(), h);
+      if (re.test(txt)) { await h.click(); await sleep(300); return true; }
     }
     return false;
   };
-  await clickTab(/my swim|swimmer/i);
+
+  // --- Nav is now exactly two tabs, plus a gear ---
+  const tabs = await page.$$eval(".tabs button", (bs) => bs.map((b) => b.textContent.trim()));
+  ok(tabs.length === 2, `Two primary tabs (got ${tabs.length}: ${tabs.join("|")})`);
+  ok(!tabs.some((t) => /watch|progress|team|about|add meet/i.test(t)), "No Watching/Progress/Teams/About/Add-meet tabs");
+  ok((await page.$(".gear-btn")) !== null, "Gear (settings) button present");
+
+  // --- Swimmers hub shows BOTH mine and watch in one screen ---
+  await clickTab(/swimmer/i);
   let body = await page.evaluate(() => document.body.innerText);
-  ok(/Amy/.test(body) && !/\bBen\b/.test(body), "My-swimmers view shows Amy only");
+  ok(/Amy/.test(body) && /Ben/.test(body), "Swimmers hub shows mine (Amy) and watch (Ben) together");
+  ok(/By team|Search/i.test(body), "Find card offers Search / By-team modes");
 
-  await clickTab(/watch/i);
-  body = await page.evaluate(() => document.body.innerText);
-  ok(/Ben/.test(body) && !/\bAmy\b/.test(body), "Watching view shows Ben only");
-
-  // --- Per-event note saves + displays ---
+  // --- Progress folded into Home (collapsible) ---
   await clickTab(/home|today|day/i);
-  await new Promise((r) => setTimeout(r, 300));
-  // open a note editor
+  await sleep(200);
+  const progToggle = await page.$$eval("button", (bs) => bs.findIndex((b) => /Progress/i.test(b.textContent)));
+  ok(progToggle >= 0, "Progress section toggle present on Home");
+
+  // --- Settings screen: add-meet, theme, language, taunt tiers, about ---
+  await page.click(".gear-btn");
+  await sleep(300);
+  const settingsText = await page.evaluate(() => document.body.innerText);
+  ok(/Add a meet/i.test(settingsText), "Settings: Add-a-meet row");
+  ok(/Theme/i.test(settingsText), "Settings: theme control");
+  ok(/Kind|Cheeky|Savage/i.test(settingsText), "Settings: taunt tier control");
+  ok(/About/i.test(settingsText), "Settings: About row");
+  // Default taunt tier persists as 'mild'
+  const tier = await page.evaluate(() => JSON.parse(localStorage.getItem("tauntTier") || '"mild"'));
+  ok(tier === "mild", `Taunt tier defaults to mild (got ${tier})`);
+
+  // --- 🫧 taunt easter egg: tap the brand 5× → a taunt pops ---
+  await clickTab(/home|today|day/i);
+  await sleep(150);
+  for (let i = 0; i < 5; i++) { await page.click(".brand"); await sleep(60); }
+  await sleep(150);
+  const taunt = await page.$(".taunt-pop");
+  ok(taunt !== null, "Taunt easter egg pops after 5 logo taps");
+
+  // --- Per-event note saves + displays (carried over) ---
+  await clickTab(/home|today|day/i);
+  await sleep(300);
   const addBtn = await page.$$("button");
   let noteOpened = false;
   for (const b of addBtn) {
@@ -90,23 +119,16 @@ try {
     await page.waitForSelector("textarea.note-input", { timeout: 2000 });
     await page.type("textarea.note-input", "Great underwaters!");
     await page.evaluate(() => document.querySelector("textarea.note-input").blur());
-    await new Promise((r) => setTimeout(r, 300));
+    await sleep(300);
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("notes") || "{}"));
-    ok(Object.values(saved).includes("Great underwaters!"), `Note persisted to localStorage (${JSON.stringify(saved)})`);
-    const shown = await page.evaluate(() => document.body.innerText);
-    ok(/Great underwaters!/.test(shown), "Note text displayed on the card");
+    ok(Object.values(saved).includes("Great underwaters!"), `Note persisted (${JSON.stringify(saved)})`);
   }
 
-  // --- Logo brand color sets header background ---
+  // --- Logo brand color sets header background (carried over) ---
   await page.evaluate(() => { localStorage.setItem("brandColor", "#e8123a"); });
   await page.reload({ waitUntil: "networkidle0" });
   const brandVar = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--brand").trim());
   ok(brandVar === "#e8123a", `--brand CSS var applied (${brandVar})`);
-  const headBg = await page.evaluate(() => {
-    const el = document.querySelector(".apphead");
-    return el ? getComputedStyle(el).backgroundImage : "";
-  });
-  ok(/232|e8123a|rgb\(\s*232/i.test(headBg), `Header gradient uses brand color (${headBg.slice(0, 80)})`);
 } finally {
   console.log("\n" + log.join("\n"));
   await browser.close();

@@ -1,9 +1,9 @@
-# Ship checklist — your one-time setup to get my-swimmer into the stores
+# Ship checklist — your one-time setup to get Heat Guardian into the stores
 
 Everything in code/CI is already done. This is the list of steps that need **you**
 (accounts, payments, secrets). Work top to bottom; iOS and Android are independent.
 
-Bundle id: **`com.chesler410.myswimmer`** · App name: **My Swimmer**
+Bundle id: **`com.chesler410.nextheat`** · App name: **Heat Guardian**
 Workflows: `.github/workflows/ios-testflight.yml`, `.github/workflows/android-release.yml`
 (Background + rationale: `docs/appify.md`.)
 
@@ -13,7 +13,7 @@ Workflows: `.github/workflows/ios-testflight.yml`, `.github/workflows/android-re
 
 ⚠️ GitHub secrets are **write-only** — you can't view the values stored in the
 health-rpg repo. Re-enter the *source* values into:
-**my-swimmer repo → Settings → Secrets and variables → Actions → New repository secret.**
+**heat-guardian repo → Settings → Secrets and variables → Actions → New repository secret.**
 
 | Secret name | Where to get the value |
 |---|---|
@@ -32,10 +32,10 @@ Make the base64 (PowerShell):
 ## Step 1 — iOS → TestFlight (no Mac needed)
 
 1. **App Store Connect → Apps → ➕ → New App**
-   - Platform: iOS · Name: **My Swimmer** · Bundle ID: **com.chesler410.myswimmer**
+   - Platform: iOS · Name: **Heat Guardian** · Bundle ID: **com.chesler410.nextheat**
      (register the App ID at developer.apple.com → Identifiers if it's not in the dropdown)
-   - SKU: anything (e.g. `myswimmer`).
-2. Confirm the 4 secrets from Step 0 are set in the my-swimmer repo.
+   - SKU: anything (e.g. `nextheat`).
+2. Confirm the 4 secrets from Step 0 are set in the heat-guardian repo.
 3. **GitHub → Actions → "iOS TestFlight" → Run workflow.**
 4. Build appears in App Store Connect → TestFlight in ~10–20 min. Add yourself +
    wife/parents as internal testers.
@@ -51,13 +51,13 @@ Make the base64 (PowerShell):
 2. **Create an upload keystore.** Easiest in **Android Studio** (you'll want it for
    the emulator anyway): Build → Generate Signed App Bundle/APK → "Create new…"
    keystore. Remember the passwords + alias. (CLI alt, needs a JDK:
-   `keytool -genkeypair -v -keystore upload-keystore.jks -alias myswimmer -keyalg RSA -keysize 2048 -validity 9125`)
+   `keytool -genkeypair -v -keystore upload-keystore.jks -alias heatguardian -keyalg RSA -keysize 2048 -validity 9125`)
 3. Set 4 repo secrets (Actions secrets, same place as Step 0):
    - `ANDROID_KEYSTORE_BASE64` —
      `[Convert]::ToBase64String([IO.File]::ReadAllBytes("upload-keystore.jks")) | Set-Clipboard`
    - `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`
 4. **GitHub → Actions → "Android build (.aab)" → Run workflow** → download the
-   `my-swimmer-release-aab` artifact.
+   `heat-guardian-release-aab` artifact.
 5. **Play Console → Create app → Internal testing → Create release → upload the .aab**
    → add testers by email. (Consider enrolling in Play App Signing when prompted.)
 6. Test in **Android Studio → Device Manager → create a Pixel emulator** — no

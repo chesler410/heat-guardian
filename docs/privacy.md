@@ -1,13 +1,13 @@
-# my-swimmer — Privacy Policy
+# Heat Guardian — Privacy Policy
 
 _Last updated: 2026-06-07_
 
-my-swimmer is a free, ad-free meet-day companion for swim families. It is built to
+Heat Guardian is a free, ad-free meet-day companion for swim families. It is built to
 collect as little as possible — in fact, **nothing leaves your device.**
 
 ## What we collect
 
-**Nothing.** my-swimmer has no accounts and no servers that store your data. There is
+**Nothing.** Heat Guardian has no accounts and no servers that store your data. There is
 no analytics, no advertising, and no tracking.
 
 ## What stays on your device
@@ -37,7 +37,7 @@ location is never sent anywhere.
 
 ## Children's privacy
 
-my-swimmer is used by families to track minors' swim events. Because all data is
+Heat Guardian is used by families to track minors' swim events. Because all data is
 stored locally and nothing is uploaded, the app does not knowingly collect personal
 information from anyone, including children under 13 (COPPA).
 

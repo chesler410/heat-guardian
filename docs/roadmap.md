@@ -1,4 +1,4 @@
-# my-swimmer — roadmap & future plans
+# Heat Guardian — roadmap & future plans
 
 **Vision:** make meet day calm for every swim family — and grow from a personal, on-device
 tool into a *shared* tool for the whole swim community (families, teams, and coaches),
@@ -9,7 +9,10 @@ without losing the things that make it good today: free, fast, private, ad-free.
 ## Where it is today (shipped)
 
 A local-first PWA (React/TS, in-browser pdf.js parsing, data on-device):
-- Multi-swimmer **family hub**; separate **My swimmers** / **Watching** tabs; **Teams** browser
+- **Calm two-tab layout** — **Home** (meet-day timeline + each swimmer's Progress folded in) and
+  **Swimmers** (a single people hub: My swimmers + Watch list, find a swimmer by search *or* by
+  team). Add-meet, appearance (theme + language), the taunt easter-egg setting, and About all
+  live behind a **⚙ Settings** gear, out of the way.
 - Per-event **motivational cut** (+ per-length breakdown) and **Southeastern championship cut**
 - **Goal & splits** (even/realistic) + on-deck split & finish-time logging; **relays**
 - **Arm-table** view (PB/Cut/Champ columns); by-date sections; cards/table
@@ -25,6 +28,14 @@ A local-first PWA (React/TS, in-browser pdf.js parsing, data on-device):
 
 ## Near-term (no backend needed)
 
+- **"Share to Heat Guardian" (native share target)** — the real fix for *"find the file a parent got
+  in an email/text."* Instead of hunting Files/Downloads, a parent opens the PDF in Mail / Files /
+  Drive / their team chat, taps the OS **Share** sheet, and picks **Heat Guardian** → it imports.
+  Covers email, Drive, and team chat in one capability (and beats a Google-Drive OAuth integration,
+  which would add accounts/COPPA surface this app avoids). *Needs native work in the Capacitor wrap:
+  an **iOS Share Extension** (declare a PDF/`public.data` activation rule, hand the file to the web
+  layer) and an **Android intent-filter** (`ACTION_SEND` / `ACTION_VIEW` for `application/pdf`, read
+  the `content://` URI). Until then, the in-app upload + the new "where's my file?" hint cover it.*
 - **HY3 / CL2 import** — the richer Hy-Tek formats (HY3 has full results + splits; CL2 entries).
   SD3 (SDIF) already lands; HY3 adds per-length splits and is the next file target.
   *(Needs a real .sd3 to certify SDIF column offsets, and a sample .hy3 to start HY3.)*
@@ -66,6 +77,18 @@ crossing — weighed against privacy and cost.
      auto-updating results to a public URL (host presses F12 each race). Our **Live results**
      poller refreshes that URL every minute. *(Today it parses the PDF form; a flat-HTML parser
      is the next add once we have a sample page.)*
+
+     **🧭 Breadcrumb — "how does Meet Mobile get results electronically?"** The honest answer
+     (verified June 2026): it doesn't have a secret pipe. Meet Manager **uploads** results to
+     Active's servers over a private, authenticated meet-host channel — there is **no public API
+     and no read endpoint** to subscribe to. The *same data* a host can also publish openly is the
+     Hy-Tek real-time page above. So the realistic expansions, in order, are: **(a)** a **flat-HTML
+     parser** for the real-time results page (we only parse the PDF variant today — needs one
+     sample page to lock the column layout); **(b)** **HY3 ingestion** (the host's own results file,
+     splits included); **(c)** if a meet host is willing, they can point us at their published
+     real-time URL and our poller already overlays it live. What we will **not** do: scrape Meet
+     Mobile's private feed (ToS + brittle). If a sanctioned results API ever appears (it doesn't
+     today — SWIMS 3.0 is membership-only), this poller is where it would plug in.
   2. **Results PDFs** posted during/after the meet — same parser, manual or live.
 - **On-deck manual entry** remains the always-works fallback (and feeds splits).
 - **Discovery ("meets near me")** has **no clean public API** — and SWIMS 3.0 does NOT provide one

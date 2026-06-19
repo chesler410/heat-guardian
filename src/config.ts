@@ -9,7 +9,7 @@ export const DEFAULT_PROXY: string = import.meta.env.VITE_PROXY_URL ?? "";
 // Where the in-app "Feedback" button sends people. Set repo variable FEEDBACK_URL to a
 // Google Form (or Tally/Typeform) link. Falls back to the GitHub issues page.
 export const FEEDBACK_URL: string =
-  import.meta.env.VITE_FEEDBACK_URL || "https://github.com/chesler410/my-swimmer/issues";
+  import.meta.env.VITE_FEEDBACK_URL || "https://github.com/chesler410/heat-guardian/issues";
 
 // Optional tip jar (free app, no ads). Shown in About.
 export const KOFI_URL: string = import.meta.env.VITE_KOFI_URL || "https://ko-fi.com/chesler410";
