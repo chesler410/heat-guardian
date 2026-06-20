@@ -1778,7 +1778,7 @@ function ImportView(props: {
         </button>
         <label className="secondary filelabel">
           {props.busy ? t("imp_reading") : t("imp_upload")}
-          <input type="file" accept="application/pdf,.sd3,.txt,.json,.heatguardian.json,.myswimmer.json" multiple disabled={props.busy} onChange={(e) => props.onFiles(e.target.files)} hidden />
+          <input type="file" accept="application/pdf,.sd3,.txt,.json,.heatguardian.json,.myswimmer.json,.htm,.html,text/html" multiple disabled={props.busy} onChange={(e) => props.onFiles(e.target.files)} hidden />
         </label>
         <p className="muted small">💡 {t("imp_findfile")}</p>
       </div>

@@ -2,6 +2,7 @@
 // Meets keep their FULL parsed roster so you can search swimmers and add them any time
 // (re-matching is automatic). COPPA-friendly: nothing leaves the device.
 import { parsePdf, Finisher } from "./parser";
+import { looksLikeHytekHtml, parseHytekHtml } from "./hytek";
 import { parseSdif, looksLikeSdif } from "./sdif";
 import { eventMeta, fmt } from "./cuts";
 
@@ -191,6 +192,12 @@ export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "
       if (!s.entries.length) throw new Error("err_no_events");
       return { kind: "meet", meet: toMeet(s.title, s.entries, fallback, source, sourceUrl) };
     }
+    // Hy-Tek "Real-Time Results to the Web" page — overlays live/actual times (the live path).
+    if (looksLikeHytekHtml(text)) {
+      const h = parseHytekHtml(text);
+      if (!h.finishers.length) throw new Error("err_no_results");
+      return { kind: "results", title: h.title, finishers: h.finishers };
+    }
   }
   const r = await parsePdf(buf);
   if (r.kind === "results") {
@@ -317,8 +324,9 @@ const isPdf = (buf: ArrayBuffer) => {
   return b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46; // %PDF
 };
 
-// Fetch a PDF by URL. Browsers block cross-origin fetches unless the host allows CORS,
-// so we try the shared fetch helper first, then a direct fetch (CORS-friendly hosts only).
+// Fetch a meet document by URL — a PDF, or a Hy-Tek "Results to the Web" HTML page (the live
+// path). Browsers block cross-origin fetches unless the host allows CORS, so we try the shared
+// fetch helper first, then a direct fetch (CORS-friendly hosts only).
 export async function fetchPdfBuffer(url: string, proxy: string): Promise<ArrayBuffer> {
   const enc = encodeURIComponent(url);
   const tries: string[] = [];
@@ -330,6 +338,7 @@ export async function fetchPdfBuffer(url: string, proxy: string): Promise<ArrayB
       if (!res.ok) continue;
       const buf = await res.arrayBuffer();
       if (isPdf(buf)) return buf;
+      if (looksLikeHytekHtml(new TextDecoder("utf-8").decode(buf))) return buf; // live HTML results
     } catch {
       /* try next */
     }

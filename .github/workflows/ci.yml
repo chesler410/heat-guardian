@@ -28,5 +28,7 @@ jobs:
           HG_BROWSER: ${{ steps.chrome.outputs.chrome-path }}
           MONKEY_ACTIONS: "600"
         run: |
+          node scripts/test_sdif.mjs
+          node scripts/test_hytek.mjs
           node scripts/e2e_smoke.mjs
           node scripts/e2e_monkey.mjs

@@ -3,6 +3,9 @@
 // header, bucket words by x, stitch columns column-major, parse events/heats/lanes.
 import * as pdfjsLib from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { Finisher } from "./hytek";
+export type { Finisher };
+export { looksLikeHytekHtml, parseHytekHtml } from "./hytek";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -148,12 +151,6 @@ function parseLines(lines: string[], out: RawEntry[]) {
   }
 }
 
-export interface Finisher {
-  event: number;
-  desc: string;
-  name: string;
-  finals: string;
-}
 export type ParsedPdf =
   // hint: "announcement" when a heat parse finds no entries but the text looks like a meet
   // info/announcement packet (sanction, rules, entry fees) — lets the UI say "grab the
