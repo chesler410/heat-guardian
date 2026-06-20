@@ -1865,11 +1865,13 @@ function SwimmersView(props: {
   );
 }
 
-// Pick the logo's most vivid (bright + saturated) non-gray color, for header branding.
-function vividColor(ctx: CanvasRenderingContext2D, w: number, h: number): string | null {
+// Pick the logo's DOMINANT vivid color (the one covering the most area among saturated,
+// non-gray pixels) for header branding — not the single brightest pixel, which grabs a small
+// bright accent (e.g. an orange flourish) over the real brand color (the big red text). We
+// bucket similar colors together and return the average of the most-prevalent bucket.
+function dominantColor(ctx: CanvasRenderingContext2D, w: number, h: number): string | null {
   const data = ctx.getImageData(0, 0, w, h).data;
-  let best: [number, number, number] | null = null;
-  let bestScore = 0;
+  const buckets = new Map<string, { r: number; g: number; b: number; n: number }>();
   for (let i = 0; i < data.length; i += 16) {
     const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
     if (a < 128) continue;
@@ -1877,13 +1879,16 @@ function vividColor(ctx: CanvasRenderingContext2D, w: number, h: number): string
     const l = (mx + mn) / 510;
     const s = mx === mn ? 0 : (mx - mn) / (255 - Math.abs(mx + mn - 255));
     if (s < 0.35 || l < 0.2 || l > 0.85) continue; // skip gray / near-black / near-white
-    const score = s * (0.55 + 0.45 * l); // favor brighter
-    if (score > bestScore) {
-      bestScore = score;
-      best = [r, g, b];
-    }
+    const key = (r >> 5) + "-" + (g >> 5) + "-" + (b >> 5); // group near-identical colors
+    const bkt = buckets.get(key) || { r: 0, g: 0, b: 0, n: 0 };
+    bkt.r += r; bkt.g += g; bkt.b += b; bkt.n++;
+    buckets.set(key, bkt);
   }
-  return best ? "#" + best.map((v) => v.toString(16).padStart(2, "0")).join("") : null;
+  let best: { r: number; g: number; b: number; n: number } | null = null;
+  for (const bkt of buckets.values()) if (!best || bkt.n > best.n) best = bkt;
+  if (!best) return null;
+  const r = Math.round(best.r / best.n), g = Math.round(best.g / best.n), b = Math.round(best.b / best.n);
+  return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
 }
 
 function processLogo(file: File, cb: (dataUrl: string, color: string | null) => void) {
@@ -1898,7 +1903,7 @@ function processLogo(file: File, cb: (dataUrl: string, color: string | null) => 
     c.height = h;
     const ctx = c.getContext("2d");
     ctx?.drawImage(img, 0, 0, w, h);
-    cb(c.toDataURL("image/png"), ctx ? vividColor(ctx, w, h) : null);
+    cb(c.toDataURL("image/png"), ctx ? dominantColor(ctx, w, h) : null);
     URL.revokeObjectURL(img.src);
   };
   img.src = URL.createObjectURL(file);
