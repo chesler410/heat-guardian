@@ -51,6 +51,16 @@ jobs:
           npx cap sync ios
           npx cap-assets generate --assetPath assets --ios || npx capacitor-assets generate --assetPath assets || true
 
+      - name: Declare no non-exempt encryption
+        # Heat Guardian uses only standard HTTPS, which is export-exempt. Setting this in
+        # Info.plist makes every build skip the App Store Connect "Export Compliance" prompt
+        # (no more manual toggling each build). ios/ is generated above, so we patch it here.
+        run: |
+          PLIST=ios/App/App/Info.plist
+          plutil -replace ITSAppUsesNonExemptEncryption -bool NO "$PLIST" 2>/dev/null \
+            || plutil -insert ITSAppUsesNonExemptEncryption -bool NO "$PLIST"
+          plutil -p "$PLIST" | grep ITSAppUsesNonExemptEncryption
+
       - name: Write App Store Connect API key
         env:
           API_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
