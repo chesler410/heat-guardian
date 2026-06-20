@@ -11,5 +11,17 @@
     "lng": -87.2169,
     "infoUrl": "https://www.gpacswimteam.org/",
     "heatUrl": "https://www.gomotionapp.com/setgpac/__eventform__/1564078_5b0b34bf-3977-46de-be18-572abc8352f8.pdf"
+  },
+  {
+    "id": "se-summer-champs-2026",
+    "title": "2026 Southeastern Swimming Summer Championships (LC)",
+    "city": "Huntsville",
+    "state": "AL",
+    "lsc": "SE",
+    "start": "2026-07-17",
+    "end": "2026-07-19",
+    "infoUrl": "https://www.gomotionapp.com/team/szsslsc/page/events/lc-meet-schedule",
+    "lat": 34.7298,
+    "lng": -86.5859
   }
 ]
