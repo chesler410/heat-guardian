@@ -554,7 +554,7 @@ footer { margin-top: 20px; text-align: center; }
 
 /* app-level import confirmation toast (survives the post-import navigation) */
 .app-toast {
-  position: fixed; left: 50%; top: 14px; transform: translateX(-50%);
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 12px); transform: translateX(-50%);
   z-index: 9998; max-width: 92vw; text-align: center; cursor: pointer;
   background: var(--made, #1f9d57); color: #fff; font-size: 0.92rem; font-weight: 700;
   padding: 11px 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.25);

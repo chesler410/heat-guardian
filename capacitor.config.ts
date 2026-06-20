@@ -11,6 +11,10 @@ const config: CapacitorConfig = {
   webDir: "dist",
   backgroundColor: "#06243f",
   ios: { contentInset: "always" },
+  // Route window.fetch through native HTTP on iOS/Android so it bypasses the WebView's CORS
+  // (which blocked the meet-link/proxy fetch on phones — desktop browsers were fine). On web
+  // this is a no-op, so the Cloudflare proxy still covers CORS-blocked hosts there.
+  plugins: { CapacitorHttp: { enabled: true } },
 };
 
 export default config;
