@@ -17,9 +17,15 @@ on:
   workflow_dispatch:
     inputs:
       release_notes:
-        description: "TestFlight notes"
-        default: "Internal build"
+        description: "TestFlight 'What to Test' notes (testers see this)"
         required: false
+        default: |
+          What to test in this build:
+          • Home — your swimmers' events by day; today's day auto-expands, others collapse (tap a day to toggle).
+          • Settings (⚙) — Add a meet, switch theme/language, set taunt edge.
+          • Import — paste a results/heat-sheet link OR upload a PDF; try a real meet.
+          • Team logo (About) — re-import to recolor the header.
+          Please flag anything confusing or broken via the in-app Feedback link.
   push:
     tags: ["ios-v*"]
 
@@ -132,3 +138,16 @@ jobs:
           else
             echo "::error::TestFlight upload failed — see log above."; exit 1
           fi
+
+      - name: Set TestFlight "What to Test" notes
+        if: success()
+        env:
+          ASC_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
+          APP_BUNDLE_ID: com.chesler410.nextheat
+          BUILD_NUMBER: ${{ steps.bn.outputs.build }}
+          TEST_NOTES: ${{ github.event.inputs.release_notes }}
+        run: |
+          export ASC_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          python3 -m pip install --quiet "pyjwt[crypto]"
+          python3 scripts/set_testflight_notes.py
