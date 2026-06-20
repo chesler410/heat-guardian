@@ -85,6 +85,7 @@ interface DirMeet {
   heatUrl?: string;
   resultsUrl?: string;
   infoUrl?: string;
+  resultsPageUrl?: string; // external results page (e.g. SwimCloud) — a link to view, not import
 }
 // Raw copy in the repo so the community can add meets via PR without an app release.
 const DIRECTORY_URL = "https://raw.githubusercontent.com/chesler410/heat-guardian/main/src/meets.json";
@@ -899,6 +900,15 @@ export function App() {
     setBusy(false);
   }
 
+  // Show the import confirmation/error as an app-level toast (auto-clears) so it survives the
+  // navigation to Home/Swimmers on a successful import — otherwise it unmounts with ImportView
+  // and the parent gets zero feedback that anything happened.
+  useEffect(() => {
+    if (!msg) return;
+    const id = setTimeout(() => setMsg(""), 6000);
+    return () => clearTimeout(id);
+  }, [msg]);
+
   // One live poll: fetch the results URL, overlay any new times, and report what changed.
   const pollLive = useCallback(async () => {
     if (!liveUrl.trim()) return;
@@ -938,6 +948,7 @@ export function App() {
     <div className="app">
       <UpdateBanner />
       {taunt && <div className="taunt-pop" onClick={() => setTaunt("")}>{taunt}</div>}
+      {msg && <div className="app-toast" onClick={() => setMsg("")}>{msg}</div>}
       <header className="apphead">
         <div className="brandrow">
           <div className="brand" onClick={bumpLogo} title="Heat Guardian">
@@ -1300,42 +1311,50 @@ function Home(props: any) {
           {(() => {
             const renderMeet = (meet: Meet, items: DE[]) => {
             const secs = bySession(items);
-            const dmap = dayDateMap(meet.start);
+            const startDate = meet.start ? new Date(meet.start + "T00:00:00") : null;
             const dayOrder: string[] = [];
             for (const s of secs) {
               const wd = s.label.split(" ")[0];
               if (s.label !== "Events" && !dayOrder.includes(wd)) dayOrder.push(wd);
             }
+            // ONE source of truth for a session's date = meet.start + its position in dayOrder
+            // (the chronological sequence of meet days). Used for the printed date, ordering,
+            // AND auto-open, so they always agree even when the PDF's weekday labels don't line
+            // up with meet.start (start comes from the directory/URL; labels come from the PDF).
+            const secDate = (label: string): Date | null => {
+              const idx = dayOrder.indexOf(label.split(" ")[0]);
+              if (!startDate || idx < 0) return null;
+              const d = new Date(startDate);
+              d.setDate(d.getDate() + idx);
+              d.setHours(0, 0, 0, 0);
+              return d;
+            };
+            const secDateMs = (label: string): number | null => secDate(label)?.getTime() ?? null;
             // "Day 1 · Friday, Jun 5 — Morning" from a session like "Friday Morning".
             const sessionHead = (raw: string): string => {
               const wd = raw.split(" ")[0];
               const part = raw.slice(wd.length).trim();
               const n = dayOrder.indexOf(wd);
               const dayPart = dayOrder.length > 1 && n >= 0 ? t("day_n", { n: n + 1 }) + " · " : "";
-              const datePart = dmap[wd] ? ", " + dmap[wd] : "";
+              const d = secDate(raw);
+              const datePart = d ? ", " + d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
               return `${dayPart}${wd}${datePart}${part ? " — " + part : ""}`;
             };
-            // Smart default-open: each session's real date = meet.start + its day index. Open
-            // today's session (meet running), else the first upcoming day, else the first.
-            const startDate = meet.start ? new Date(meet.start + "T00:00:00") : null;
-            const secDateMs = (label: string): number | null => {
-              const idx = dayOrder.indexOf(label.split(" ")[0]);
-              if (!startDate || idx < 0) return null;
-              const d = new Date(startDate);
-              d.setDate(d.getDate() + idx);
-              d.setHours(0, 0, 0, 0);
-              return d.getTime();
-            };
             const todayMs = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })();
-            let focusLabel = secs[0]?.label;
-            const todaySec = secs.find((s) => secDateMs(s.label) === todayMs);
-            if (todaySec) focusLabel = todaySec.label;
+            // Which day to auto-open: today's (meet running), else the next upcoming day, else
+            // the MOST RECENT day (a just-finished meet still in the grace window) — not the
+            // oldest. Then open ALL of that day's sessions (a parent's there all day), not just
+            // the first. No dated sessions → open the first.
+            const dated = secs.map((s) => ({ label: s.label, ms: secDateMs(s.label) })).filter((x) => x.ms != null) as { label: string; ms: number }[];
+            let focusDayMs: number | null = null;
+            if (dated.some((x) => x.ms === todayMs)) focusDayMs = todayMs;
             else {
-              const upcoming = secs
-                .filter((s) => { const m = secDateMs(s.label); return m != null && m >= todayMs; })
-                .sort((a, b) => (secDateMs(a.label)! - secDateMs(b.label)!));
-              if (upcoming.length) focusLabel = upcoming[0].label;
+              const upcoming = dated.filter((x) => x.ms >= todayMs).sort((a, b) => a.ms - b.ms);
+              focusDayMs = upcoming.length ? upcoming[0].ms : dated.length ? Math.max(...dated.map((x) => x.ms)) : null;
             }
+            const openLabels = new Set(
+              focusDayMs != null ? dated.filter((x) => x.ms === focusDayMs).map((x) => x.label) : secs[0] ? [secs[0].label] : []
+            );
             const oneSession = secs.length <= 1;
             return (
             <div className="meet-block" key={meet.id}>
@@ -1377,7 +1396,7 @@ function Home(props: any) {
                     head={sec.label !== "Events" ? sessionHead(sec.label) : null}
                     count={sec.items.length}
                     grid={view === "cards"}
-                    defaultOpen={oneSession || sec.label === focusLabel}
+                    defaultOpen={oneSession || openLabels.has(sec.label)}
                   >
                     {view === "cards" ? (
                       sec.items.map((d, i) => {
@@ -1536,22 +1555,6 @@ function CoachTeamPicker(props: {
   );
 }
 
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-// Map each weekday name in the meet's week → a short date (e.g. {Friday: "Jun 5"}), from
-// the meet's ISO start day, so session headers can show the actual date.
-function dayDateMap(start?: string): Record<string, string> {
-  if (!start) return {};
-  const d0 = new Date(start + "T00:00:00");
-  if (isNaN(+d0)) return {};
-  const map: Record<string, string> = {};
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(d0);
-    d.setDate(d0.getDate() + i);
-    map[WEEKDAYS[d.getDay()]] = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  }
-  return map;
-}
-
 function fmtDateRange(start?: string, end?: string): string {
   if (!start) return "";
   const opt: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
@@ -1588,15 +1591,22 @@ function DiscoverView(props: {
   const states = [...new Set(props.meets.map((m) => m.state).filter(Boolean))].sort() as string[];
 
   function findNearMe() {
-    if (!navigator.geolocation) { setGeoMsg(t("disc_geoerr")); return; }
+    // Clear the state filter so "showing all" is actually true whether geolocation succeeds
+    // (sorts by distance) or is denied (falls back to all meets).
+    if (!navigator.geolocation) { setGeoMsg(t("disc_geoerr")); setStateFilter(""); return; }
     setGeoMsg(t("disc_locating"));
     navigator.geolocation.getCurrentPosition(
       (pos) => { setHere({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoMsg(""); setStateFilter(""); },
-      () => setGeoMsg(t("disc_geoerr"))
+      () => { setGeoMsg(t("disc_geoerr")); setStateFilter(""); }
     );
   }
 
-  let list = props.meets.filter((m) => !stateFilter || m.state === stateFilter);
+  // "Find a meet near you" is for UPCOMING meets — hide ones whose last day has already
+  // passed (same past-date logic as Home's archive), so a finished meet drops off the list.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  let list = props.meets
+    .filter((m) => !stateFilter || m.state === stateFilter)
+    .filter((m) => (m.end || m.start || todayISO) >= todayISO);
   if (here) {
     list = [...list].sort((a, b) => {
       const da = a.lat != null && a.lng != null ? miBetween(here, { lat: a.lat, lng: a.lng }) : 1e9;
@@ -1642,6 +1652,7 @@ function DiscoverView(props: {
                   {m.heatUrl && <button className="chip sm" onClick={() => props.onImport(m.heatUrl!)}>{t("disc_import")}</button>}
                   {m.resultsUrl && <button className="chip sm" onClick={() => props.onImport(m.resultsUrl!)}>{t("disc_results")}</button>}
                   {m.resultsUrl && <button className="chip sm golive" onClick={() => props.onGoLive(m.resultsUrl!)}>🔴 {t("disc_golive")}</button>}
+                  {m.resultsPageUrl && <a className="chip sm" href={m.resultsPageUrl} target="_blank" rel="noopener noreferrer">📊 {t("disc_viewresults")}</a>}
                   {(m.heatUrl || m.resultsUrl) && (
                     <button className="chip sm" onClick={async () => { const r = await shareMeet({ t: m.title, u: m.heatUrl || m.resultsUrl!, r: m.resultsUrl }); showToast(r === "copied" ? t("share_copied") : ""); }}>🔗 {t("share_btn")}</button>
                   )}
@@ -1771,8 +1782,6 @@ function ImportView(props: {
         </label>
         <p className="muted small">💡 {t("imp_findfile")}</p>
       </div>
-
-      {props.msg && <p className="importmsg">{props.msg}</p>}
 
       <Foldable title={<>{props.liveOn ? <span className="live-dot" /> : "⏱ "}{t("live_h")}</>} defaultOpen={props.liveOn}>
         <p className="muted">{t("live_b")}</p>

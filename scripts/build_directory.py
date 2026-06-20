@@ -121,7 +121,7 @@ def main() -> int:
         mid = src["id"]
         entry = dict(existing.get(mid, {}))          # start from any curated entry
         entry["id"] = mid
-        for k in ("title", "city", "state", "lsc", "start", "end", "infoUrl"):
+        for k in ("title", "city", "state", "lsc", "start", "end", "infoUrl", "resultsPageUrl"):
             if src.get(k):                            # explicit source values win
                 entry[k] = src[k]
         # Drop any stale labels for URLs we're about to (re)classify, so a link previously

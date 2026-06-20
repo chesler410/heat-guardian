@@ -1,0 +1,32 @@
+name: CI tests
+
+# Runs the E2E smoke (15 functional checks) + the monkey (random-interaction crash hunt)
+# against a fresh production build on every push/PR. Uses Chrome on the runner; the scripts
+# read $HG_BROWSER (default = local Edge for dev). A red check blocks a broken merge.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm" }
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with: { chrome-version: stable }
+      - run: npm ci
+      - run: npm run build
+      - name: E2E smoke + monkey
+        env:
+          HG_BROWSER: ${{ steps.chrome.outputs.chrome-path }}
+          MONKEY_ACTIONS: "600"
+        run: |
+          node scripts/e2e_smoke.mjs
+          node scripts/e2e_monkey.mjs

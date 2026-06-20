@@ -204,7 +204,7 @@ const NAME_RES = /[A-Za-z'.\-]+,\s+[A-Za-z'.\-]+(?:\s+[A-Za-z]\b)?/;
 
 // Parse a PDF, auto-detecting a heat sheet vs a results sheet.
 export async function parsePdf(data: ArrayBuffer): Promise<ParsedPdf> {
-  const doc = await pdfjsLib.getDocument({ data }).promise;
+  const doc = await pdfjsLib.getDocument({ data, verbosity: 0 }).promise; // 0=errors only (mute font warnings)
   const pages: Word[][] = [];
   let title = "Meet";
   for (let p = 1; p <= doc.numPages; p++) {

@@ -18,6 +18,7 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  disc_viewresults: "View results",
   past_meets: "Past meets",
   no_upcoming: "No upcoming meet. Add one in ⚙ Settings — your swimmers' records are saved.",
   imp_what: "What to import: the meet's Results (actual times), Meet Program / heat sheet (events & lineups), or Psych Sheet — not the meet info or entry form.",
@@ -182,6 +183,7 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  disc_viewresults: "Ver resultados",
   past_meets: "Competencias pasadas",
   no_upcoming: "No hay competencias próximas. Añade una en ⚙ Ajustes — los registros de tus nadadores están guardados.",
   imp_what: "Qué importar: los Resultados (tiempos reales), el Meet Program / hoja de series (eventos y alineaciones) o la Psych Sheet — no el formulario de información o inscripción.",
@@ -343,6 +345,7 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  disc_viewresults: "查看成绩",
   past_meets: "过往比赛",
   no_upcoming: "没有即将到来的比赛。在 ⚙ 设置中添加——你运动员的记录已保存。",
   imp_what: "导入什么：比赛的成绩单(Results，实际成绩)、分组单(Meet Program，项目与名单)或种子表(Psych Sheet)——不是比赛信息或报名表。",
@@ -504,6 +507,7 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  disc_viewresults: "Ver resultados",
   past_meets: "Competições passadas",
   no_upcoming: "Nenhuma competição em breve. Adicione uma em ⚙ Configurações — os registros dos seus nadadores estão salvos.",
   imp_what: "O que importar: os Resultados (tempos reais), o Meet Program / planilha de séries (provas e composições) ou a Psych Sheet — não o formulário de informações ou inscrição.",
@@ -665,6 +669,7 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  disc_viewresults: "Ergebnisse ansehen",
   past_meets: "Vergangene Wettkämpfe",
   no_upcoming: "Kein anstehender Wettkampf. Füge einen in ⚙ Einstellungen hinzu — die Rekorde deiner Schwimmer sind gespeichert.",
   imp_what: "Was importieren: die Ergebnisse (echte Zeiten), das Meet Program / Meldeergebnis (Wettkämpfe & Aufstellungen) oder die Psych Sheet — nicht die Ausschreibung oder das Meldeformular.",
@@ -826,6 +831,7 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  disc_viewresults: "Xem kết quả",
   past_meets: "Giải đã qua",
   no_upcoming: "Chưa có giải sắp tới. Thêm một giải trong ⚙ Cài đặt — hồ sơ VĐV của bạn đã được lưu.",
   imp_what: "Nhập gì: Kết quả (Results, thời gian thực), Meet Program / bảng đợt bơi (nội dung & danh sách) hoặc Psych Sheet — không phải mẫu thông tin hay đăng ký.",
@@ -987,6 +993,7 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  disc_viewresults: "Voir les résultats",
   past_meets: "Compétitions passées",
   no_upcoming: "Aucune compétition à venir. Ajoutez-en une dans ⚙ Réglages — les records de vos nageurs sont sauvegardés.",
   imp_what: "Quoi importer : les Résultats (temps réels), le Meet Program / feuille de séries (épreuves & compositions) ou la Psych Sheet — pas le formulaire d'info ou d'inscription.",
@@ -1181,6 +1188,7 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  disc_viewresults: "Смотреть результаты",
   past_meets: "Прошедшие соревнования",
   no_upcoming: "Нет предстоящих соревнований. Добавьте одно в ⚙ Настройках — рекорды ваших пловцов сохранены.",
   imp_what: "Что импортировать: Результаты (реальное время), Meet Program / стартовый протокол (заплывы и составы) или Psych Sheet — не положение и не форму заявки.",

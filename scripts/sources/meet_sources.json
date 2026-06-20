@@ -20,5 +20,19 @@
     "end": "2026-07-19",
     "infoUrl": "https://www.gomotionapp.com/team/szsslsc/page/events/lc-meet-schedule",
     "links": []
+  },
+  {
+    "id": "auburn-richard-quick-2026",
+    "title": "2026 Auburn Aquatics Richard Quick Invitational",
+    "city": "Auburn",
+    "state": "AL",
+    "lsc": "SE",
+    "start": "2026-06-26",
+    "end": "2026-06-28",
+    "infoUrl": "https://www.playeasy.com/events/a2c68749-949b-418f-8189-8d518c96e3d6",
+    "resultsPageUrl": "https://www.swimcloud.com/results/385624/",
+    "links": [
+      "https://www.gomotionapp.com/gada/__eventform__/1551613_b7e4cf69-0d56-4a5d-9d01-b00ddb4916fa.pdf"
+    ]
   }
 ]

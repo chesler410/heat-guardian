@@ -395,7 +395,7 @@ footer { margin-top: 20px; text-align: center; }
   --blue: #5b9bff; --close: #34d07f;
 }
 .theme-dark .card { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); }
-.theme-dark .disclaimer { background: #3a300f; border-color: #6a560f; color: #f3e3a0; }
+.theme-dark .disclaimer { background: #2a2418; border-color: #5a4a22; color: #f0d68a; }
 .theme-dark .seg { background: #26313f; }
 .theme-dark .seg button.on { background: #0d141c; color: #cfe0ff; }
 .theme-dark .highlight { background: linear-gradient(160deg, #15293a, #161f2a); border-color: #234058; }
@@ -526,6 +526,15 @@ footer { margin-top: 20px; text-align: center; }
 }
 @keyframes tauntPop { from { opacity: 0; transform: translateX(-50%) scale(.6) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); } }
 
+/* app-level import confirmation toast (survives the post-import navigation) */
+.app-toast {
+  position: fixed; left: 50%; top: 14px; transform: translateX(-50%);
+  z-index: 9998; max-width: 92vw; text-align: center; cursor: pointer;
+  background: var(--made, #1f9d57); color: #fff; font-size: 0.92rem; font-weight: 700;
+  padding: 11px 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  animation: tauntPop .3s cubic-bezier(.2,1.4,.4,1);
+}
+
 /* ---- discover (meet directory) ---- */
 .disc-filters { display: flex; gap: 8px; align-items: center; margin: 10px 0 4px; }
 .disc-state { flex: 1; max-width: 220px; }
@@ -632,7 +641,11 @@ footer { margin-top: 20px; text-align: center; }
 .colcut.on { background: var(--close); border-color: var(--close); color: #fff; }
 .colchamp.on { background: var(--gold); border-color: var(--gold); color: #3a2c00; }
 /* ---- arm table mobile spacing ---- */
-.arm-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* right-edge fade hints there are more columns (PB/Cut/Champ) to scroll to */
+.arm-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; background:
+  linear-gradient(to right, transparent calc(100% - 24px), rgba(11,61,145,0.06)) right / 100% 100% no-repeat; }
+.theme-dark .arm-wrap { background:
+  linear-gradient(to right, transparent calc(100% - 24px), rgba(124,178,255,0.10)) right / 100% 100% no-repeat; }
 table.arm { white-space: nowrap; }
 table.arm th, table.arm td { padding-right: 14px; }
 
