@@ -1683,6 +1683,20 @@ function ProgressSection({ progress }: { progress: SwimmerProgress[] }) {
   );
 }
 
+// A collapsible card — used to tuck the secondary Add-meet options (live results, sources)
+// out of the way so the screen leads with the primary path and isn't a wall of cards.
+function Foldable(props: { title: ReactNode; defaultOpen?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(!!props.defaultOpen);
+  return (
+    <div className="card">
+      <button className="prep-toggle" onClick={() => setOpen((o) => !o)}>
+        {props.title} <span className="prep-caret">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && <div className="fold-body">{props.children}</div>}
+    </div>
+  );
+}
+
 function ImportView(props: {
   busy: boolean;
   msg: string;
@@ -1711,68 +1725,39 @@ function ImportView(props: {
       <div className="card">
         <h2>{t("imp_title")}</h2>
         <p className="imp-note">📋 {t("imp_what")}</p>
-        <p className="muted">{t("imp_tip")}</p>
         <input className="field" placeholder="https://…/heatsheet.pdf" value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" autoFocus />
         <button className="primary" disabled={props.busy || !url.trim()} onClick={() => props.onUrl(url)}>
           {props.busy ? t("imp_opening") : t("imp_open")}
         </button>
-        <p className="muted small">{t("imp_linktip")}</p>
-      </div>
-
-      <div className={"card live-card" + (props.liveOn ? " on" : "")}>
-        <h3>{props.liveOn && <span className="live-dot" />}{t("live_h")}</h3>
-        <p className="muted">{t("live_b")}</p>
-        <input
-          className="field"
-          placeholder="https://…/results.pdf"
-          value={liveDraft}
-          onChange={(e) => setLiveDraft(e.target.value)}
-          inputMode="url"
-          disabled={props.liveOn}
-        />
-        {props.liveOn ? (
-          <button className="secondary" onClick={() => props.setLiveOn(false)}>
-            {t("live_stop")}
-          </button>
-        ) : (
-          <button
-            className="primary"
-            disabled={!liveDraft.trim()}
-            onClick={() => {
-              props.setLiveUrl(liveDraft.trim());
-              props.setLiveOn(true);
-            }}
-          >
-            {t("live_start")}
-          </button>
-        )}
-        {props.liveStatus && <p className="live-status">{props.liveStatus}</p>}
-        <p className="muted small">{t("live_tip")}</p>
-      </div>
-
-      <div className="card">
-        <h3>{t("imp_backup")}</h3>
-        <p className="muted">{t("imp_backuptip")}</p>
         <label className="secondary filelabel">
           {props.busy ? t("imp_reading") : t("imp_upload")}
           <input type="file" accept="application/pdf,.sd3,.txt,.json,.heatguardian.json,.myswimmer.json" multiple disabled={props.busy} onChange={(e) => props.onFiles(e.target.files)} hidden />
         </label>
-        <p className="imp-note">💡 {t("imp_findfile")}</p>
-        <p className="muted small">{t("imp_sd3")}</p>
-        <p className="muted small">{t("imp_pack")}</p>
+        <p className="muted small">💡 {t("imp_findfile")}</p>
       </div>
 
       {props.msg && <p className="importmsg">{props.msg}</p>}
 
-      <div className="card">
-        <h3>{t("src_h")}</h3>
+      <Foldable title={<>{props.liveOn ? <span className="live-dot" /> : "⏱ "}{t("live_h")}</>} defaultOpen={props.liveOn}>
+        <p className="muted">{t("live_b")}</p>
+        <input className="field" placeholder="https://…/results.pdf" value={liveDraft} onChange={(e) => setLiveDraft(e.target.value)} inputMode="url" disabled={props.liveOn} />
+        {props.liveOn ? (
+          <button className="secondary" onClick={() => props.setLiveOn(false)}>{t("live_stop")}</button>
+        ) : (
+          <button className="primary" disabled={!liveDraft.trim()} onClick={() => { props.setLiveUrl(liveDraft.trim()); props.setLiveOn(true); }}>{t("live_start")}</button>
+        )}
+        {props.liveStatus && <p className="live-status">{props.liveStatus}</p>}
+        <p className="muted small">{t("live_tip")}</p>
+      </Foldable>
+
+      <Foldable title={<>🔎 {t("src_h")}</>}>
         <p className="muted small">{t("src_note")}</p>
         <ul className="src-links">
           <li><a href="https://data.usaswimming.org/datahub/usas/individualsearch" target="_blank" rel="noreferrer">USA Swimming — Individual Times Search</a></li>
           <li><a href="https://swimstandards.com" target="_blank" rel="noreferrer">SwimStandards — time standards & best times</a></li>
           <li><a href="https://www.swimcloud.com" target="_blank" rel="noreferrer">SwimCloud — rankings & results</a></li>
         </ul>
-      </div>
+      </Foldable>
     </div>
   );
 }

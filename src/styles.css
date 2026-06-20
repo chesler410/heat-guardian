@@ -386,6 +386,7 @@ footer { margin-top: 20px; text-align: center; }
 .session-head.toggle:hover { background: rgba(11, 61, 145, 0.06); }
 .theme-dark .session-head.toggle:hover { background: rgba(124, 178, 255, 0.10); }
 .sess-meta { color: var(--muted); font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+.fold-body { margin-top: 10px; }
 
 /* ---- dark mode ---- */
 /* ---- dark theme (forced via html.theme-dark, set by theme.ts) ---- */
