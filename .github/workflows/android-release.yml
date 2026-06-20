@@ -44,13 +44,19 @@ jobs:
           npx cap sync android
           npx capacitor-assets generate --assetPath assets --android || true
 
-      - name: Force compile/target SDK 35 (Google Play requirement)
-        # android/ is generated above, so pin the SDK levels here regardless of the
-        # Capacitor template default. Play requires targetSdkVersion >= 35.
+      - name: Pin SDK 35 + version code (Play requirements)
+        # android/ is generated above. Pin SDK 35 (Play requires targetSdk >= 35), and set
+        # versionCode/versionName directly in build.gradle — the -Pandroid.injected.version.*
+        # flags don't override Capacitor's hardcoded versionCode 1, so Play rejected the
+        # second upload as "version code 1 already used." Commit count = monotonic versionCode.
         run: |
-          V=android/variables.gradle
-          sed -i -E 's/(compileSdkVersion *= *)[0-9]+/\135/; s/(targetSdkVersion *= *)[0-9]+/\135/' "$V"
-          echo "--- variables.gradle SDK levels ---"; grep -E "SdkVersion" "$V"
+          sed -i -E 's/(compileSdkVersion *= *)[0-9]+/\135/; s/(targetSdkVersion *= *)[0-9]+/\135/' android/variables.gradle
+          VCODE=$(git rev-list --count HEAD)
+          VNAME=$(node -p "require('./package.json').version")
+          sed -i -E "s/versionCode [0-9]+/versionCode $VCODE/; s/versionName \"[^\"]*\"/versionName \"$VNAME\"/" android/app/build.gradle
+          echo "--- pinned values ---"
+          grep -E "SdkVersion" android/variables.gradle
+          grep -E "versionCode|versionName" android/app/build.gradle
 
       - name: Decode keystore
         env:
@@ -64,16 +70,12 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          VCODE=$(git rev-list --count HEAD)
-          VNAME=$(node -p "require('../package.json').version")
           chmod +x ./gradlew
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file="$RUNNER_TEMP/upload-keystore.jks" \
             -Pandroid.injected.signing.store.password="$KS_PASS" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASS" \
-            -Pandroid.injected.version.code="$VCODE" \
-            -Pandroid.injected.version.name="$VNAME"
+            -Pandroid.injected.signing.key.password="$KEY_PASS"
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
