@@ -1128,6 +1128,18 @@ function bySession(items: DE[]): { label: string; items: DE[] }[] {
   return order.map((s) => ({ label: s, items: map.get(s)! }));
 }
 
+// The meet's last calendar day (ms at local midnight), derived from how many distinct session
+// days it spans from meet.start. Null when the start is unknown (then we never auto-archive it).
+function meetEndMs(meet: Meet): number | null {
+  if (!meet.start) return null;
+  const days = new Set<string>();
+  for (const e of meet.entries) if (e.session && e.session !== "Events") days.add(e.session.split(" ")[0]);
+  const d = new Date(meet.start + "T00:00:00");
+  d.setDate(d.getDate() + (Math.max(1, days.size) - 1));
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
 // One day/session block on Home — collapsible. defaultOpen is set by the smart focus logic
 // (today's session if the meet is running, else the first upcoming day) so meet day shows
 // only the relevant events and past/future days stay tucked away. Tap the header to toggle.
@@ -1163,7 +1175,15 @@ function Home(props: any) {
     localStorage.setItem("armcols", JSON.stringify(next));
   }
   const resultOf = (d: DE) => results[resultKey(d.meetId, d.e.event, d.swimmer)];
-  const groups = buildDisplay(meets, swimmers, filter);
+  // Meet lifecycle: a meet auto-tucks into a collapsed "Past meets" archive ~3 days after its
+  // last session, so between the bursty meet weekends Home stays focused on the active/upcoming
+  // meet and never defaults to a stale one. Records persist — Progress spans every meet, the
+  // past meet just moves to the archive (nothing is deleted).
+  const todayMid = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+  const isPast = (m: Meet) => { const e = meetEndMs(m); return e != null && e + 3 * 86400000 < todayMid; };
+  const allGroups = buildDisplay(meets, swimmers, filter);
+  const groups = allGroups.filter((g: any) => !isPast(g.meet)); // active / upcoming
+  const pastGroups = allGroups.filter((g: any) => isPast(g.meet)); // archived
   const all = groups.flatMap((g: any) => g.items as DE[]);
   const closest = all
     .map((d: DE) => ({ d, cut: cutFor(d, resultOf(d)) }))
@@ -1248,10 +1268,11 @@ function Home(props: any) {
               ))}
             </section>
           )}
-          {!coach && <Fueling />}
-          {!coach && <Prep />}
+          {!coach && groups.length > 0 && <Fueling />}
+          {!coach && groups.length > 0 && <Prep />}
+          {groups.length > 0 && (
           <div className="events-head">
-            <h2 className="section-title">{t("meets", { n: meets.length })}</h2>
+            <h2 className="section-title">{t("meets", { n: groups.length })}</h2>
             <div className="seg">
               <button className={view === "cards" ? "on" : ""} onClick={() => pickView("cards")}>
                 {t("v_cards")}
@@ -1261,7 +1282,8 @@ function Home(props: any) {
               </button>
             </div>
           </div>
-          {view === "table" && (
+          )}
+          {groups.length > 0 && view === "table" && (
             <div className="colchips">
               {t("columns")}
               <button className={"chip sm colpb" + (cols.pb ? " on" : "")} onClick={() => toggleCol("pb")}>
@@ -1275,7 +1297,8 @@ function Home(props: any) {
               </button>
             </div>
           )}
-          {groups.map(({ meet, items }: any) => {
+          {(() => {
+            const renderMeet = (meet: Meet, items: DE[]) => {
             const secs = bySession(items);
             const dmap = dayDateMap(meet.start);
             const dayOrder: string[] = [];
@@ -1324,7 +1347,7 @@ function Home(props: any) {
                     className="meet-share"
                     title={t("share_btn")}
                     onClick={async () => {
-                      const r = await shareMeet({ t: meet.title, u: meet.sourceUrl, tm: coachTeam || undefined });
+                      const r = await shareMeet({ t: meet.title, u: meet.sourceUrl!, tm: coachTeam || undefined });
                       showToast(r === "copied" ? t("share_copied") : r === "shared" ? "" : t("share_fail"));
                     }}
                   >
@@ -1385,7 +1408,20 @@ function Home(props: any) {
               )}
             </div>
             );
-          })}
+            };
+            return (
+              <>
+                {groups.length > 0
+                  ? groups.map((g: any) => renderMeet(g.meet, g.items))
+                  : pastGroups.length > 0 && <p className="muted no-active">{t("no_upcoming")}</p>}
+                {pastGroups.length > 0 && (
+                  <Foldable title={<>🗄️ {t("past_meets")} ({pastGroups.length})</>}>
+                    {pastGroups.map((g: any) => renderMeet(g.meet, g.items))}
+                  </Foldable>
+                )}
+              </>
+            );
+          })()}
           <ProgressSection progress={progress || []} />
         </>
       )}

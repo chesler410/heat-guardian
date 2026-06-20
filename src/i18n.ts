@@ -18,6 +18,8 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  past_meets: "Past meets",
+  no_upcoming: "No upcoming meet. Add one in ⚙ Settings — your swimmers' records are saved.",
   imp_what: "What to import: the meet's Results (actual times), Meet Program / heat sheet (events & lineups), or Psych Sheet — not the meet info or entry form.",
   err_announcement: "Looks like the meet info/entry packet, not a heat sheet. Grab the meet's Results, Meet Program, or Psych Sheet instead.",
   err_no_events: "No events found — is this a Hy-Tek heat sheet, psych sheet, or results PDF? (Not the meet info/entry form.)",
@@ -180,6 +182,8 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  past_meets: "Competencias pasadas",
+  no_upcoming: "No hay competencias próximas. Añade una en ⚙ Ajustes — los registros de tus nadadores están guardados.",
   imp_what: "Qué importar: los Resultados (tiempos reales), el Meet Program / hoja de series (eventos y alineaciones) o la Psych Sheet — no el formulario de información o inscripción.",
   err_announcement: "Parece el paquete de información/inscripción, no una hoja de series. Busca los Resultados, el Meet Program o la Psych Sheet.",
   err_no_events: "No se encontraron eventos — ¿es una hoja de series, psych sheet o PDF de resultados de Hy-Tek? (No el formulario de información/inscripción.)",
@@ -339,6 +343,8 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  past_meets: "过往比赛",
+  no_upcoming: "没有即将到来的比赛。在 ⚙ 设置中添加——你运动员的记录已保存。",
   imp_what: "导入什么：比赛的成绩单(Results，实际成绩)、分组单(Meet Program，项目与名单)或种子表(Psych Sheet)——不是比赛信息或报名表。",
   err_announcement: "这看起来是比赛信息/报名文件，不是分组单。请改用成绩单(Results)、分组单(Meet Program)或种子表(Psych Sheet)。",
   err_no_events: "未找到项目——这是 Hy-Tek 分组单、种子表或成绩单 PDF 吗？（不是比赛信息/报名表。）",
@@ -498,6 +504,8 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  past_meets: "Competições passadas",
+  no_upcoming: "Nenhuma competição em breve. Adicione uma em ⚙ Configurações — os registros dos seus nadadores estão salvos.",
   imp_what: "O que importar: os Resultados (tempos reais), o Meet Program / planilha de séries (provas e composições) ou a Psych Sheet — não o formulário de informações ou inscrição.",
   err_announcement: "Parece o pacote de informações/inscrição, não uma planilha de séries. Procure os Resultados, o Meet Program ou a Psych Sheet.",
   err_no_events: "Nenhuma prova encontrada — isto é uma planilha de séries, psych sheet ou PDF de resultados Hy-Tek? (Não o formulário de informações/inscrição.)",
@@ -657,6 +665,8 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  past_meets: "Vergangene Wettkämpfe",
+  no_upcoming: "Kein anstehender Wettkampf. Füge einen in ⚙ Einstellungen hinzu — die Rekorde deiner Schwimmer sind gespeichert.",
   imp_what: "Was importieren: die Ergebnisse (echte Zeiten), das Meet Program / Meldeergebnis (Wettkämpfe & Aufstellungen) oder die Psych Sheet — nicht die Ausschreibung oder das Meldeformular.",
   err_announcement: "Sieht nach Ausschreibung/Meldeformular aus, nicht nach einem Meldeergebnis. Nimm stattdessen die Ergebnisse, das Meet Program oder die Psych Sheet.",
   err_no_events: "Keine Wettkämpfe gefunden — ist das ein Hy-Tek-Meldeergebnis, eine Psych Sheet oder ein Ergebnis-PDF? (Nicht die Ausschreibung/das Meldeformular.)",
@@ -816,6 +826,8 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  past_meets: "Giải đã qua",
+  no_upcoming: "Chưa có giải sắp tới. Thêm một giải trong ⚙ Cài đặt — hồ sơ VĐV của bạn đã được lưu.",
   imp_what: "Nhập gì: Kết quả (Results, thời gian thực), Meet Program / bảng đợt bơi (nội dung & danh sách) hoặc Psych Sheet — không phải mẫu thông tin hay đăng ký.",
   err_announcement: "Trông giống tập tin thông tin/đăng ký, không phải bảng đợt bơi. Hãy lấy Kết quả (Results), Meet Program hoặc Psych Sheet.",
   err_no_events: "Không tìm thấy nội dung — đây có phải bảng đợt bơi, psych sheet hay PDF kết quả Hy-Tek không? (Không phải mẫu thông tin/đăng ký.)",
@@ -975,6 +987,8 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  past_meets: "Compétitions passées",
+  no_upcoming: "Aucune compétition à venir. Ajoutez-en une dans ⚙ Réglages — les records de vos nageurs sont sauvegardés.",
   imp_what: "Quoi importer : les Résultats (temps réels), le Meet Program / feuille de séries (épreuves & compositions) ou la Psych Sheet — pas le formulaire d'info ou d'inscription.",
   err_announcement: "On dirait le dossier d'info/d'inscription, pas une feuille de séries. Prenez plutôt les Résultats, le Meet Program ou la Psych Sheet.",
   err_no_events: "Aucune épreuve trouvée — est-ce une feuille de séries, une psych sheet ou un PDF de résultats Hy-Tek ? (Pas le formulaire d'info/d'inscription.)",
@@ -1167,6 +1181,8 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  past_meets: "Прошедшие соревнования",
+  no_upcoming: "Нет предстоящих соревнований. Добавьте одно в ⚙ Настройках — рекорды ваших пловцов сохранены.",
   imp_what: "Что импортировать: Результаты (реальное время), Meet Program / стартовый протокол (заплывы и составы) или Psych Sheet — не положение и не форму заявки.",
   err_announcement: "Похоже на положение/форму заявки, а не стартовый протокол. Возьмите Результаты, Meet Program или Psych Sheet.",
   err_no_events: "Заплывы не найдены — это стартовый протокол Hy-Tek, psych sheet или PDF результатов? (Не положение/форма заявки.)",
