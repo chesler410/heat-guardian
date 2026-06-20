@@ -163,9 +163,12 @@ export type ParsedPdf =
 
 // A meet announcement/entry packet (vs a seeded heat sheet) is mostly prose: sanction
 // language, rules, entry fees, warm-up times. Two+ of these markers with no parsed entries
-// means the user grabbed the info doc, not the heat sheet.
+// means the user grabbed the info doc, not the heat sheet. BUT some hosts staple the heat
+// sheet onto the back of the info packet — if the doc has many Hy-Tek "Heat N of M" headers
+// it's a real (if unparsed) heat sheet, not an announcement, so don't mislabel it.
 function looksLikeAnnouncement(pages: Word[][]): boolean {
   const text = pages.map((w) => w.map((x) => x.s).join(" ")).join(" ");
+  if ((text.match(/Heat\s+\d+\s+of\s+\d+/gi) || []).length >= 3) return false; // has a heat sheet
   const markers = [/sanction/i, /USA Swimming/i, /entry fee/i, /warm-?up/i, /technical rules/i, /order of events/i, /time standards?/i, /entries? (close|due|deadline)/i];
   return markers.filter((re) => re.test(text)).length >= 2;
 }
