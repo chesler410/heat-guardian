@@ -1,13 +1,18 @@
 :root {
   --navy: #06243f;
   --blue: #0b3d91;
-  --accent: #19b3e6;
+  --accent: #15b8d6;
+  --accent2: #16cf9c;
   --gold: #f4b400;
-  --ink: #0f2233;
-  --muted: #6b7c8c;
+  --ink: #112a3c;
+  --muted: #66798a;
   --card: #ffffff;
-  --bg: #eef4fb;
-  --close: #1f9d57;
+  --bg: #eaf1f8;
+  --close: #16a85f;
+  --line: #e6eef6;
+  --radius: 16px;
+  --shadow: 0 2px 10px rgba(8, 36, 63, 0.07), 0 1px 2px rgba(8, 36, 63, 0.05);
+  --shadow-lg: 0 10px 30px rgba(8, 36, 63, 0.16);
 }
 
 * { box-sizing: border-box; }
@@ -15,9 +20,16 @@
 html, body {
   margin: 0;
   overflow-x: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
+  font-family: "Inter var", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  background:
+    radial-gradient(1100px 480px at 50% -8%, rgba(21, 184, 214, 0.10), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: 0.1px;
 }
 
 .app {
@@ -60,10 +72,11 @@ header .meet { margin-top: 8px; font-size: 0.8rem; opacity: 0.7; text-transform:
 
 .card {
   background: var(--card);
-  border-radius: 14px;
-  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 15px;
   margin-bottom: 12px;
-  box-shadow: 0 1px 4px rgba(6, 36, 63, 0.08);
+  box-shadow: var(--shadow);
 }
 .card h2 { margin: 0 0 10px; font-size: 1rem; }
 
@@ -91,10 +104,21 @@ header .meet { margin-top: 8px; font-size: 0.8rem; opacity: 0.7; text-transform:
   border-radius: 9px;
 }
 
-.highlight { background: linear-gradient(160deg, #e7f8ff, #ffffff); border: 1px solid #cdeefb; }
-.hl-row { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px dashed #d6e6f0; }
+/* "Closest to a new cut" — promoted to a hero card with an aqua gradient + accent rail */
+.highlight {
+  position: relative; overflow: hidden;
+  background: linear-gradient(150deg, #eafaff 0%, #ffffff 70%);
+  border: 1px solid #cdeefb; box-shadow: var(--shadow-lg);
+}
+.highlight::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: linear-gradient(180deg, var(--accent), var(--accent2)); }
+.highlight h2 { letter-spacing: 0.2px; }
+.theme-dark .highlight { background: linear-gradient(150deg, #122833 0%, var(--card) 70%); border-color: #1d3a47; }
+.hl-row { display: flex; justify-content: space-between; padding: 7px 0; border-top: 1px dashed #d6e6f0; }
+.theme-dark .hl-row { border-top-color: #233643; }
 .hl-row:first-of-type { border-top: none; }
-.hl-need { font-weight: 700; color: var(--blue); }
+.hl-need { font-weight: 800; color: var(--blue); background: rgba(21,184,214,0.12); padding: 1px 9px; border-radius: 999px; white-space: nowrap; }
+.theme-dark .hl-need { background: rgba(91,155,255,0.16); }
 
 .fuel ul { margin: 0; padding-left: 18px; }
 .fuel li { margin: 5px 0; font-size: 0.9rem; }
@@ -392,9 +416,11 @@ footer { margin-top: 20px; text-align: center; }
 /* ---- dark theme (forced via html.theme-dark, set by theme.ts) ---- */
 .theme-dark {
   --bg: #0d141c; --card: #161f2a; --ink: #e7eef5; --muted: #93a3b3;
-  --blue: #5b9bff; --close: #34d07f;
+  --blue: #5b9bff; --close: #34d07f; --line: #243240;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.45); --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
-.theme-dark .card { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); }
+.theme-dark body { background: radial-gradient(1100px 480px at 50% -8%, rgba(21, 184, 214, 0.10), transparent 60%), var(--bg); }
+.theme-dark .card { box-shadow: var(--shadow); }
 .theme-dark .disclaimer { background: #2a2418; border-color: #5a4a22; color: #f0d68a; }
 .theme-dark .seg { background: #26313f; }
 .theme-dark .seg button.on { background: #0d141c; color: #cfe0ff; }
@@ -716,3 +742,26 @@ table.arm th, table.arm td { padding-right: 14px; }
 .add-btns .chip.sm:disabled { opacity: 0.5; cursor: default; }
 .teams .team-card { border: 1px solid var(--line, #e6edf4); border-radius: 12px; padding: 6px 12px; margin-top: 8px; }
 .theme-dark .teams .team-card { border-color: #243340; }
+
+/* ---- 2026 polish: micro-interactions + tactile feedback (refined & calm) ---- */
+button, .chip, .result, .settings-row, .team-row, .session-head.toggle, .prep-toggle, a.chip {
+  transition: transform .12s cubic-bezier(.2,.8,.3,1), box-shadow .15s ease, background-color .15s ease, opacity .15s ease;
+}
+button:active, .chip:active, .result:active, .settings-row:active, a.chip:active { transform: scale(.97); }
+.primary { box-shadow: 0 4px 14px rgba(11,61,145,.28); }
+.primary:hover { box-shadow: 0 6px 18px rgba(11,61,145,.34); }
+.primary:active { transform: translateY(1px) scale(.99); }
+.card { transition: box-shadow .18s ease, border-color .18s ease; }
+/* event cards lift slightly on hover (desktop) */
+@media (hover: hover) {
+  .event:hover { box-shadow: var(--shadow-lg); }
+  .settings-row:hover, .result:hover, .disc-card:hover { background: rgba(21,184,214,.05); }
+  .theme-dark .settings-row:hover, .theme-dark .result:hover, .theme-dark .disc-card:hover { background: rgba(91,155,255,.07); }
+}
+.event { transition: box-shadow .18s ease, transform .12s ease; }
+/* nav tabs: pill-style active state */
+.tabs button { transition: background-color .15s ease, color .15s ease; border-radius: 9px; }
+/* respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, button, .chip, .card, .event, .taunt-pop, .app-toast { transition: none !important; animation: none !important; }
+}
