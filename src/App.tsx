@@ -1084,6 +1084,7 @@ export function App() {
           addSwimmer={addSwimmer}
           removeSwimmer={removeSwimmer}
           goImport={() => setNav("import")}
+          swimmer={role === "swimmer"}
         />
       )}
       {gated && nav === "settings" && (
@@ -1824,6 +1825,7 @@ function SwimmersView(props: {
   addSwimmer: (name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean) => void;
   removeSwimmer: (id: string) => void;
   goImport: () => void;
+  swimmer?: boolean; // "My Meet" mode — reframes "My swimmers/Watching" as "Me/Friends"
 }) {
   const [find, setFind] = useState<"search" | "teams">("search");
   const [q, setQ] = useState("");
@@ -1863,10 +1865,10 @@ function SwimmersView(props: {
         </span>
         <span className="add-btns">
           <button className="chip sm" disabled={st === "mine"} onClick={() => props.addSwimmer(r.name, r.team, ageNum(r.age), r.gender, false)}>
-            {st === "mine" ? "✓ " : "+ "}{t("sw_mine")}
+            {st === "mine" ? "✓ " : "+ "}{props.swimmer ? t("sw_me") : t("sw_mine")}
           </button>
           <button className="chip sm" disabled={st === "watch"} onClick={() => props.addSwimmer(r.name, r.team, ageNum(r.age), r.gender, true)}>
-            {st === "watch" ? "✓ " : "👁 "}{t("sw_watch")}
+            {st === "watch" ? "✓ " : props.swimmer ? "👤 " : "👁 "}{props.swimmer ? t("sw_friend") : t("sw_watch")}
           </button>
         </span>
       </div>
@@ -1876,14 +1878,14 @@ function SwimmersView(props: {
   return (
     <div>
       <div className="card">
-        <h2>{t("myswimmers")}</h2>
-        {mine.length === 0 && <p className="muted">{t("sw_none")}</p>}
+        <h2>{props.swimmer ? "🏊 " + t("me_h") : t("myswimmers")}</h2>
+        {mine.length === 0 && <p className="muted">{props.swimmer ? t("sw_none_me") : t("sw_none")}</p>}
         {mine.map(kidRow)}
       </div>
 
       {watch.length > 0 && (
         <div className="card">
-          <h2>👁 {t("watchlist")}</h2>
+          <h2>{props.swimmer ? "👥 " + t("friends_h") : "👁 " + t("watchlist")}</h2>
           {watch.map(kidRow)}
         </div>
       )}

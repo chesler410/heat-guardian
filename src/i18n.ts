@@ -18,6 +18,11 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  me_h: "Me",
+  friends_h: "Friends",
+  sw_me: "Me",
+  sw_friend: "Friend",
+  sw_none_me: "Find yourself below to see your meet.",
   role_swimmer: "Swimmer", role_swimmer_d: "Track your own meet — your events, friends, and notes.",
   imp_working: "Working… large meets can take a moment on phones.",
   disc_viewresults: "View results",
@@ -185,6 +190,11 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  me_h: "Yo",
+  friends_h: "Amigos",
+  sw_me: "Soy yo",
+  sw_friend: "Amigo",
+  sw_none_me: "Encuéntrate abajo para ver tu competencia.",
   role_swimmer: "Nadador/a", role_swimmer_d: "Sigue tu propia competencia: tus pruebas, amigos y notas.",
   imp_working: "Procesando… las competencias grandes pueden tardar un momento en el teléfono.",
   disc_viewresults: "Ver resultados",
@@ -349,6 +359,11 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  me_h: "我",
+  friends_h: "朋友",
+  sw_me: "是我",
+  sw_friend: "朋友",
+  sw_none_me: "在下方找到自己，查看你的比赛。",
   role_swimmer: "运动员", role_swimmer_d: "管理你自己的比赛——你的项目、朋友和笔记。",
   imp_working: "处理中……大型比赛在手机上可能需要一点时间。",
   disc_viewresults: "查看成绩",
@@ -513,6 +528,11 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  me_h: "Eu",
+  friends_h: "Amigos",
+  sw_me: "Sou eu",
+  sw_friend: "Amigo",
+  sw_none_me: "Encontre-se abaixo para ver sua competição.",
   role_swimmer: "Nadador(a)", role_swimmer_d: "Acompanhe sua própria competição: suas provas, amigos e notas.",
   imp_working: "Processando… competições grandes podem demorar um pouco no celular.",
   disc_viewresults: "Ver resultados",
@@ -677,6 +697,11 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  me_h: "Ich",
+  friends_h: "Freunde",
+  sw_me: "Das bin ich",
+  sw_friend: "Freund",
+  sw_none_me: "Finde dich unten, um deinen Wettkampf zu sehen.",
   role_swimmer: "Schwimmer/in", role_swimmer_d: "Verfolge deinen eigenen Wettkampf – deine Starts, Freunde und Notizen.",
   imp_working: "Verarbeite… große Wettkämpfe können auf dem Handy etwas dauern.",
   disc_viewresults: "Ergebnisse ansehen",
@@ -841,6 +866,11 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  me_h: "Tôi",
+  friends_h: "Bạn bè",
+  sw_me: "Là tôi",
+  sw_friend: "Bạn",
+  sw_none_me: "Tìm chính bạn bên dưới để xem giải của bạn.",
   role_swimmer: "Vận động viên", role_swimmer_d: "Theo dõi giải của chính bạn — nội dung, bạn bè và ghi chú.",
   imp_working: "Đang xử lý… giải lớn có thể mất một lúc trên điện thoại.",
   disc_viewresults: "Xem kết quả",
@@ -1005,6 +1035,11 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  me_h: "Moi",
+  friends_h: "Amis",
+  sw_me: "C'est moi",
+  sw_friend: "Ami",
+  sw_none_me: "Trouve-toi ci-dessous pour voir ta compétition.",
   role_swimmer: "Nageur/se", role_swimmer_d: "Suivez votre propre compétition : vos épreuves, amis et notes.",
   imp_working: "Traitement… les grandes compétitions peuvent prendre un moment sur téléphone.",
   disc_viewresults: "Voir les résultats",
@@ -1202,6 +1237,11 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  me_h: "Я",
+  friends_h: "Друзья",
+  sw_me: "Это я",
+  sw_friend: "Друг",
+  sw_none_me: "Найди себя ниже, чтобы увидеть своё соревнование.",
   role_swimmer: "Пловец", role_swimmer_d: "Следи за своим соревнованием — твои заплывы, друзья и заметки.",
   imp_working: "Обработка… большие соревнования могут занять время на телефоне.",
   disc_viewresults: "Смотреть результаты",
