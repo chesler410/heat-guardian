@@ -18,6 +18,7 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  imp_working: "Working… large meets can take a moment on phones.",
   disc_viewresults: "View results",
   past_meets: "Past meets",
   no_upcoming: "No upcoming meet. Add one in ⚙ Settings — your swimmers' records are saved.",
@@ -183,6 +184,7 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  imp_working: "Procesando… las competencias grandes pueden tardar un momento en el teléfono.",
   disc_viewresults: "Ver resultados",
   past_meets: "Competencias pasadas",
   no_upcoming: "No hay competencias próximas. Añade una en ⚙ Ajustes — los registros de tus nadadores están guardados.",
@@ -345,6 +347,7 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  imp_working: "处理中……大型比赛在手机上可能需要一点时间。",
   disc_viewresults: "查看成绩",
   past_meets: "过往比赛",
   no_upcoming: "没有即将到来的比赛。在 ⚙ 设置中添加——你运动员的记录已保存。",
@@ -507,6 +510,7 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  imp_working: "Processando… competições grandes podem demorar um pouco no celular.",
   disc_viewresults: "Ver resultados",
   past_meets: "Competições passadas",
   no_upcoming: "Nenhuma competição em breve. Adicione uma em ⚙ Configurações — os registros dos seus nadadores estão salvos.",
@@ -669,6 +673,7 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  imp_working: "Verarbeite… große Wettkämpfe können auf dem Handy etwas dauern.",
   disc_viewresults: "Ergebnisse ansehen",
   past_meets: "Vergangene Wettkämpfe",
   no_upcoming: "Kein anstehender Wettkampf. Füge einen in ⚙ Einstellungen hinzu — die Rekorde deiner Schwimmer sind gespeichert.",
@@ -831,6 +836,7 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  imp_working: "Đang xử lý… giải lớn có thể mất một lúc trên điện thoại.",
   disc_viewresults: "Xem kết quả",
   past_meets: "Giải đã qua",
   no_upcoming: "Chưa có giải sắp tới. Thêm một giải trong ⚙ Cài đặt — hồ sơ VĐV của bạn đã được lưu.",
@@ -993,6 +999,7 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  imp_working: "Traitement… les grandes compétitions peuvent prendre un moment sur téléphone.",
   disc_viewresults: "Voir les résultats",
   past_meets: "Compétitions passées",
   no_upcoming: "Aucune compétition à venir. Ajoutez-en une dans ⚙ Réglages — les records de vos nageurs sont sauvegardés.",
@@ -1188,6 +1195,7 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  imp_working: "Обработка… большие соревнования могут занять время на телефоне.",
   disc_viewresults: "Смотреть результаты",
   past_meets: "Прошедшие соревнования",
   no_upcoming: "Нет предстоящих соревнований. Добавьте одно в ⚙ Настройках — рекорды ваших пловцов сохранены.",

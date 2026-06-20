@@ -949,6 +949,7 @@ export function App() {
       <UpdateBanner />
       {taunt && <div className="taunt-pop" onClick={() => setTaunt("")}>{taunt}</div>}
       {msg && <div className="app-toast" onClick={() => setMsg("")}>{msg}</div>}
+      {busy && !msg && <div className="app-toast busy-toast">⏳ {t("imp_working")}</div>}
       <header className="apphead">
         <div className="brandrow">
           <div className="brand" onClick={bumpLogo} title="Heat Guardian">
