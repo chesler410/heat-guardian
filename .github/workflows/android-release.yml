@@ -44,6 +44,14 @@ jobs:
           npx cap sync android
           npx capacitor-assets generate --assetPath assets --android || true
 
+      - name: Force compile/target SDK 35 (Google Play requirement)
+        # android/ is generated above, so pin the SDK levels here regardless of the
+        # Capacitor template default. Play requires targetSdkVersion >= 35.
+        run: |
+          V=android/variables.gradle
+          sed -i -E 's/(compileSdkVersion *= *)[0-9]+/\135/; s/(targetSdkVersion *= *)[0-9]+/\135/' "$V"
+          echo "--- variables.gradle SDK levels ---"; grep -E "SdkVersion" "$V"
+
       - name: Decode keystore
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
