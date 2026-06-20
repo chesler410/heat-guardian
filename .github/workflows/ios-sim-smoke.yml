@@ -1,0 +1,64 @@
+name: iOS simulator smoke
+
+# The native-shell counterpart to the web monkey/E2E: confirms the Capacitor iOS app still
+# BUILDS for the simulator (catches native/Capacitor config breakage — e.g. a Capacitor major
+# bump) and LAUNCHES without crashing/white-screening. The web build it wraps is already
+# exercised by the cheap ubuntu CI; this is the macOS-only native check. Runs on a schedule +
+# on demand (macOS minutes are costly, so not every push).
+
+on:
+  schedule:
+    - cron: "0 8 * * 1" # Mondays 08:00 UTC
+  workflow_dispatch:
+
+jobs:
+  sim-smoke:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm" }
+
+      - name: Build web + add iOS
+        run: |
+          npm ci
+          npm run build
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Build app for the simulator (no signing)
+        working-directory: ios/App
+        run: |
+          set -o pipefail
+          xcodebuild -workspace App.xcworkspace -scheme App \
+            -sdk iphonesimulator -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
+
+      - name: Boot a simulator, install + launch, screenshot
+        id: launch
+        run: |
+          APP="$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/App.app"
+          DEV=$(xcrun simctl list devices available | grep -m1 -oE "iPhone 1[5-9]" || echo "iPhone 16")
+          echo "Using simulator: $DEV"
+          xcrun simctl boot "$DEV" || true
+          xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          xcrun simctl launch "$DEV" com.chesler410.nextheat
+          sleep 10
+          xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/ios-launch.png"
+          # Fail if the app process died (crash / white-screen-then-exit).
+          if xcrun simctl spawn "$DEV" launchctl list 2>/dev/null | grep -q com.chesler410.nextheat; then
+            echo "App is still running after launch ✓"
+          else
+            echo "::error::Heat Guardian is not running 10s after launch — possible crash."; exit 1
+          fi
+
+      - name: Upload launch screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-launch-screenshot
+          path: ${{ runner.temp }}/ios-launch.png
+          if-no-files-found: warn
