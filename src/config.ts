@@ -1,3 +1,10 @@
+import { Capacitor } from "@capacitor/core";
+
+// True only inside the native iOS/Android shell (false on the web PWA). Used to hide the
+// Ko-fi tip jar in store builds — Apple/Google restrict external donation links, so the
+// tip jar lives on the web version only; native monetization (if any) must use store billing.
+export const IS_NATIVE = Capacitor.isNativePlatform();
+
 // One shared fetch helper for the whole app, set once by the site owner (not per user).
 // Set VITE_PROXY_URL at build time (see .github/workflows/deploy.yml) to the deployed
 // Cloudflare Worker, using {url} where the link goes:

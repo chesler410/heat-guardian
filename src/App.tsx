@@ -26,7 +26,7 @@ import {
   ImportOutcome,
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, eventMeta, segInfo } from "./cuts.ts";
-import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL } from "./config.ts";
+import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE } from "./config.ts";
 import { getTheme, setTheme, Theme } from "./theme.ts";
 import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
 import day from "./day.json";
@@ -2022,11 +2022,15 @@ function About({ logo, setLogo, setBrand, role, onChangeRole }: { logo: string; 
         {t("fb_send")}
       </a>
 
-      <h3>{t("kofi_h")}</h3>
-      <p className="muted">{t("kofi_b")}</p>
-      <a className="secondary kofi-btn" href={KOFI_URL} target="_blank" rel="noopener noreferrer">
-        ☕ {t("kofi_btn")}
-      </a>
+      {!IS_NATIVE && (
+        <>
+          <h3>{t("kofi_h")}</h3>
+          <p className="muted">{t("kofi_b")}</p>
+          <a className="secondary kofi-btn" href={KOFI_URL} target="_blank" rel="noopener noreferrer">
+            ☕ {t("kofi_btn")}
+          </a>
+        </>
+      )}
 
       <h3>{t("logo_h")}</h3>
       {logo && <img className="team-logo lg" src={logo} alt="team logo" />}
