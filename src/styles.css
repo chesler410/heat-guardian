@@ -382,6 +382,10 @@ footer { margin-top: 20px; text-align: center; }
 /* ---- session (date) sections ---- */
 .session-block { margin-bottom: 8px; }
 .session-head { font-weight: 700; color: var(--blue); font-size: 0.9rem; margin: 12px 4px 8px; }
+.session-head.toggle { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; background: none; border: none; cursor: pointer; font: inherit; font-weight: 700; color: var(--blue); font-size: 0.9rem; margin: 8px 0 6px; padding: 7px 8px; border-radius: 9px; }
+.session-head.toggle:hover { background: rgba(11, 61, 145, 0.06); }
+.theme-dark .session-head.toggle:hover { background: rgba(124, 178, 255, 0.10); }
+.sess-meta { color: var(--muted); font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
 
 /* ---- dark mode ---- */
 /* ---- dark theme (forced via html.theme-dark, set by theme.ts) ---- */
@@ -639,9 +643,8 @@ table.arm th, table.arm td { padding-right: 14px; }
 @media (min-width: 820px) {
   .app { max-width: 960px; padding-left: 20px; padding-right: 20px; }
   .apphead { margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; }
-  .session-block.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; align-items: start; }
-  .session-block.grid .session-head { grid-column: 1 / -1; }
-  .session-block.grid .event { margin-bottom: 0; }
+  .session-items.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; align-items: start; }
+  .session-items.grid .event { margin-bottom: 0; }
   /* keep the info cards readable, not super-wide */
   .disclaimer, .highlight, .fuel, .prep, .empty, .about { max-width: 680px; }
 }

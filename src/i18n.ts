@@ -18,6 +18,10 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  imp_what: "What to import: the meet's Results (actual times), Meet Program / heat sheet (events & lineups), or Psych Sheet — not the meet info or entry form.",
+  err_announcement: "Looks like the meet info/entry packet, not a heat sheet. Grab the meet's Results, Meet Program, or Psych Sheet instead.",
+  err_no_events: "No events found — is this a Hy-Tek heat sheet, psych sheet, or results PDF? (Not the meet info/entry form.)",
+  err_no_results: "No results found in this PDF.",
   imp_findfile: "Saved a heat sheet from a team email or text? Tap Upload — it's in Files or Downloads (look under 'Recents').",
   set_addmeet: "Add a meet", set_addmeet_b: "Import a heat sheet or results — PDF, link, or a teammate's file.",
   set_about: "About & help", set_about_b: "How it works, privacy, feedback, team logo.",
@@ -176,6 +180,10 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  imp_what: "Qué importar: los Resultados (tiempos reales), el Meet Program / hoja de series (eventos y alineaciones) o la Psych Sheet — no el formulario de información o inscripción.",
+  err_announcement: "Parece el paquete de información/inscripción, no una hoja de series. Busca los Resultados, el Meet Program o la Psych Sheet.",
+  err_no_events: "No se encontraron eventos — ¿es una hoja de series, psych sheet o PDF de resultados de Hy-Tek? (No el formulario de información/inscripción.)",
+  err_no_results: "No se encontraron resultados en este PDF.",
   imp_findfile: "¿Guardaste una hoja de series de un correo o mensaje del equipo? Toca Subir: está en Archivos o Descargas (busca en 'Recientes').",
   set_addmeet: "Añadir competición", set_addmeet_b: "Importa una hoja de series o resultados: PDF, enlace o el archivo de un compañero.",
   set_about: "Acerca de y ayuda", set_about_b: "Cómo funciona, privacidad, comentarios, logo del equipo.",
@@ -331,6 +339,10 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  imp_what: "导入什么：比赛的成绩单(Results，实际成绩)、分组单(Meet Program，项目与名单)或种子表(Psych Sheet)——不是比赛信息或报名表。",
+  err_announcement: "这看起来是比赛信息/报名文件，不是分组单。请改用成绩单(Results)、分组单(Meet Program)或种子表(Psych Sheet)。",
+  err_no_events: "未找到项目——这是 Hy-Tek 分组单、种子表或成绩单 PDF 吗？（不是比赛信息/报名表。）",
+  err_no_results: "此 PDF 中未找到成绩。",
   imp_findfile: "从团队邮件或短信里存了分组单？点击上传——在“文件”或“下载”里（看看“最近”）。",
   set_addmeet: "添加比赛", set_addmeet_b: "导入分组单或成绩——PDF、链接或队友的文件。",
   set_about: "关于与帮助", set_about_b: "使用方法、隐私、反馈、队徽。",
@@ -486,6 +498,10 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  imp_what: "O que importar: os Resultados (tempos reais), o Meet Program / planilha de séries (provas e composições) ou a Psych Sheet — não o formulário de informações ou inscrição.",
+  err_announcement: "Parece o pacote de informações/inscrição, não uma planilha de séries. Procure os Resultados, o Meet Program ou a Psych Sheet.",
+  err_no_events: "Nenhuma prova encontrada — isto é uma planilha de séries, psych sheet ou PDF de resultados Hy-Tek? (Não o formulário de informações/inscrição.)",
+  err_no_results: "Nenhum resultado encontrado neste PDF.",
   imp_findfile: "Salvou uma planilha de séries de um e-mail ou mensagem do time? Toque em Enviar — está em Arquivos ou Downloads (veja em 'Recentes').",
   set_addmeet: "Adicionar competição", set_addmeet_b: "Importe uma planilha de séries ou resultados — PDF, link ou o arquivo de um colega.",
   set_about: "Sobre e ajuda", set_about_b: "Como funciona, privacidade, feedback, logo do time.",
@@ -641,6 +657,10 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  imp_what: "Was importieren: die Ergebnisse (echte Zeiten), das Meet Program / Meldeergebnis (Wettkämpfe & Aufstellungen) oder die Psych Sheet — nicht die Ausschreibung oder das Meldeformular.",
+  err_announcement: "Sieht nach Ausschreibung/Meldeformular aus, nicht nach einem Meldeergebnis. Nimm stattdessen die Ergebnisse, das Meet Program oder die Psych Sheet.",
+  err_no_events: "Keine Wettkämpfe gefunden — ist das ein Hy-Tek-Meldeergebnis, eine Psych Sheet oder ein Ergebnis-PDF? (Nicht die Ausschreibung/das Meldeformular.)",
+  err_no_results: "Keine Ergebnisse in diesem PDF gefunden.",
   imp_findfile: "Eine Meldeliste aus einer Team-E-Mail oder SMS gespeichert? Tippe auf Hochladen – sie liegt in Dateien oder Downloads (schau unter 'Zuletzt').",
   set_addmeet: "Wettkampf hinzufügen", set_addmeet_b: "Meldeergebnis oder Resultate importieren – PDF, Link oder Datei eines Teamkollegen.",
   set_about: "Über & Hilfe", set_about_b: "Funktionsweise, Datenschutz, Feedback, Team-Logo.",
@@ -796,6 +816,10 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  imp_what: "Nhập gì: Kết quả (Results, thời gian thực), Meet Program / bảng đợt bơi (nội dung & danh sách) hoặc Psych Sheet — không phải mẫu thông tin hay đăng ký.",
+  err_announcement: "Trông giống tập tin thông tin/đăng ký, không phải bảng đợt bơi. Hãy lấy Kết quả (Results), Meet Program hoặc Psych Sheet.",
+  err_no_events: "Không tìm thấy nội dung — đây có phải bảng đợt bơi, psych sheet hay PDF kết quả Hy-Tek không? (Không phải mẫu thông tin/đăng ký.)",
+  err_no_results: "Không tìm thấy kết quả trong PDF này.",
   imp_findfile: "Đã lưu bảng đợt bơi từ email hoặc tin nhắn của đội? Chạm Tải lên — nó nằm trong Tệp hoặc Tải xuống (xem mục 'Gần đây').",
   set_addmeet: "Thêm giải đấu", set_addmeet_b: "Nhập bảng đợt bơi hoặc kết quả — PDF, liên kết, hoặc tệp của đồng đội.",
   set_about: "Giới thiệu & trợ giúp", set_about_b: "Cách dùng, quyền riêng tư, phản hồi, logo đội.",
@@ -951,6 +975,10 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  imp_what: "Quoi importer : les Résultats (temps réels), le Meet Program / feuille de séries (épreuves & compositions) ou la Psych Sheet — pas le formulaire d'info ou d'inscription.",
+  err_announcement: "On dirait le dossier d'info/d'inscription, pas une feuille de séries. Prenez plutôt les Résultats, le Meet Program ou la Psych Sheet.",
+  err_no_events: "Aucune épreuve trouvée — est-ce une feuille de séries, une psych sheet ou un PDF de résultats Hy-Tek ? (Pas le formulaire d'info/d'inscription.)",
+  err_no_results: "Aucun résultat trouvé dans ce PDF.",
   imp_findfile: "Une feuille de séries enregistrée depuis un e-mail ou SMS de l'équipe ? Touchez Importer — elle est dans Fichiers ou Téléchargements (voyez 'Récents').",
   set_addmeet: "Ajouter une compétition", set_addmeet_b: "Importez une feuille de séries ou des résultats — PDF, lien ou le fichier d'un coéquipier.",
   set_about: "À propos et aide", set_about_b: "Fonctionnement, confidentialité, retours, logo de l'équipe.",
@@ -1139,6 +1167,10 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  imp_what: "Что импортировать: Результаты (реальное время), Meet Program / стартовый протокол (заплывы и составы) или Psych Sheet — не положение и не форму заявки.",
+  err_announcement: "Похоже на положение/форму заявки, а не стартовый протокол. Возьмите Результаты, Meet Program или Psych Sheet.",
+  err_no_events: "Заплывы не найдены — это стартовый протокол Hy-Tek, psych sheet или PDF результатов? (Не положение/форма заявки.)",
+  err_no_results: "В этом PDF результаты не найдены.",
   imp_findfile: "Сохранили стартовый протокол из письма или сообщения команды? Нажмите «Загрузить» — он в Файлах или Загрузках (загляните в «Недавние»).",
   set_addmeet: "Добавить соревнование", set_addmeet_b: "Импортируйте стартовый протокол или результаты — PDF, ссылку или файл товарища по команде.",
   set_about: "О приложении и помощь", set_about_b: "Как работает, конфиденциальность, отзывы, логотип команды.",

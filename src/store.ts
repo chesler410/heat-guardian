@@ -188,16 +188,18 @@ export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "
     if (pack) return { kind: "meet", ...pack };
     if (looksLikeSdif(text)) {
       const s = parseSdif(text);
-      if (!s.entries.length) throw new Error("No events found in this SD3 file.");
+      if (!s.entries.length) throw new Error("err_no_events");
       return { kind: "meet", meet: toMeet(s.title, s.entries, fallback, source, sourceUrl) };
     }
   }
   const r = await parsePdf(buf);
   if (r.kind === "results") {
-    if (!r.finishers.length) throw new Error("No results found in this PDF.");
+    if (!r.finishers.length) throw new Error("err_no_results");
     return { kind: "results", title: r.title, finishers: r.finishers };
   }
-  if (!r.entries.length) throw new Error("No events found — is this a Hy-Tek heat sheet or results PDF?");
+  // Thrown messages are i18n KEYS — App translates them (t() passes plain strings through).
+  // "announcement" hint = the user grabbed the meet info/entry packet, not a heat sheet.
+  if (!r.entries.length) throw new Error(r.hint === "announcement" ? "err_announcement" : "err_no_events");
   return { kind: "meet", meet: toMeet(r.title, r.entries, fallback, source, sourceUrl, r.start) };
 }
 

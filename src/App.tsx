@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Swimmer,
   Meet,
@@ -826,7 +826,8 @@ export function App() {
       try {
         outcomes.push(await importFile(f));
       } catch (e: any) {
-        err = e?.message || `Couldn't read ${f.name}.`;
+        // store throws i18n keys (err_*) for known cases; t() passes plain messages through.
+        err = e?.message ? t(e.message) : `Couldn't read ${f.name}.`;
       }
     }
     finishImport(outcomes, err);
@@ -839,7 +840,7 @@ export function App() {
     try {
       finishImport([await importUrl(url, loadProxy() || DEFAULT_PROXY)], "");
     } catch (e: any) {
-      finishImport([], e?.message || "Couldn't fetch that link.");
+      finishImport([], e?.message ? t(e.message) : "Couldn't fetch that link.");
     }
   }
 
@@ -1127,6 +1128,24 @@ function bySession(items: DE[]): { label: string; items: DE[] }[] {
   return order.map((s) => ({ label: s, items: map.get(s)! }));
 }
 
+// One day/session block on Home — collapsible. defaultOpen is set by the smart focus logic
+// (today's session if the meet is running, else the first upcoming day) so meet day shows
+// only the relevant events and past/future days stay tucked away. Tap the header to toggle.
+function SessionBlock(props: { head: string | null; count: number; grid: boolean; defaultOpen: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(props.defaultOpen);
+  const body = <div className={props.grid ? "session-items grid" : "session-items"}>{props.children}</div>;
+  if (!props.head) return <div className="session-block">{body}</div>; // "Events" — no day header
+  return (
+    <div className="session-block">
+      <button className="session-head toggle" onClick={() => setOpen((o) => !o)}>
+        <span>📅 {props.head}</span>
+        <span className="sess-meta">🏊 {props.count} {open ? "▾" : "▸"}</span>
+      </button>
+      {open && body}
+    </div>
+  );
+}
+
 function Home(props: any) {
   const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam, progress } = props;
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
@@ -1273,6 +1292,28 @@ function Home(props: any) {
               const datePart = dmap[wd] ? ", " + dmap[wd] : "";
               return `${dayPart}${wd}${datePart}${part ? " — " + part : ""}`;
             };
+            // Smart default-open: each session's real date = meet.start + its day index. Open
+            // today's session (meet running), else the first upcoming day, else the first.
+            const startDate = meet.start ? new Date(meet.start + "T00:00:00") : null;
+            const secDateMs = (label: string): number | null => {
+              const idx = dayOrder.indexOf(label.split(" ")[0]);
+              if (!startDate || idx < 0) return null;
+              const d = new Date(startDate);
+              d.setDate(d.getDate() + idx);
+              d.setHours(0, 0, 0, 0);
+              return d.getTime();
+            };
+            const todayMs = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+            let focusLabel = secs[0]?.label;
+            const todaySec = secs.find((s) => secDateMs(s.label) === todayMs);
+            if (todaySec) focusLabel = todaySec.label;
+            else {
+              const upcoming = secs
+                .filter((s) => { const m = secDateMs(s.label); return m != null && m >= todayMs; })
+                .sort((a, b) => (secDateMs(a.label)! - secDateMs(b.label)!));
+              if (upcoming.length) focusLabel = upcoming[0].label;
+            }
+            const oneSession = secs.length <= 1;
             return (
             <div className="meet-block" key={meet.id}>
               <div className="meet-head">
@@ -1308,8 +1349,13 @@ function Home(props: any) {
                 <p className="muted meet-empty">{t("em_none_meet")}</p>
               ) : (
                 secs.map((sec) => (
-                  <div className={"session-block" + (view === "cards" ? " grid" : "")} key={sec.label}>
-                    {sec.label !== "Events" && <div className="session-head">📅 {sessionHead(sec.label)}</div>}
+                  <SessionBlock
+                    key={sec.label}
+                    head={sec.label !== "Events" ? sessionHead(sec.label) : null}
+                    count={sec.items.length}
+                    grid={view === "cards"}
+                    defaultOpen={oneSession || sec.label === focusLabel}
+                  >
                     {view === "cards" ? (
                       sec.items.map((d, i) => {
                         const k = resultKey(d.meetId, d.e.event, d.swimmer);
@@ -1334,7 +1380,7 @@ function Home(props: any) {
                     ) : (
                       <ArmTable items={sec.items} results={results} cols={cols} />
                     )}
-                  </div>
+                  </SessionBlock>
                 ))
               )}
             </div>
@@ -1664,8 +1710,8 @@ function ImportView(props: {
 
       <div className="card">
         <h2>{t("imp_title")}</h2>
+        <p className="imp-note">📋 {t("imp_what")}</p>
         <p className="muted">{t("imp_tip")}</p>
-        <p className="imp-note">📄 {t("imp_results")}</p>
         <input className="field" placeholder="https://…/heatsheet.pdf" value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" autoFocus />
         <button className="primary" disabled={props.busy || !url.trim()} onClick={() => props.onUrl(url)}>
           {props.busy ? t("imp_opening") : t("imp_open")}

@@ -155,8 +155,20 @@ export interface Finisher {
   finals: string;
 }
 export type ParsedPdf =
-  | { kind: "heat"; title: string; entries: RawEntry[]; start?: string }
+  // hint: "announcement" when a heat parse finds no entries but the text looks like a meet
+  // info/announcement packet (sanction, rules, entry fees) — lets the UI say "grab the
+  // Results / Meet Program / Psych Sheet instead" rather than a generic "no events".
+  | { kind: "heat"; title: string; entries: RawEntry[]; start?: string; hint?: "announcement" }
   | { kind: "results"; title: string; finishers: Finisher[] };
+
+// A meet announcement/entry packet (vs a seeded heat sheet) is mostly prose: sanction
+// language, rules, entry fees, warm-up times. Two+ of these markers with no parsed entries
+// means the user grabbed the info doc, not the heat sheet.
+function looksLikeAnnouncement(pages: Word[][]): boolean {
+  const text = pages.map((w) => w.map((x) => x.s).join(" ")).join(" ");
+  const markers = [/sanction/i, /USA Swimming/i, /entry fee/i, /warm-?up/i, /technical rules/i, /order of events/i, /time standards?/i, /entries? (close|due|deadline)/i];
+  return markers.filter((re) => re.test(text)).length >= 2;
+}
 
 // The meet's first day, from a "M/D/YYYY to M/D/YYYY" range in the running header (ISO).
 // (Anchored on "to" so we don't grab the Hy-Tek print date.)
@@ -214,7 +226,8 @@ export async function parsePdf(data: ArrayBuffer): Promise<ParsedPdf> {
   }
   const entries: RawEntry[] = [];
   parseLines(ordered, entries);
-  return { kind: "heat", title, entries, start: findMeetStart(pages) };
+  const hint = entries.length === 0 && looksLikeAnnouncement(pages) ? ("announcement" as const) : undefined;
+  return { kind: "heat", title, entries, start: findMeetStart(pages), hint };
 }
 
 // Pick, per finisher row, the time nearest the "Finals" column (vs the Seed column).
