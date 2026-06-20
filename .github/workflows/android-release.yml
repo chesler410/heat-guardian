@@ -85,3 +85,18 @@ jobs:
           name: heat-guardian-release-aab
           path: android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
+
+      # Optional auto-publish to the Internal testing track (parity with iOS TestFlight) —
+      # DORMANT until enabled. One-time setup: create a Google Cloud service account, grant it
+      # release access in Play Console, store its JSON as the ANDROID_SERVICE_ACCOUNT_JSON
+      # secret, then set the repo VARIABLE ANDROID_AUTO_PUBLISH=true. (Google requires the very
+      # first track release to be uploaded manually; this automates every release after that.)
+      - name: Publish to Internal testing (if enabled)
+        if: ${{ vars.ANDROID_AUTO_PUBLISH == 'true' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.ANDROID_SERVICE_ACCOUNT_JSON }}
+          packageName: com.chesler410.nextheat
+          releaseFiles: android/app/build/outputs/bundle/release/*.aab
+          track: internal
+          status: completed
