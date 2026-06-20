@@ -766,3 +766,14 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 @media (prefers-reduced-motion: reduce) {
   *, button, .chip, .card, .event, .taunt-pop, .app-toast { transition: none !important; animation: none !important; }
 }
+
+/* "Up next" hero — the soonest races, the meet-day-urgent thing */
+.upnext { position: relative; overflow: hidden; background: linear-gradient(150deg, #eef5ff 0%, #fff 70%); border: 1px solid #cdddfb; box-shadow: var(--shadow-lg); }
+.upnext::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, var(--blue), var(--accent)); }
+.theme-dark .upnext { background: linear-gradient(150deg, #122033 0%, var(--card) 70%); border-color: #1d3047; }
+.un-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 0; border-top: 1px dashed #d6e0f0; }
+.un-row:first-of-type { border-top: none; }
+.theme-dark .un-row { border-top-color: #233443; }
+.un-who { font-weight: 700; }
+.un-where { color: var(--blue); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; background: rgba(21,184,214,0.12); padding: 1px 9px; border-radius: 999px; }
+.theme-dark .un-where { color: #9cc2ff; background: rgba(91,155,255,0.16); }

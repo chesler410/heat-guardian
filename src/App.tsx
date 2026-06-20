@@ -1203,6 +1203,12 @@ function Home(props: any) {
     .filter((x) => x.cut?.nextCut)
     .sort((a, b) => a.cut!.nextCut!.needed - b.cut!.nextCut!.needed)
     .slice(0, 3);
+  // "Up next" — the soonest upcoming races for your swimmers (earliest event #s with no logged
+  // result yet = next in program order). The most meet-day-urgent thing: what's coming up.
+  const upNext: DE[] = all
+    .filter((d: DE) => !d.e.relay && !resultOf(d))
+    .sort((a: DE, b: DE) => a.e.event - b.e.event)
+    .slice(0, swimmers.length > 1 ? 3 : 2);
 
   // Coach view: a quick team-stats summary instead of the parent fueling/prep sections.
   const teamStats = coach
@@ -1264,6 +1270,24 @@ function Home(props: any) {
                 );
               })}
             </div>
+          )}
+          {upNext.length > 0 && (
+            <section className="card upnext">
+              <h2>⏱ {t("upnext")}</h2>
+              {upNext.map((d: DE, i: number) => {
+                const hn = d.e.heat ? /Heat\s+(\d+)/.exec(d.e.heat)?.[1] : null;
+                return (
+                  <div className="un-row" key={i}>
+                    <span className="un-who">
+                      {swimmers.length > 1 ? <strong>{firstName(d.swimmer)} </strong> : null}{d.e.race}
+                    </span>
+                    <span className="un-where">
+                      {hn ? t("heat_n", { n: hn }) + " · " : ""}{t("lane", { n: d.e.lane })}
+                    </span>
+                  </div>
+                );
+              })}
+            </section>
           )}
           {closest.length > 0 && (
             <section className="card highlight">

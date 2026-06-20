@@ -18,6 +18,8 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  upnext: "Up next",
+  heat_n: "Heat {n}",
   me_h: "Me",
   friends_h: "Friends",
   sw_me: "Me",
@@ -190,6 +192,8 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  upnext: "Próximo",
+  heat_n: "Serie {n}",
   me_h: "Yo",
   friends_h: "Amigos",
   sw_me: "Soy yo",
@@ -359,6 +363,8 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  upnext: "接下来",
+  heat_n: "第{n}组",
   me_h: "我",
   friends_h: "朋友",
   sw_me: "是我",
@@ -528,6 +534,8 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  upnext: "A seguir",
+  heat_n: "Série {n}",
   me_h: "Eu",
   friends_h: "Amigos",
   sw_me: "Sou eu",
@@ -697,6 +705,8 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  upnext: "Als Nächstes",
+  heat_n: "Lauf {n}",
   me_h: "Ich",
   friends_h: "Freunde",
   sw_me: "Das bin ich",
@@ -866,6 +876,8 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  upnext: "Tiếp theo",
+  heat_n: "Đợt {n}",
   me_h: "Tôi",
   friends_h: "Bạn bè",
   sw_me: "Là tôi",
@@ -1035,6 +1047,8 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  upnext: "À suivre",
+  heat_n: "Série {n}",
   me_h: "Moi",
   friends_h: "Amis",
   sw_me: "C'est moi",
@@ -1237,6 +1251,8 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  upnext: "Далее",
+  heat_n: "Заплыв {n}",
   me_h: "Я",
   friends_h: "Друзья",
   sw_me: "Это я",
