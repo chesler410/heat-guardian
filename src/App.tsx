@@ -1773,7 +1773,7 @@ function ImportView(props: {
         <h2>{t("imp_title")}</h2>
         <p className="imp-note">📋 {t("imp_what")}</p>
         <input className="field" placeholder="https://…/heatsheet.pdf" value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" autoFocus />
-        <button className="primary" disabled={props.busy || !url.trim()} onClick={() => props.onUrl(url)}>
+        <button className="primary" disabled={props.busy || !url.trim()} onClick={() => { props.onUrl(url); setUrl(""); }}>
           {props.busy ? t("imp_opening") : t("imp_open")}
         </button>
         <label className="secondary filelabel">
