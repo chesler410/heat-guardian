@@ -191,6 +191,7 @@ function EntryCard({
   setPacing,
   note,
   onNote,
+  swimmer,
 }: {
   d: DE;
   showSwimmer: boolean;
@@ -204,6 +205,7 @@ function EntryCard({
   setPacing?: (p: "even" | "realistic") => void;
   note?: string;
   onNote?: (val: string) => void;
+  swimmer?: boolean; // "My Meet" mode — frame the note as the swimmer's own reflection
 }) {
   const { e } = d;
   const [editing, setEditing] = useState(false);
@@ -368,7 +370,7 @@ function EntryCard({
               className="field note-input"
               autoFocus
               defaultValue={note || ""}
-              placeholder={t("note_ph")}
+              placeholder={swimmer ? t("note_ph_me") : t("note_ph")}
               rows={2}
               onBlur={(ev) => {
                 onNote?.(ev.target.value.trim());
@@ -381,7 +383,7 @@ function EntryCard({
             </div>
           ) : (
             <button className="inline-link" onClick={() => setEditNote(true)}>
-              {t("note_add")}
+              {swimmer ? t("note_add_me") : t("note_add")}
             </button>
           )}
         </div>
@@ -1055,6 +1057,7 @@ export function App() {
           liveStatus={liveStatus}
           coach={coaching}
           coachTeam={coaching ? coachTeam : ""}
+          swimmer={role === "swimmer"}
         />
       )}
       {gated && nav === "import" && (
@@ -1172,7 +1175,7 @@ function SessionBlock(props: { head: string | null; count: number; grid: boolean
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam, progress } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
   const [shareMsg, showToast] = useToast();
   const [cols, setCols] = useState<{ pb: boolean; cut: boolean; champ: boolean }>(() => {
@@ -1437,6 +1440,7 @@ function Home(props: any) {
                             goal={goals[k]}
                             asplits={asplits[k]}
                             note={notes[k]}
+                            swimmer={swimmer}
                             onGoal={(v: string) => setMap("goal", d.meetId, d.e.event, d.swimmer, v)}
                             onSplits={(v: string) => setMap("splits", d.meetId, d.e.event, d.swimmer, v)}
                             onNote={(v: string) => setMap("note", d.meetId, d.e.event, d.swimmer, v)}

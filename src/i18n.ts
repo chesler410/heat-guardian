@@ -18,6 +18,8 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  note_ph_me: "How did it feel? What went well, what to work on?",
+  note_add_me: "📝 Reflect on this swim",
   upnext: "Up next",
   heat_n: "Heat {n}",
   me_h: "Me",
@@ -192,6 +194,8 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  note_ph_me: "¿Cómo se sintió? ¿Qué salió bien, qué mejorar?",
+  note_add_me: "📝 Reflexiona sobre esta prueba",
   upnext: "Próximo",
   heat_n: "Serie {n}",
   me_h: "Yo",
@@ -363,6 +367,8 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  note_ph_me: "感觉如何？哪里做得好，哪里要改进？",
+  note_add_me: "📝 回顾这次比赛",
   upnext: "接下来",
   heat_n: "第{n}组",
   me_h: "我",
@@ -534,6 +540,8 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  note_ph_me: "Como foi? O que deu certo, o que melhorar?",
+  note_add_me: "📝 Reflita sobre esta prova",
   upnext: "A seguir",
   heat_n: "Série {n}",
   me_h: "Eu",
@@ -705,6 +713,8 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  note_ph_me: "Wie hat es sich angefühlt? Was lief gut, was üben?",
+  note_add_me: "📝 Über dieses Rennen nachdenken",
   upnext: "Als Nächstes",
   heat_n: "Lauf {n}",
   me_h: "Ich",
@@ -876,6 +886,8 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  note_ph_me: "Cảm giác thế nào? Điều gì tốt, điều gì cần cải thiện?",
+  note_add_me: "📝 Ghi lại cảm nhận về lượt bơi này",
   upnext: "Tiếp theo",
   heat_n: "Đợt {n}",
   me_h: "Tôi",
@@ -1047,6 +1059,8 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  note_ph_me: "Comment c'était ? Qu'est-ce qui a marché, quoi travailler ?",
+  note_add_me: "📝 Réfléchis à cette course",
   upnext: "À suivre",
   heat_n: "Série {n}",
   me_h: "Moi",
@@ -1251,6 +1265,8 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  note_ph_me: "Как ощущения? Что удалось, над чем поработать?",
+  note_add_me: "📝 Заметка об этом заплыве",
   upnext: "Далее",
   heat_n: "Заплыв {n}",
   me_h: "Я",
