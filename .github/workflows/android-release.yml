@@ -51,7 +51,9 @@ jobs:
         # second upload as "version code 1 already used." Commit count = monotonic versionCode.
         run: |
           sed -i -E 's/(compileSdkVersion *= *)[0-9]+/\135/; s/(targetSdkVersion *= *)[0-9]+/\135/' android/variables.gradle
-          VCODE=$(git rev-list --count HEAD)
+          # versionCode = minutes since epoch — strictly increasing and unique per build (Play
+          # permanently reserves every uploaded code, so even a rebuild needs a higher one).
+          VCODE=$(( $(date +%s) / 60 ))
           VNAME=$(node -p "require('./package.json').version")
           sed -i -E "s/versionCode [0-9]+/versionCode $VCODE/; s/versionName \"[^\"]*\"/versionName \"$VNAME\"/" android/app/build.gradle
           echo "--- pinned values ---"
