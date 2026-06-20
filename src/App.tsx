@@ -2067,7 +2067,7 @@ function About({ logo, setLogo, setBrand, role, onChangeRole }: { logo: string; 
       <p>{t("ab_intro")}</p>
 
       <div className="role-line">
-        <span className="muted">{role === "coach" ? "🧑‍🏫 " + t("role_coach") : "👪 " + t("role_parent")}</span>
+        <span className="muted">{role === "coach" ? "🧑‍🏫 " + t("role_coach") : role === "swimmer" ? "🏊 " + t("role_swimmer") : "👪 " + t("role_parent")}</span>
         <button className="inline-link" onClick={onChangeRole}>{t("role_change")}</button>
       </div>
 
