@@ -141,6 +141,7 @@ jobs:
 
       - name: Set TestFlight "What to Test" notes
         if: success()
+        continue-on-error: true # the IPA is already uploaded; never fail a release over notes
         env:
           ASC_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
@@ -149,5 +150,7 @@ jobs:
           TEST_NOTES: ${{ github.event.inputs.release_notes }}
         run: |
           export ASC_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
-          python3 -m pip install --quiet "pyjwt[crypto]"
-          python3 scripts/set_testflight_notes.py
+          # macOS runner's Python is PEP-668 "externally managed" — install into a venv.
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet "pyjwt[crypto]"
+          "$RUNNER_TEMP/venv/bin/python" scripts/set_testflight_notes.py
