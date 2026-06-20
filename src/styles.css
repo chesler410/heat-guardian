@@ -592,8 +592,8 @@ footer { margin-top: 20px; text-align: center; }
 
 /* ---- role picker + coach mode ---- */
 .rolepick { text-align: center; }
-.role-opts { display: flex; gap: 12px; margin-top: 14px; }
-.role-opt { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 2px solid #dbe4ee; border-radius: 14px; padding: 18px 12px; cursor: pointer; font: inherit; color: var(--ink); transition: border-color .15s, transform .05s; }
+.role-opts { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.role-opt { flex: 1 1 140px; display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 2px solid #dbe4ee; border-radius: 14px; padding: 18px 12px; cursor: pointer; font: inherit; color: var(--ink); transition: border-color .15s, transform .05s; }
 .role-opt:hover { border-color: var(--blue); }
 .role-opt:active { transform: scale(0.98); }
 .theme-dark .role-opt { background: #14202c; border-color: #2a3744; }

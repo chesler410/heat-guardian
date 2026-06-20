@@ -18,6 +18,7 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  role_swimmer: "Swimmer", role_swimmer_d: "Track your own meet — your events, friends, and notes.",
   imp_working: "Working… large meets can take a moment on phones.",
   disc_viewresults: "View results",
   past_meets: "Past meets",
@@ -184,6 +185,7 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  role_swimmer: "Nadador/a", role_swimmer_d: "Sigue tu propia competencia: tus pruebas, amigos y notas.",
   imp_working: "Procesando… las competencias grandes pueden tardar un momento en el teléfono.",
   disc_viewresults: "Ver resultados",
   past_meets: "Competencias pasadas",
@@ -347,6 +349,7 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  role_swimmer: "运动员", role_swimmer_d: "管理你自己的比赛——你的项目、朋友和笔记。",
   imp_working: "处理中……大型比赛在手机上可能需要一点时间。",
   disc_viewresults: "查看成绩",
   past_meets: "过往比赛",
@@ -510,6 +513,7 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  role_swimmer: "Nadador(a)", role_swimmer_d: "Acompanhe sua própria competição: suas provas, amigos e notas.",
   imp_working: "Processando… competições grandes podem demorar um pouco no celular.",
   disc_viewresults: "Ver resultados",
   past_meets: "Competições passadas",
@@ -673,6 +677,7 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  role_swimmer: "Schwimmer/in", role_swimmer_d: "Verfolge deinen eigenen Wettkampf – deine Starts, Freunde und Notizen.",
   imp_working: "Verarbeite… große Wettkämpfe können auf dem Handy etwas dauern.",
   disc_viewresults: "Ergebnisse ansehen",
   past_meets: "Vergangene Wettkämpfe",
@@ -836,6 +841,7 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  role_swimmer: "Vận động viên", role_swimmer_d: "Theo dõi giải của chính bạn — nội dung, bạn bè và ghi chú.",
   imp_working: "Đang xử lý… giải lớn có thể mất một lúc trên điện thoại.",
   disc_viewresults: "Xem kết quả",
   past_meets: "Giải đã qua",
@@ -999,6 +1005,7 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  role_swimmer: "Nageur/se", role_swimmer_d: "Suivez votre propre compétition : vos épreuves, amis et notes.",
   imp_working: "Traitement… les grandes compétitions peuvent prendre un moment sur téléphone.",
   disc_viewresults: "Voir les résultats",
   past_meets: "Compétitions passées",
@@ -1195,6 +1202,7 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  role_swimmer: "Пловец", role_swimmer_d: "Следи за своим соревнованием — твои заплывы, друзья и заметки.",
   imp_working: "Обработка… большие соревнования могут занять время на телефоне.",
   disc_viewresults: "Смотреть результаты",
   past_meets: "Прошедшие соревнования",

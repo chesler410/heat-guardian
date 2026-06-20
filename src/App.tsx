@@ -89,7 +89,7 @@ interface DirMeet {
 }
 // Raw copy in the repo so the community can add meets via PR without an app release.
 const DIRECTORY_URL = "https://raw.githubusercontent.com/chesler410/heat-guardian/main/src/meets.json";
-type Role = "parent" | "coach";
+type Role = "parent" | "coach" | "swimmer"; // swimmer = "My Meet" self-mode; behaves like parent
 
 function displayName(n: string): string {
   if (n.includes(",")) {
@@ -992,7 +992,7 @@ export function App() {
       </header>
 
       {role === null && (
-        <RolePicker onPick={(r) => { setRole(r); if (r === "parent") setCoachTeam(""); }} />
+        <RolePicker onPick={(r) => { setRole(r); if (r !== "coach") setCoachTeam(""); }} />
       )}
       {role === "coach" && !coachTeam && (
         <CoachTeamPicker
@@ -1514,6 +1514,11 @@ function RolePicker(props: { onPick: (r: Role) => void }) {
           <span className="role-emoji">👪</span>
           <span className="role-name">{t("role_parent")}</span>
           <span className="role-desc">{t("role_parent_d")}</span>
+        </button>
+        <button className="role-opt" onClick={() => props.onPick("swimmer")}>
+          <span className="role-emoji">🏊</span>
+          <span className="role-name">{t("role_swimmer")}</span>
+          <span className="role-desc">{t("role_swimmer_d")}</span>
         </button>
         <button className="role-opt" onClick={() => props.onPick("coach")}>
           <span className="role-emoji">🧑‍🏫</span>
