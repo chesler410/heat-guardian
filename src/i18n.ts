@@ -18,6 +18,8 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  disc_near_none: "No meets within {n} miles in our directory yet.",
+  disc_far: "Farther out",
   fb_title: "How did my meet go?",
   fb_sub: "Get warm, encouraging feedback on your swims and your own notes.",
   fb_go: "✨ Get my feedback",
@@ -211,6 +213,8 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  disc_near_none: "Aún no hay competencias a {n} millas en nuestro directorio.",
+  disc_far: "Más lejos",
   fb_title: "¿Cómo me fue en la competencia?",
   fb_sub: "Recibe comentarios cálidos y alentadores sobre tus pruebas y tus notas.",
   fb_go: "✨ Ver mis comentarios",
@@ -401,6 +405,8 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  disc_near_none: "目录中暂无 {n} 英里内的比赛。",
+  disc_far: "更远的",
   fb_title: "我的比赛怎么样？",
   fb_sub: "根据你的比赛和笔记，获得温暖鼓励的反馈。",
   fb_go: "✨ 获取我的反馈",
@@ -591,6 +597,8 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  disc_near_none: "Ainda não há competições a {n} milhas no nosso diretório.",
+  disc_far: "Mais longe",
   fb_title: "Como foi minha competição?",
   fb_sub: "Receba um retorno caloroso e motivador sobre suas provas e suas notas.",
   fb_go: "✨ Ver meu retorno",
@@ -781,6 +789,8 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  disc_near_none: "Noch keine Wettkämpfe im Umkreis von {n} Meilen im Verzeichnis.",
+  disc_far: "Weiter entfernt",
   fb_title: "Wie lief mein Wettkampf?",
   fb_sub: "Hol dir warmes, ermutigendes Feedback zu deinen Starts und deinen Notizen.",
   fb_go: "✨ Mein Feedback holen",
@@ -971,6 +981,8 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  disc_near_none: "Chưa có giải nào trong bán kính {n} dặm trong danh bạ.",
+  disc_far: "Xa hơn",
   fb_title: "Giải đấu của mình thế nào?",
   fb_sub: "Nhận phản hồi ấm áp, động viên về các lượt bơi và ghi chú của bạn.",
   fb_go: "✨ Xem phản hồi của tôi",
@@ -1161,6 +1173,8 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  disc_near_none: "Aucune compétition à moins de {n} miles dans notre annuaire pour l'instant.",
+  disc_far: "Plus loin",
   fb_title: "Comment s'est passée ma compétition ?",
   fb_sub: "Reçois un retour chaleureux et encourageant sur tes courses et tes notes.",
   fb_go: "✨ Voir mon retour",
@@ -1384,6 +1398,8 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  disc_near_none: "Пока нет соревнований в радиусе {n} миль в каталоге.",
+  disc_far: "Дальше",
   fb_title: "Как прошли мои соревнования?",
   fb_sub: "Получи тёплый, ободряющий отзыв о своих заплывах и заметках.",
   fb_go: "✨ Мой отзыв",

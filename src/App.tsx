@@ -30,6 +30,7 @@ import {
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, eventMeta, segInfo } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE } from "./config.ts";
+import { Geolocation } from "@capacitor/geolocation";
 import { getTheme, setTheme, Theme } from "./theme.ts";
 import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
 import day from "./day.json";
@@ -1697,32 +1698,74 @@ function DiscoverView(props: {
   const [shareMsg, showToast] = useToast();
   const states = [...new Set(props.meets.map((m) => m.state).filter(Boolean))].sort() as string[];
 
-  function findNearMe() {
-    // Clear the state filter so "showing all" is actually true whether geolocation succeeds
-    // (sorts by distance) or is denied (falls back to all meets).
-    if (!navigator.geolocation) { setGeoMsg(t("disc_geoerr")); setStateFilter(""); return; }
+  // Real device location via the Capacitor Geolocation plugin (proper native permission flow on
+  // iOS/Android; navigator.geolocation on web). Clearing the state filter makes "showing all"
+  // honest whether we got a fix (sort by distance) or were denied (fall back to the full list).
+  async function findNearMe() {
     setGeoMsg(t("disc_locating"));
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { setHere({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoMsg(""); setStateFilter(""); },
-      () => { setGeoMsg(t("disc_geoerr")); setStateFilter(""); }
-    );
+    try {
+      if (IS_NATIVE) {
+        const perm = await Geolocation.requestPermissions();
+        if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
+          setGeoMsg(t("disc_geoerr"));
+          setStateFilter("");
+          return;
+        }
+      }
+      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 10000 });
+      setHere({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      setGeoMsg("");
+      setStateFilter("");
+    } catch {
+      setGeoMsg(t("disc_geoerr"));
+      setStateFilter("");
+    }
   }
 
   // "Find a meet near you" is for UPCOMING meets — hide ones whose last day has already
   // passed (same past-date logic as Home's archive), so a finished meet drops off the list.
   const todayISO = new Date().toISOString().slice(0, 10);
-  let list = props.meets
+  const RADIUS_MI = 150; // what "near you" actually means — a reasonable drive to a meet
+  const upcoming = props.meets
     .filter((m) => !stateFilter || m.state === stateFilter)
     .filter((m) => (m.end || m.start || todayISO) >= todayISO);
+  // With a real location fix, split into genuinely-near (≤ radius) and everything else ("Farther
+  // out"), nearest-first — so "near me" reflects real proximity instead of just re-sorting.
+  let near: DirMeet[];
+  let far: DirMeet[] = [];
   if (here) {
-    list = [...list].sort((a, b) => {
-      const da = a.lat != null && a.lng != null ? miBetween(here, { lat: a.lat, lng: a.lng }) : 1e9;
-      const db = b.lat != null && b.lng != null ? miBetween(here, { lat: b.lat, lng: b.lng }) : 1e9;
-      return da - db;
-    });
+    const withD = upcoming
+      .map((m) => ({ m, d: m.lat != null && m.lng != null ? miBetween(here, { lat: m.lat, lng: m.lng }) : Infinity }))
+      .sort((a, b) => a.d - b.d);
+    near = withD.filter((x) => x.d <= RADIUS_MI).map((x) => x.m);
+    far = withD.filter((x) => x.d > RADIUS_MI).slice(0, 6).map((x) => x.m);
   } else {
-    list = [...list].sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+    near = [...upcoming].sort((a, b) => (a.start || "").localeCompare(b.start || ""));
   }
+
+  const renderCard = (m: DirMeet) => {
+    const dist = here && m.lat != null && m.lng != null ? miBetween(here, { lat: m.lat, lng: m.lng }) : null;
+    return (
+      <div className="disc-card" key={m.id}>
+        <div className="disc-date">📅 {fmtDateRange(m.start, m.end)}</div>
+        <div className="disc-title">{m.title}</div>
+        <div className="disc-loc muted">
+          {[m.city, m.state].filter(Boolean).join(", ")}{m.lsc ? ` · ${m.lsc}` : ""}
+          {dist != null ? <span className="disc-dist"> · {t("disc_mi", { n: dist })}</span> : null}
+        </div>
+        <div className="disc-actions">
+          {m.heatUrl && <button className="chip sm" onClick={() => props.onImport(m.heatUrl!)}>{t("disc_import")}</button>}
+          {m.resultsUrl && <button className="chip sm" onClick={() => props.onImport(m.resultsUrl!)}>{t("disc_results")}</button>}
+          {m.resultsUrl && <button className="chip sm golive" onClick={() => props.onGoLive(m.resultsUrl!)}>🔴 {t("disc_golive")}</button>}
+          {m.resultsPageUrl && <a className="chip sm" href={m.resultsPageUrl} target="_blank" rel="noopener noreferrer">📊 {t("disc_viewresults")}</a>}
+          {(m.heatUrl || m.resultsUrl) && (
+            <button className="chip sm" onClick={async () => { const r = await shareMeet({ t: m.title, u: m.heatUrl || m.resultsUrl!, r: m.resultsUrl }); showToast(r === "copied" ? t("share_copied") : ""); }}>🔗 {t("share_btn")}</button>
+          )}
+          {m.infoUrl && <a className="chip sm" href={m.infoUrl} target="_blank" rel="noopener noreferrer">{t("disc_open")}</a>}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="card discover">
@@ -1738,36 +1781,21 @@ function DiscoverView(props: {
       {geoMsg && <p className="muted small">{geoMsg}</p>}
       {shareMsg && <p className="share-toast">{shareMsg}</p>}
 
-      {list.length === 0 ? (
+      {near.length === 0 && far.length === 0 ? (
         <div className="disc-empty">
-          <p className="muted">{t("disc_none")}</p>
+          <p className="muted">{here ? t("disc_near_none", { n: RADIUS_MI }) : t("disc_none")}</p>
           <a className="secondary" href={props.suggestUrl} target="_blank" rel="noopener noreferrer">{t("disc_suggest")}</a>
         </div>
       ) : (
         <>
-          {list.map((m) => {
-            const dist = here && m.lat != null && m.lng != null ? miBetween(here, { lat: m.lat, lng: m.lng }) : null;
-            return (
-              <div className="disc-card" key={m.id}>
-                <div className="disc-date">📅 {fmtDateRange(m.start, m.end)}</div>
-                <div className="disc-title">{m.title}</div>
-                <div className="disc-loc muted">
-                  {[m.city, m.state].filter(Boolean).join(", ")}{m.lsc ? ` · ${m.lsc}` : ""}
-                  {dist != null ? <span className="disc-dist"> · {t("disc_mi", { n: dist })}</span> : null}
-                </div>
-                <div className="disc-actions">
-                  {m.heatUrl && <button className="chip sm" onClick={() => props.onImport(m.heatUrl!)}>{t("disc_import")}</button>}
-                  {m.resultsUrl && <button className="chip sm" onClick={() => props.onImport(m.resultsUrl!)}>{t("disc_results")}</button>}
-                  {m.resultsUrl && <button className="chip sm golive" onClick={() => props.onGoLive(m.resultsUrl!)}>🔴 {t("disc_golive")}</button>}
-                  {m.resultsPageUrl && <a className="chip sm" href={m.resultsPageUrl} target="_blank" rel="noopener noreferrer">📊 {t("disc_viewresults")}</a>}
-                  {(m.heatUrl || m.resultsUrl) && (
-                    <button className="chip sm" onClick={async () => { const r = await shareMeet({ t: m.title, u: m.heatUrl || m.resultsUrl!, r: m.resultsUrl }); showToast(r === "copied" ? t("share_copied") : ""); }}>🔗 {t("share_btn")}</button>
-                  )}
-                  {m.infoUrl && <a className="chip sm" href={m.infoUrl} target="_blank" rel="noopener noreferrer">{t("disc_open")}</a>}
-                </div>
-              </div>
-            );
-          })}
+          {here && near.length === 0 && far.length > 0 && <p className="muted small">{t("disc_near_none", { n: RADIUS_MI })}</p>}
+          {near.map(renderCard)}
+          {here && far.length > 0 && (
+            <>
+              <div className="disc-far-label">{t("disc_far")}</div>
+              {far.map(renderCard)}
+            </>
+          )}
           <p className="feedback-foot">
             <a href={props.suggestUrl} target="_blank" rel="noopener noreferrer">{t("disc_suggest")}</a>
           </p>

@@ -790,3 +790,6 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .fb-text { white-space: pre-wrap; line-height: 1.5; margin: 4px 0 12px; }
 .fb-err { color: #b4451f; margin: 4px 0 8px; font-size: 0.9rem; }
 .theme-dark .fb-err { color: #ff9d72; }
+
+/* "Near me" — "Farther out" divider for meets beyond the radius */
+.disc-far-label { margin: 14px 0 8px; font-size: 0.78rem; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
