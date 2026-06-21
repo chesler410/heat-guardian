@@ -793,3 +793,13 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 
 /* "Near me" — "Farther out" divider for meets beyond the radius */
 .disc-far-label { margin: 14px 0 8px; font-size: 0.78rem; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+
+/* "No current meet" home block — center the Add-a-meet button under the message */
+.no-active-wrap { text-align: center; padding: 8px 0 4px; }
+.no-active-wrap .no-active { margin-bottom: 12px; }
+
+/* pull-to-refresh indicator (drag down at the top) */
+.ptr { display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.ptr-icon { font-size: 1.4rem; color: var(--blue); padding-bottom: 6px; }
+.ptr-icon.spin { animation: ptrspin 0.7s linear infinite; }
+@keyframes ptrspin { to { transform: rotate(360deg); } }

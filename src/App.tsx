@@ -762,12 +762,57 @@ export function App() {
   }
   // Community meet directory: start with the bundled copy, then refresh from the repo.
   const [directory, setDirectory] = useState<DirMeet[]>(meetsDirectory as DirMeet[]);
+  const loadDirectory = useCallback(
+    () =>
+      fetch(DIRECTORY_URL)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (Array.isArray(d) && d.length) setDirectory(d); })
+        .catch(() => { /* keep bundled */ }),
+    []
+  );
+  useEffect(() => { loadDirectory(); }, [loadDirectory]);
+
+  // Pull-to-refresh: drag down at the very top to re-fetch the live meet directory.
+  const [pullY, setPullY] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshingRef = useRef(false);
   useEffect(() => {
-    fetch(DIRECTORY_URL)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (Array.isArray(d) && d.length) setDirectory(d); })
-      .catch(() => { /* keep bundled */ });
-  }, []);
+    const st = { startY: 0, pulling: false };
+    const onStart = (e: TouchEvent) => {
+      if (window.scrollY <= 0 && !refreshingRef.current) { st.startY = e.touches[0].clientY; st.pulling = true; }
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!st.pulling) return;
+      const d = e.touches[0].clientY - st.startY;
+      if (d > 0 && window.scrollY <= 0) setPullY(Math.min(d * 0.5, 80));
+      else { st.pulling = false; setPullY(0); }
+    };
+    const onEnd = () => {
+      if (!st.pulling) return;
+      st.pulling = false;
+      setPullY((p) => {
+        if (p >= 45 && !refreshingRef.current) {
+          refreshingRef.current = true;
+          setRefreshing(true);
+          Promise.all([loadDirectory(), new Promise((r) => setTimeout(r, 600))]).finally(() => {
+            refreshingRef.current = false;
+            setRefreshing(false);
+            setPullY(0);
+          });
+          return 45;
+        }
+        return 0;
+      });
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [loadDirectory]);
   // A meet shared via link (?add=...) — offer to import it.
   const [pendingShare, setPendingShare] = useState<SharePayload | null>(readSharePayload);
   function clearShare() {
@@ -977,6 +1022,11 @@ export function App() {
 
   return (
     <div className="app">
+      {(pullY > 0 || refreshing) && (
+        <div className="ptr" style={{ height: pullY }} aria-hidden>
+          <span className={"ptr-icon" + (refreshing ? " spin" : "")}>↻</span>
+        </div>
+      )}
       <UpdateBanner />
       {taunt && <div className="taunt-pop" onClick={() => setTaunt("")}>{taunt}</div>}
       {msg && <div className="app-toast" onClick={() => setMsg("")}>{msg}</div>}
@@ -1301,6 +1351,9 @@ function Home(props: any) {
       {meets.length > 0 && swimmers.length === 0 && (
         <Empty title={t("em_pick_t")} body={t("em_pick_b")} cta={t("em_choose")} onCta={props.goSwimmers} />
       )}
+      {meets.length === 0 && swimmers.length > 0 && (
+        <Empty title={t("em_nomeet_t")} body={t("em_nomeet_b")} cta={t("sw_addmeet")} onCta={props.goImport} />
+      )}
 
       {meets.length > 0 && swimmers.length > 0 && (
         <>
@@ -1535,7 +1588,12 @@ function Home(props: any) {
               <>
                 {groups.length > 0
                   ? groups.map((g: any) => renderMeet(g.meet, g.items))
-                  : pastGroups.length > 0 && <p className="muted no-active">{t("no_upcoming")}</p>}
+                  : pastGroups.length > 0 && (
+                      <div className="no-active-wrap">
+                        <p className="muted no-active">{t("no_upcoming")}</p>
+                        <button className="primary" onClick={props.goImport}>{t("sw_addmeet")}</button>
+                      </div>
+                    )}
                 {pastGroups.length > 0 && (
                   <Foldable title={<>🗄️ {t("past_meets")} ({pastGroups.length})</>}>
                     {pastGroups.map((g: any) => renderMeet(g.meet, g.items))}

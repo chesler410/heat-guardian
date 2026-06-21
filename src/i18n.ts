@@ -18,6 +18,8 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  em_nomeet_t: "No meet loaded",
+  em_nomeet_b: "Add this weekend's heat sheet or results — or find a meet near you.",
   disc_near_none: "No meets within {n} miles in our directory yet.",
   disc_far: "Farther out",
   fb_title: "How did my meet go?",
@@ -213,6 +215,8 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  em_nomeet_t: "Sin competencia cargada",
+  em_nomeet_b: "Añade la planilla o los resultados de este fin de semana, o busca una competencia cerca.",
   disc_near_none: "Aún no hay competencias a {n} millas en nuestro directorio.",
   disc_far: "Más lejos",
   fb_title: "¿Cómo me fue en la competencia?",
@@ -405,6 +409,8 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  em_nomeet_t: "未加载比赛",
+  em_nomeet_b: "添加本周末的赛程或成绩，或查找附近的比赛。",
   disc_near_none: "目录中暂无 {n} 英里内的比赛。",
   disc_far: "更远的",
   fb_title: "我的比赛怎么样？",
@@ -597,6 +603,8 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  em_nomeet_t: "Nenhuma competição carregada",
+  em_nomeet_b: "Adicione a planilha ou os resultados deste fim de semana, ou encontre uma competição por perto.",
   disc_near_none: "Ainda não há competições a {n} milhas no nosso diretório.",
   disc_far: "Mais longe",
   fb_title: "Como foi minha competição?",
@@ -789,6 +797,8 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  em_nomeet_t: "Kein Wettkampf geladen",
+  em_nomeet_b: "Füge die Startliste oder Ergebnisse dieses Wochenendes hinzu – oder finde einen Wettkampf in der Nähe.",
   disc_near_none: "Noch keine Wettkämpfe im Umkreis von {n} Meilen im Verzeichnis.",
   disc_far: "Weiter entfernt",
   fb_title: "Wie lief mein Wettkampf?",
@@ -981,6 +991,8 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  em_nomeet_t: "Chưa tải giải nào",
+  em_nomeet_b: "Thêm danh sách đợt bơi hoặc kết quả cuối tuần này, hoặc tìm giải gần bạn.",
   disc_near_none: "Chưa có giải nào trong bán kính {n} dặm trong danh bạ.",
   disc_far: "Xa hơn",
   fb_title: "Giải đấu của mình thế nào?",
@@ -1173,6 +1185,8 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  em_nomeet_t: "Aucune compétition chargée",
+  em_nomeet_b: "Ajoute le programme ou les résultats de ce week-end, ou trouve une compétition près de toi.",
   disc_near_none: "Aucune compétition à moins de {n} miles dans notre annuaire pour l'instant.",
   disc_far: "Plus loin",
   fb_title: "Comment s'est passée ma compétition ?",
@@ -1398,6 +1412,8 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  em_nomeet_t: "Соревнование не загружено",
+  em_nomeet_b: "Добавь стартовый протокол или результаты этих выходных — или найди соревнование рядом.",
   disc_near_none: "Пока нет соревнований в радиусе {n} миль в каталоге.",
   disc_far: "Дальше",
   fb_title: "Как прошли мои соревнования?",
