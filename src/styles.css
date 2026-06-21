@@ -783,3 +783,10 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .code-or { color: var(--muted); font-size: 0.85rem; }
 .code-input { flex: 1; min-width: 120px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
 .code-row .secondary { flex: none; }
+
+/* AI post-meet feedback card (swimmer mode) */
+.feedback-card { background: linear-gradient(150deg, #f1ecff 0%, #fff 70%); border: 1px solid #ddd2fb; box-shadow: var(--shadow-lg); }
+.theme-dark .feedback-card { background: linear-gradient(150deg, #1c1733 0%, var(--card) 70%); border-color: #2c2348; }
+.fb-text { white-space: pre-wrap; line-height: 1.5; margin: 4px 0 12px; }
+.fb-err { color: #b4451f; margin: 4px 0 8px; font-size: 0.9rem; }
+.theme-dark .fb-err { color: #ff9d72; }

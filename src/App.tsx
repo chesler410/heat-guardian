@@ -21,6 +21,7 @@ import {
   importUrl,
   importMeetCode,
   cacheMeet,
+  getFeedback,
   buildMeetPack,
   applyResults,
   buildProgress,
@@ -1242,6 +1243,34 @@ function Home(props: any) {
     .sort((a: DE, b: DE) => a.e.event - b.e.event)
     .slice(0, swimmers.length > 1 ? 3 : 2);
 
+  // Phase 3b — AI post-meet feedback, swimmer mode only. We gather the swimmer's OWN swims (not
+  // friends) that have a time or a reflection, and send COPPA-minimized context (race/seed/result/
+  // cut/note) — never name or team. The Worker holds the key; we degrade gracefully if it's down.
+  const mineNames = new Set(swimmers.filter((s: Swimmer) => !s.watch).map((s: Swimmer) => s.name));
+  const fbSwims = !swimmer
+    ? []
+    : all
+        .filter((d: DE) => !d.e.relay && mineNames.has(d.swimmer))
+        .map((d: DE) => {
+          const k = resultKey(d.meetId, d.e.event, d.swimmer);
+          const c = cutFor(d, results[k]);
+          const cut = c?.achieved ? `made ${c.achieved}` : c?.nextCut ? `${c.nextCut.needed.toFixed(2)}s from ${c.nextCut.level}` : "";
+          return { race: raceOf(d.e), seed: d.e.seed, result: results[k], cut, note: notes[k] };
+        })
+        .filter((s) => s.result || s.note);
+  const [fb, setFb] = useState<{ loading: boolean; text: string; err: string }>({ loading: false, text: "", err: "" });
+  async function runFeedback() {
+    if (!fbSwims.length) return;
+    setFb({ loading: true, text: "", err: "" });
+    try {
+      const me = swimmers.find((s: Swimmer) => !s.watch);
+      const text = await getFeedback(fbSwims, me?.age, loadProxy() || DEFAULT_PROXY);
+      setFb({ loading: false, text, err: "" });
+    } catch (e: any) {
+      setFb({ loading: false, text: "", err: t(e?.message || "feedback_failed") });
+    }
+  }
+
   // Coach view: a quick team-stats summary instead of the parent fueling/prep sections.
   const teamStats = coach
     ? (() => {
@@ -1335,6 +1364,17 @@ function Home(props: any) {
                   </span>
                 </div>
               ))}
+            </section>
+          )}
+          {swimmer && fbSwims.length > 0 && (
+            <section className="card feedback-card">
+              <h2>✨ {t("fb_title")}</h2>
+              {fb.text ? <p className="fb-text">{fb.text}</p> : <p className="muted">{t("fb_sub")}</p>}
+              {fb.err && <p className="fb-err">{fb.err}</p>}
+              <button className="primary" disabled={fb.loading} onClick={runFeedback}>
+                {fb.loading ? t("fb_loading") : fb.text ? t("fb_again") : t("fb_go")}
+              </button>
+              <p className="muted small">{t("fb_disclaimer")}</p>
             </section>
           )}
           {!coach && groups.length > 0 && <Fueling />}
