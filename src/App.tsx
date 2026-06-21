@@ -774,47 +774,6 @@ export function App() {
   );
   useEffect(() => { loadDirectory(); }, [loadDirectory]);
 
-  // Pull-to-refresh: drag down at the very top to re-fetch the live meet directory.
-  const [pullY, setPullY] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const refreshingRef = useRef(false);
-  useEffect(() => {
-    const st = { startY: 0, pulling: false };
-    const onStart = (e: TouchEvent) => {
-      if (window.scrollY <= 0 && !refreshingRef.current) { st.startY = e.touches[0].clientY; st.pulling = true; }
-    };
-    const onMove = (e: TouchEvent) => {
-      if (!st.pulling) return;
-      const d = e.touches[0].clientY - st.startY;
-      if (d > 0 && window.scrollY <= 0) setPullY(Math.min(d * 0.5, 80));
-      else { st.pulling = false; setPullY(0); }
-    };
-    const onEnd = () => {
-      if (!st.pulling) return;
-      st.pulling = false;
-      setPullY((p) => {
-        if (p >= 45 && !refreshingRef.current) {
-          refreshingRef.current = true;
-          setRefreshing(true);
-          Promise.all([loadDirectory(), new Promise((r) => setTimeout(r, 600))]).finally(() => {
-            refreshingRef.current = false;
-            setRefreshing(false);
-            setPullY(0);
-          });
-          return 45;
-        }
-        return 0;
-      });
-    };
-    window.addEventListener("touchstart", onStart, { passive: true });
-    window.addEventListener("touchmove", onMove, { passive: true });
-    window.addEventListener("touchend", onEnd, { passive: true });
-    return () => {
-      window.removeEventListener("touchstart", onStart);
-      window.removeEventListener("touchmove", onMove);
-      window.removeEventListener("touchend", onEnd);
-    };
-  }, [loadDirectory]);
   // A meet shared via link (?add=...) — offer to import it.
   const [pendingShare, setPendingShare] = useState<SharePayload | null>(readSharePayload);
   function clearShare() {
@@ -932,7 +891,20 @@ export function App() {
   }
 
   function finishImport(outcomes: ImportOutcome[], err: string) {
-    const newMeets = outcomes.flatMap((o) => (o.kind === "meet" ? [o.meet] : []));
+    // Don't store duplicate copies of the same meet (e.g. re-importing the same heat sheet) —
+    // dedup by title+start against existing meets AND within this batch. Results imports
+    // (kind "results") are untouched: they overlay times onto matched swimmers, not add a meet.
+    const meetKey = (m: Meet) => `${m.title.trim().toLowerCase()}|${m.start || ""}`;
+    const seenKeys = new Set(meets.map(meetKey));
+    let dupSkipped = 0;
+    const newMeets = outcomes
+      .flatMap((o) => (o.kind === "meet" ? [o.meet] : []))
+      .filter((m) => {
+        const k = meetKey(m);
+        if (seenKeys.has(k)) { dupSkipped++; return false; }
+        seenKeys.add(k);
+        return true;
+      });
     const resultSets = outcomes.flatMap((o) => (o.kind === "results" ? [o] : []));
     let meetsNext = meets;
     if (newMeets.length) {
@@ -940,6 +912,7 @@ export function App() {
       persistMeets(meetsNext);
     }
     const parts: string[] = [];
+    if (dupSkipped > 0) parts.push(`Skipped ${dupSkipped} meet(s) you'd already imported.`);
     if (newMeets.length) {
       const total = newMeets.reduce((n, m) => n + m.entries.length, 0);
       parts.push(`Imported ${newMeets.length} meet file(s) — ${total} swimmers found.`);
@@ -1032,11 +1005,6 @@ export function App() {
 
   return (
     <div className="app">
-      {(pullY > 0 || refreshing) && (
-        <div className="ptr" style={{ height: pullY }} aria-hidden>
-          <span className={"ptr-icon" + (refreshing ? " spin" : "")}>↻</span>
-        </div>
-      )}
       <UpdateBanner />
       {taunt && <div className="taunt-pop" onClick={() => setTaunt("")}>{taunt}</div>}
       {msg && <div className="app-toast" onClick={() => setMsg("")}>{msg}</div>}
@@ -1559,31 +1527,34 @@ function Home(props: any) {
               <div className="meet-head">
                 <h3>{meet.title}</h3>
                 {courseLabel(meet) && <span className="course-badge">{courseLabel(meet)}</span>}
-                {meet.sourceUrl && (
+                <span className="mh-share">
+                  <span className="mh-share-lbl">{t("share_label")}</span>
+                  {meet.sourceUrl && (
+                    <button
+                      className="meet-share"
+                      title={t("share_btn")}
+                      onClick={async () => {
+                        const r = await shareMeet({ t: meet.title, u: meet.sourceUrl!, tm: coachTeam || undefined });
+                        showToast(r === "copied" ? t("share_copied") : r === "shared" ? "" : t("share_fail"));
+                      }}
+                    >
+                      🔗 {t("share_link_w")}
+                    </button>
+                  )}
+                  <button className="meet-pack" title={t("share_code_btn")} onClick={() => props.onShareMeet(meet)}>
+                    #️⃣ {t("share_code_w")}
+                  </button>
                   <button
-                    className="meet-share"
-                    title={t("share_btn")}
-                    onClick={async () => {
-                      const r = await shareMeet({ t: meet.title, u: meet.sourceUrl!, tm: coachTeam || undefined });
-                      showToast(r === "copied" ? t("share_copied") : r === "shared" ? "" : t("share_fail"));
+                    className="meet-pack"
+                    title={t("pack_export")}
+                    onClick={() => {
+                      downloadPack(meet, results);
+                      showToast(t("pack_saved"));
                     }}
                   >
-                    🔗
+                    📤
                   </button>
-                )}
-                <button
-                  className="meet-pack"
-                  title={t("pack_export")}
-                  onClick={() => {
-                    downloadPack(meet, results);
-                    showToast(t("pack_saved"));
-                  }}
-                >
-                  📤
-                </button>
-                <button className="meet-pack" title={t("share_code_btn")} onClick={() => props.onShareMeet(meet)}>
-                  #️⃣
-                </button>
+                </span>
                 <button className="remove" onClick={() => props.removeMeet(meet.id)}>
                   ✕
                 </button>
