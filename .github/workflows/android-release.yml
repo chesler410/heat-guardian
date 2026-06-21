@@ -43,6 +43,11 @@ jobs:
           npx cap add android
           npx cap sync android
           npx capacitor-assets generate --assetPath assets --android || true
+          # Belt-and-suspenders: ensure the location permissions are in the app manifest (the
+          # @capacitor/geolocation plugin should merge them, but make "Find a meet near you" reliable).
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          grep -q ACCESS_COARSE_LOCATION "$MANIFEST" || sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <application#' "$MANIFEST"
+          grep -c "permission.ACCESS_.*_LOCATION" "$MANIFEST"
 
       - name: Pin SDK 35 + version code (Play requirements)
         # android/ is generated above. Pin SDK 35 (Play requires targetSdk >= 35), and set

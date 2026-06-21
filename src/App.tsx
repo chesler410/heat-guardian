@@ -1827,7 +1827,9 @@ function DiscoverView(props: {
           return;
         }
       }
-      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 10000 });
+      // GPS-first (gets a fix outdoors even with no network), accept a recent cached fix, and a
+      // generous timeout — Android's network-location fix is often slow or unavailable indoors.
+      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 20000, maximumAge: 120000 });
       setHere({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       setGeoMsg("");
       setStateFilter("");
