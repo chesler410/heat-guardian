@@ -821,3 +821,7 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .mh-share { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 .mh-share-lbl { font-size: 0.78rem; color: var(--muted); }
 .mh-share .meet-share, .mh-share .meet-pack { font-size: 0.8rem; }
+
+/* per-meet "Add results" button — accented so it reads as an action, not just an icon */
+.mh-results { font-size: 0.8rem; background: rgba(21,184,214,0.14); border-radius: 8px; padding: 3px 9px; color: var(--blue); font-weight: 700; }
+.theme-dark .mh-results { color: #9cc2ff; background: rgba(91,155,255,0.18); }

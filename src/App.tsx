@@ -1562,6 +1562,11 @@ function Home(props: any) {
               <div className="meet-head">
                 <h3>{meet.title}</h3>
                 {courseLabel(meet) && <span className="course-badge">{courseLabel(meet)}</span>}
+                {/* Per-meet "add results" — opens the import flow to overlay actual swum times.
+                    Deprecate this one button if/when live electronic results land. */}
+                <button className="meet-pack mh-results" title={t("results_tip")} onClick={() => props.goImport()}>
+                  📊 {t("results_w")}
+                </button>
                 <span className="mh-share">
                   <span className="mh-share-lbl">{t("share_label")}</span>
                   {meet.sourceUrl && (

@@ -18,6 +18,8 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  results_w: "Results",
+  results_tip: "Add this meet's results — upload the results PDF or paste a live link",
   addtime_me: "+ add the time you swam",
   fb_team_title: "How did your team do?",
   fb_team_sub: "Get an encouraging overall summary of your team's meet.",
@@ -228,6 +230,8 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  results_w: "Resultados",
+  results_tip: "Añade los resultados de esta competencia — sube el PDF o pega un enlace en vivo",
   addtime_me: "+ añade el tiempo que nadaste",
   fb_team_title: "¿Cómo le fue a tu equipo?",
   fb_team_sub: "Recibe un resumen general y alentador de la competencia de tu equipo.",
@@ -435,6 +439,8 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  results_w: "成绩",
+  results_tip: "添加这场比赛的成绩 —— 上传成绩 PDF 或粘贴实时链接",
   addtime_me: "+ 添加你游的成绩",
   fb_team_title: "你的队伍表现如何？",
   fb_team_sub: "获取你队伍本场比赛的鼓励性总体总结。",
@@ -642,6 +648,8 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  results_w: "Resultados",
+  results_tip: "Adicione os resultados desta competição — envie o PDF ou cole um link ao vivo",
   addtime_me: "+ adicione o tempo que você nadou",
   fb_team_title: "Como foi sua equipe?",
   fb_team_sub: "Receba um resumo geral e motivador da competição da sua equipe.",
@@ -849,6 +857,8 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  results_w: "Ergebnisse",
+  results_tip: "Ergebnisse dieses Wettkampfs hinzufügen — Ergebnis-PDF hochladen oder Live-Link einfügen",
   addtime_me: "+ deine geschwommene Zeit eintragen",
   fb_team_title: "Wie lief dein Team?",
   fb_team_sub: "Hol dir eine ermutigende Gesamtübersicht des Wettkampfs deines Teams.",
@@ -1056,6 +1066,8 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  results_w: "Kết quả",
+  results_tip: "Thêm kết quả của giải này — tải PDF kết quả hoặc dán liên kết trực tiếp",
   addtime_me: "+ thêm thời gian bạn đã bơi",
   fb_team_title: "Đội của bạn thi đấu thế nào?",
   fb_team_sub: "Nhận tóm tắt tổng quan, động viên về giải đấu của đội bạn.",
@@ -1263,6 +1275,8 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  results_w: "Résultats",
+  results_tip: "Ajoute les résultats de cette compétition — téléverse le PDF ou colle un lien en direct",
   addtime_me: "+ ajoute le temps que tu as nagé",
   fb_team_title: "Comment a fait ton équipe ?",
   fb_team_sub: "Reçois un résumé général et encourageant de la compétition de ton équipe.",
@@ -1503,6 +1517,8 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  results_w: "Результаты",
+  results_tip: "Добавь результаты этого соревнования — загрузи PDF или вставь ссылку на трансляцию",
   addtime_me: "+ добавь своё время",
   fb_team_title: "Как выступила твоя команда?",
   fb_team_sub: "Получи ободряющий общий обзор соревнования твоей команды.",
