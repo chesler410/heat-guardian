@@ -73,11 +73,14 @@ jobs:
           plutil -replace ITSAppUsesNonExemptEncryption -bool NO "$PLIST" 2>/dev/null \
             || plutil -insert ITSAppUsesNonExemptEncryption -bool NO "$PLIST"
           plutil -p "$PLIST" | grep ITSAppUsesNonExemptEncryption
-          # Location usage string — required or iOS silently denies "Find a meet near you".
-          MSG="Heat Guardian uses your location only to show swim meets near you. It never leaves your device."
-          plutil -replace NSLocationWhenInUseUsageDescription -string "$MSG" "$PLIST" 2>/dev/null \
-            || plutil -insert NSLocationWhenInUseUsageDescription -string "$MSG" "$PLIST"
-          plutil -p "$PLIST" | grep NSLocationWhenInUseUsageDescription
+          # Location purpose strings. We only ever request when-in-use, but the geolocation
+          # library references the "always" API, so Apple (warning 90683) requires BOTH keys —
+          # otherwise the build is flagged. Same honest string for each.
+          MSG="Heat Guardian uses your location only to show swim meets near you. It never tracks you in the background and never leaves your device."
+          for KEY in NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription NSLocationAlwaysUsageDescription; do
+            plutil -replace "$KEY" -string "$MSG" "$PLIST" 2>/dev/null || plutil -insert "$KEY" -string "$MSG" "$PLIST"
+          done
+          plutil -p "$PLIST" | grep NSLocation
 
       - name: Write App Store Connect API key
         env:
