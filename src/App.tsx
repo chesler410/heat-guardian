@@ -700,6 +700,8 @@ export function App() {
   const [filter, setFilter] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [shareCode, setShareCode] = useState(""); // a meet just shared → show its code persistently
+  const [copied, setCopied] = useState(false);
   const [results, setResultsState] = useState<Record<string, string>>(loadResults);
   const [notes, setNotesState] = useState<Record<string, string>>(() => loadMap("notes"));
   const [goals, setGoalsState] = useState<Record<string, string>>(() => loadMap("goals"));
@@ -856,7 +858,13 @@ export function App() {
   }
   function addSwimmer(name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean) {
     if (!name.trim()) return;
-    if (swimmers.some((s) => matchesName(s.name, name) && (s.team || "") === (team || ""))) return;
+    const existing = swimmers.find((s) => matchesName(s.name, name) && (s.team || "") === (team || ""));
+    if (existing) {
+      // Already on the list — flip their list (mine ↔ watch) when you tap the OTHER button,
+      // instead of silently doing nothing (the bug where "Watch" looked unresponsive).
+      if (!!existing.watch !== !!watch) persistSwimmers(swimmers.map((s) => (s.id === existing.id ? { ...s, watch } : s)));
+      return;
+    }
     persistSwimmers([...swimmers, makeSwimmer(name, team, swimmers.length, age, gender, watch)]);
   }
   function removeSwimmer(id: string) {
@@ -914,7 +922,9 @@ export function App() {
     setMsg("");
     try {
       const code = await cacheMeet(meet, results, loadProxy() || DEFAULT_PROXY);
-      setMsg(t("share_code_msg", { code }));
+      try { await navigator.clipboard?.writeText(code); } catch { /* clipboard may be blocked */ }
+      setShareCode(code); // persistent banner with Copy / Share, instead of a fleeting toast
+      setCopied(true);
     } catch (e: any) {
       setMsg(t(e?.message || "share_failed"));
     }
@@ -1031,6 +1041,32 @@ export function App() {
       {taunt && <div className="taunt-pop" onClick={() => setTaunt("")}>{taunt}</div>}
       {msg && <div className="app-toast" onClick={() => setMsg("")}>{msg}</div>}
       {busy && !msg && <div className="app-toast busy-toast">⏳ {t("imp_working")}</div>}
+      {shareCode && (
+        <div className="share-code-banner">
+          <div className="scb-text">
+            <span className="scb-label">{t("share_code_label")}</span>
+            <strong className="scb-value">{shareCode}</strong>
+            <span className="scb-hint">{t("share_code_hint")}</span>
+          </div>
+          <div className="scb-actions">
+            <button
+              className="chip sm"
+              onClick={async () => { try { await navigator.clipboard?.writeText(shareCode); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} }}
+            >
+              {copied ? t("share_copied2") : t("share_copy")}
+            </button>
+            {typeof navigator !== "undefined" && (navigator as any).share && (
+              <button
+                className="chip sm"
+                onClick={() => (navigator as any).share({ title: "Heat Guardian", text: t("share_msg_text", { code: shareCode }) }).catch(() => {})}
+              >
+                {t("share_share")}
+              </button>
+            )}
+            <button className="chip sm scb-x" onClick={() => setShareCode("")}>✕</button>
+          </div>
+        </div>
+      )}
       <header className="apphead">
         <div className="brandrow">
           <div className="brand" onClick={bumpLogo} title="Heat Guardian">

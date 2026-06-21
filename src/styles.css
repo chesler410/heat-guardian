@@ -803,3 +803,14 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .ptr-icon { font-size: 1.4rem; color: var(--blue); padding-bottom: 6px; }
 .ptr-icon.spin { animation: ptrspin 0.7s linear infinite; }
 @keyframes ptrspin { to { transform: rotate(360deg); } }
+
+/* persistent share-code banner — copy / share the code instead of a fleeting toast */
+.share-code-banner { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 16px); transform: translateX(-50%); width: calc(100% - 28px); max-width: 532px; background: var(--card); border: 1.5px solid var(--accent); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 11px 13px; z-index: 60; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.scb-text { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.scb-label { color: var(--muted); font-size: 0.85rem; }
+.scb-value { font-size: 1.45rem; letter-spacing: 3px; color: var(--blue); font-variant-numeric: tabular-nums; }
+.theme-dark .scb-value { color: #9cc2ff; }
+.scb-hint { color: #1f9d57; font-size: 0.76rem; }
+.theme-dark .scb-hint { color: #6fe0a0; }
+.scb-actions { display: flex; gap: 6px; align-items: center; }
+.scb-x { padding: 4px 9px; }

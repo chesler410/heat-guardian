@@ -18,6 +18,12 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  share_code_label: "Share code",
+  share_code_hint: "copied — paste it to your team",
+  share_copy: "📋 Copy",
+  share_copied2: "✓ Copied",
+  share_share: "↗ Share",
+  share_msg_text: "Join my meet on Heat Guardian — import code: {code}",
   em_nomeet_t: "No meet loaded",
   em_nomeet_b: "Add this weekend's heat sheet or results — or find a meet near you.",
   disc_near_none: "No meets within {n} miles in our directory yet.",
@@ -215,6 +221,12 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  share_code_label: "Código para compartir",
+  share_code_hint: "copiado — pégalo a tu equipo",
+  share_copy: "📋 Copiar",
+  share_copied2: "✓ Copiado",
+  share_share: "↗ Compartir",
+  share_msg_text: "Únete a mi competencia en Heat Guardian — código: {code}",
   em_nomeet_t: "Sin competencia cargada",
   em_nomeet_b: "Añade la planilla o los resultados de este fin de semana, o busca una competencia cerca.",
   disc_near_none: "Aún no hay competencias a {n} millas en nuestro directorio.",
@@ -409,6 +421,12 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  share_code_label: "分享代码",
+  share_code_hint: "已复制 —— 发给你的队伍",
+  share_copy: "📋 复制",
+  share_copied2: "✓ 已复制",
+  share_share: "↗ 分享",
+  share_msg_text: "加入我在 Heat Guardian 的比赛 —— 导入代码：{code}",
   em_nomeet_t: "未加载比赛",
   em_nomeet_b: "添加本周末的赛程或成绩，或查找附近的比赛。",
   disc_near_none: "目录中暂无 {n} 英里内的比赛。",
@@ -603,6 +621,12 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  share_code_label: "Código de compartilhamento",
+  share_code_hint: "copiado — cole para sua equipe",
+  share_copy: "📋 Copiar",
+  share_copied2: "✓ Copiado",
+  share_share: "↗ Compartilhar",
+  share_msg_text: "Entre na minha competição no Heat Guardian — código: {code}",
   em_nomeet_t: "Nenhuma competição carregada",
   em_nomeet_b: "Adicione a planilha ou os resultados deste fim de semana, ou encontre uma competição por perto.",
   disc_near_none: "Ainda não há competições a {n} milhas no nosso diretório.",
@@ -797,6 +821,12 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  share_code_label: "Freigabecode",
+  share_code_hint: "kopiert – schick ihn deinem Team",
+  share_copy: "📋 Kopieren",
+  share_copied2: "✓ Kopiert",
+  share_share: "↗ Teilen",
+  share_msg_text: "Komm zu meinem Wettkampf bei Heat Guardian – Code: {code}",
   em_nomeet_t: "Kein Wettkampf geladen",
   em_nomeet_b: "Füge die Startliste oder Ergebnisse dieses Wochenendes hinzu – oder finde einen Wettkampf in der Nähe.",
   disc_near_none: "Noch keine Wettkämpfe im Umkreis von {n} Meilen im Verzeichnis.",
@@ -991,6 +1021,12 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  share_code_label: "Mã chia sẻ",
+  share_code_hint: "đã sao chép — gửi cho đội của bạn",
+  share_copy: "📋 Sao chép",
+  share_copied2: "✓ Đã sao chép",
+  share_share: "↗ Chia sẻ",
+  share_msg_text: "Tham gia giải của tôi trên Heat Guardian — mã: {code}",
   em_nomeet_t: "Chưa tải giải nào",
   em_nomeet_b: "Thêm danh sách đợt bơi hoặc kết quả cuối tuần này, hoặc tìm giải gần bạn.",
   disc_near_none: "Chưa có giải nào trong bán kính {n} dặm trong danh bạ.",
@@ -1185,6 +1221,12 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  share_code_label: "Code de partage",
+  share_code_hint: "copié — colle-le à ton équipe",
+  share_copy: "📋 Copier",
+  share_copied2: "✓ Copié",
+  share_share: "↗ Partager",
+  share_msg_text: "Rejoins ma compétition sur Heat Guardian — code : {code}",
   em_nomeet_t: "Aucune compétition chargée",
   em_nomeet_b: "Ajoute le programme ou les résultats de ce week-end, ou trouve une compétition près de toi.",
   disc_near_none: "Aucune compétition à moins de {n} miles dans notre annuaire pour l'instant.",
@@ -1412,6 +1454,12 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  share_code_label: "Код для обмена",
+  share_code_hint: "скопировано — отправь команде",
+  share_copy: "📋 Копировать",
+  share_copied2: "✓ Скопировано",
+  share_share: "↗ Поделиться",
+  share_msg_text: "Заходи на моё соревнование в Heat Guardian — код: {code}",
   em_nomeet_t: "Соревнование не загружено",
   em_nomeet_b: "Добавь стартовый протокол или результаты этих выходных — или найди соревнование рядом.",
   disc_near_none: "Пока нет соревнований в радиусе {n} миль в каталоге.",
