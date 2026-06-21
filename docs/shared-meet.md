@@ -59,7 +59,8 @@ interface ResultCell {
   src: ResultSource;
   at: number;          // epoch ms, last write
   agree?: number;      // # of independent crowd entries that match this time (for promotion)
-  confirmed?: boolean; // true once official (or live) corroborates it
+  confirmed?: boolean; // true by default for live/official (the machine/legal record); for crowd,
+                       // true only once a machine source corroborates. Drives the tentative styling.
   // No name/email/account of the contributor — accountless. Provenance is the SOURCE, not the person.
 }
 ```
@@ -76,16 +77,26 @@ When more than one source has a value for the same swim, show the highest-confid
 official  >  live  >  crowd(agree ≥ 2)  >  crowd(single)  >  seed
 ```
 
-A `crowd` or `live` cell renders **unconfirmed** (bold, tap-to-verify) until an `official` import
-corroborates it → then `confirmed: true` and it drops to normal weight.
+**Trust the machine over the parent's eyes.** `live` (the Hy-Tek real-time feed straight from
+Meet Manager) is the **legal record** — it is what was recorded until an audit or a review against
+a DQ / equipment malfunction. So:
+
+- **`live` and `official` are authoritative/trusted by default** (`confirmed: true`), NOT rendered
+  as tentative. `official` is simply the post-review final (it reflects any DQ/correction the live
+  feed predates), so it overrides `live` *only when it actually differs.*
+- **Only `crowd`/manual is tentative** — it gets the bold "unconfirmed" + `✍︎ manually entered`
+  treatment. A crowd time **never overrides a `live` or `official` value**; the machine wins, full
+  stop. Crowd is a stopgap *only* where no live feed exists, and it yields the instant a machine
+  source arrives.
 
 ## UI spec
 
 ### The "bold until you click" affordance (the user's idea — it doubles as the trust signal)
 
-- A **captured but unconfirmed** time (`crowd`/`live`, `!confirmed`) renders **bold** with a small
-  source chip, distinct from the documented `seed` (plain). This reuses the green swum-time pill
-  we just shipped — unconfirmed = bold/outlined pill; confirmed = solid pill.
+- Only a **manually entered, unconfirmed** time (`crowd`, `!confirmed`) renders **bold/outlined**
+  with a source chip, distinct from the documented `seed` (plain). `live` and `official` render as
+  **trusted/solid** (the green swum-time pill we just shipped) — they are the machine record, not
+  something to second-guess.
 - **Tap the time → a provenance sheet:** shows source ("✍︎ Manually entered by the room",
   "📡 Live from the host's results page", "📄 From the official results"), the timestamp, agree
   count, and a **"Verify against official results ↗"** action (jump to the meet's results
@@ -135,8 +146,9 @@ accountless:
   the user not to fully trust it.* The UI never launders a crowd time into an official one.
 - **2-agree promotion:** a `crowd` time only reaches normal confidence when ≥ 2 independent
   entries match (`agree ≥ 2`). A lone outlier stays visibly tentative.
-- **Official wins:** when the results PDF/SD3 imports, `official` cells overwrite and set
-  `confirmed`, healing any bad crowd value.
+- **The machine wins:** any `live` or `official` cell overwrites a `crowd` value and is trusted
+  (`confirmed`) — live is the legal record, official is its post-review final. A crowd time can
+  never override either; it exists only to fill the gap until a machine source arrives.
 - **Append-only-ish:** prefer recording the latest cell with provenance over destructive
   overwrite, so a bad value is *superseded*, not lost — and an official import can always correct.
 - **Rate limit:** reuse the optional per-IP KV limiter already in the Worker for the results POST.
