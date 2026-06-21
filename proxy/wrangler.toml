@@ -17,6 +17,6 @@ bucket_name = "heat-guardian-meets"
 #   2) uncomment the 3 lines below and paste the printed id
 #   3) wrangler deploy
 # Also set an account-level monthly spend cap in the Anthropic console — belt and suspenders.
-# [[kv_namespaces]]
-# binding = "RL"
-# id = "PASTE_KV_NAMESPACE_ID_HERE"
+[[kv_namespaces]]
+binding = "RL"
+id = "3e20e61bd3a04f0ca4b112de606d06fe"
