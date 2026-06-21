@@ -14,10 +14,12 @@ export const IS_NATIVE = Capacitor.isNativePlatform();
 export const DEFAULT_PROXY: string =
   import.meta.env.VITE_PROXY_URL || "https://my-swimmer-fetch.ches-hughes.workers.dev/?url={url}";
 
-// Where the in-app "Feedback" button sends people. Set repo variable FEEDBACK_URL to a
-// Google Form (or Tally/Typeform) link. Falls back to the GitHub issues page.
+// Where the in-app "Feedback" button sends people — a Google Form (works for testers AND at
+// release; not GitHub, which is too techy for parents and was only ever a fallback). Defaults
+// to the live form so it's correct in the native app builds too (which don't pass the env var).
+// During TestFlight/Play testing, testers also have the store's built-in screenshot feedback.
 export const FEEDBACK_URL: string =
-  import.meta.env.VITE_FEEDBACK_URL || "https://github.com/chesler410/heat-guardian/issues";
+  import.meta.env.VITE_FEEDBACK_URL || "https://forms.gle/EmQcAHaMxBTg3QJU6";
 
 // Optional tip jar (free app, no ads). Shown in About.
 export const KOFI_URL: string = import.meta.env.VITE_KOFI_URL || "https://ko-fi.com/chesler410";

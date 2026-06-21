@@ -814,3 +814,9 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .theme-dark .scb-hint { color: #6fe0a0; }
 .scb-actions { display: flex; gap: 6px; align-items: center; }
 .scb-x { padding: 4px 9px; }
+
+/* "Whose meet" context label — shown when a single swimmer is in focus */
+.focus-swimmer { margin: 2px 4px 12px; font-size: 1.05rem; color: var(--ink); }
+.focus-swimmer strong { color: var(--blue); }
+.theme-dark .focus-swimmer strong { color: #9cc2ff; }
+.fs-team { color: var(--muted); font-weight: 600; }

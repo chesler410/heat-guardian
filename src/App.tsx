@@ -1329,6 +1329,10 @@ function Home(props: any) {
     .filter((d: DE) => !d.e.relay && !resultOf(d))
     .sort((a: DE, b: DE) => a.e.event - b.e.event)
     .slice(0, swimmers.length > 1 ? 3 : 2);
+  // Whose meet is this? With a single swimmer in focus (only one, or filtered to one), label the
+  // screen with their name + team — the arm table/cards otherwise don't show whose swims these are.
+  const focused: Swimmer | null =
+    swimmers.length === 1 ? swimmers[0] : filter.size === 1 ? swimmers.find((s: Swimmer) => filter.has(s.id)) || null : null;
 
   // Phase 3b — AI post-meet feedback, swimmer mode only. We gather the swimmer's OWN swims (not
   // friends) that have a time or a reflection, and send COPPA-minimized context (race/seed/result/
@@ -1422,6 +1426,12 @@ function Home(props: any) {
               })}
             </div>
           )}
+          {focused && (
+            <div className="focus-swimmer">
+              🏊 <strong>{displayName(focused.name)}</strong>
+              {focused.team ? <span className="fs-team"> · {focused.team}</span> : null}
+            </div>
+          )}
           {upNext.length > 0 && (
             <section className="card upnext">
               <h2>⏱ {t("upnext")}</h2>
@@ -1469,9 +1479,9 @@ function Home(props: any) {
           )}
           {!coach && groups.length > 0 && <Fueling />}
           {!coach && groups.length > 0 && <Prep />}
-          {groups.length > 0 && (
+          {(groups.length > 0 || pastGroups.length > 0) && (
           <div className="events-head">
-            <h2 className="section-title">{t("meets", { n: groups.length })}</h2>
+            {groups.length > 0 && <h2 className="section-title">{t("meets", { n: groups.length })}</h2>}
             <div className="seg">
               <button className={view === "cards" ? "on" : ""} onClick={() => pickView("cards")}>
                 {t("v_cards")}
@@ -1482,7 +1492,7 @@ function Home(props: any) {
             </div>
           </div>
           )}
-          {groups.length > 0 && view === "table" && (
+          {(groups.length > 0 || pastGroups.length > 0) && view === "table" && (
             <div className="colchips">
               {t("columns")}
               <button className={"chip sm colpb" + (cols.pb ? " on" : "")} onClick={() => toggleCol("pb")}>
