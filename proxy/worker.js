@@ -12,10 +12,13 @@ import Anthropic from "@anthropic-ai/sdk";
 const MAX_PDF_BYTES = 30 * 1024 * 1024; // 30 MB
 const MAX_MEET_BYTES = 3 * 1024 * 1024; // 3 MB — a meet-pack JSON is small
 const MAX_FEEDBACK_BYTES = 24 * 1024; // 24 KB of swim context + notes is plenty
-const FEEDBACK_DAILY_CAP = 40; // per-IP/day, when KV is bound
-const FEEDBACK_GLOBAL_DAILY_CAP = 250; // ALL feedback calls/day — a hard spend backstop so abuse or
-// a viral spike can't run up the AI bill; pairs with the monthly cap you set in the Anthropic console.
-const MEET_DAILY_CAP = 60; // per-IP/day share uploads, to deter storage spam
+// Spend math: one Opus 4.8 feedback call ≈ 1.5¢ (~1k tokens in + ~400 out). The owner's Anthropic
+// monthly spend limit (~$20) is the hard, ironclad stop. These caps are defense-in-depth to slow the
+// burn and block single-day abuse so no one bad day eats the month:
+const FEEDBACK_DAILY_CAP = 40; // per-IP/day (~$0.60/IP) — stops one user/script hammering it
+const FEEDBACK_GLOBAL_DAILY_CAP = 150; // ALL feedback calls/day ≈ $2.25/day max — generous headroom
+// for a real meet day (normal pilot use is well under this), but sized so it can't blow the ~$20/mo.
+const MEET_DAILY_CAP = 60; // per-IP/day share uploads, to deter storage spam (no AI cost)
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
