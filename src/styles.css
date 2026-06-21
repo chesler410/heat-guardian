@@ -235,6 +235,16 @@ tr.arm-ach.lvl-aaaa td:first-child, tr.arm-ach.arm-champ td:first-child { box-sh
   color: var(--muted);
 }
 .ev-meta strong { color: var(--ink); }
+/* The actual time swum is the value parents hunt for — make it pop as a green pill. */
+.ev-meta .swam-val {
+  background: rgba(22, 168, 95, 0.12);
+  color: var(--close);
+  border-radius: 999px;
+  padding: 2px 11px;
+  font-weight: 600;
+  order: -1;
+}
+.ev-meta .swam-val strong { color: var(--close); font-size: 1.08rem; font-variant-numeric: tabular-nums; }
 .lane {
   background: var(--bg);
   border-radius: 7px;
@@ -437,6 +447,8 @@ footer { margin-top: 20px; text-align: center; }
 .theme-dark .sample { border-color: #2a3744; }
 .theme-dark .champ-need { color: #ff9d6b; }
 .theme-dark .result-meta, .theme-dark .ev-meta { color: var(--muted); }
+.theme-dark .ev-meta .swam-val { background: rgba(22, 168, 95, 0.22); color: #5fe3a0; }
+.theme-dark .ev-meta .swam-val strong { color: #5fe3a0; }
 
 /* secondary (backup) button */
 .secondary {

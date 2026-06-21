@@ -236,7 +236,7 @@ function EntryCard({
       <div className="ev-meta">
         <span>{e.heat ?? t("heat_tbd")}</span>
         <span className="lane">{t("lane", { n: e.lane })}</span>
-        <span>
+        <span className={!e.relay && result ? "swam-val" : undefined}>
           {e.relay ? t("team_label") : result ? t("swam") : t("seed")} <strong>{time}</strong>
         </span>
       </div>
