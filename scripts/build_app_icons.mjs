@@ -1,29 +1,26 @@
-// Generate the 1024² icon master + 2732² splash screens that @capacitor/assets needs
-// (it only had assets/logo.svg before). Rasterizes the SVG with sharp (already a dep).
-// Run: node scripts/build_app_icons.mjs   — then CI's `capacitor-assets generate` fans
-// these out to every iOS/Android icon + splash size.
+// The app-icon MASTER is assets/logo.png — the full-bleed navy shield (1024², committed
+// directly). In CI, `capacitor-assets generate` fans it out to every iOS/Android icon size.
+// This script regenerates the splash screens FROM that same icon, centered on the icon's own
+// navy so the tile blends seamlessly into the splash background.
+//
+// Run after dropping in a new icon:  node scripts/build_app_icons.mjs
 import sharp from "sharp";
-import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const A = (f) => resolve(root, "assets", f);
-const svg = readFileSync(A("logo.svg"));
-const BG = "#06243f"; // app background_color (matches manifest + capacitor.config.ts)
+const SRC = A("logo.png");
 
-// High density so the 64-viewBox SVG rasterizes crisp at large sizes.
-const render = (px) => sharp(svg, { density: 2400 }).resize(px, px);
+// Sample the icon's corner so the splash background exactly matches its navy (no visible seam).
+const c = await sharp(SRC).extract({ left: 6, top: 6, width: 1, height: 1 }).raw().toBuffer();
+const BG = { r: c[0], g: c[1], b: c[2], alpha: 1 };
 
-// 1024² icon master — the navy rounded tile is already in the SVG, so this works as the
-// plain logo source; capacitor-assets derives all icon sizes (incl. maskable) from it.
-await render(1024).png().toFile(A("logo.png"));
-
-// Splash: the logo centered on the app's navy at ~36% of the canvas, light + dark the same
-// (the brand is already dark, so one treatment reads well on both).
+// Splash: the shield centered at ~40% of a 2732² canvas on the icon's navy. Light + dark are the
+// same (the brand is already dark, so one treatment reads well on both).
 async function splash(file) {
   const S = 2732;
-  const logo = await render(Math.round(S * 0.36)).png().toBuffer();
+  const logo = await sharp(SRC).resize(Math.round(S * 0.4)).png().toBuffer();
   await sharp({ create: { width: S, height: S, channels: 4, background: BG } })
     .composite([{ input: logo, gravity: "centre" }])
     .png()
@@ -32,4 +29,8 @@ async function splash(file) {
 await splash("splash.png");
 await splash("splash-dark.png");
 
-console.log("Wrote assets/logo.png (1024²), splash.png + splash-dark.png (2732²).");
+console.log(
+  "Regenerated splash.png + splash-dark.png from assets/logo.png (bg #" +
+    [c[0], c[1], c[2]].map((x) => x.toString(16).padStart(2, "0")).join("") +
+    ")."
+);
