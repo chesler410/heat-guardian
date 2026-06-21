@@ -7,6 +7,15 @@ import "./styles.css";
 
 applyTheme();
 
+// Ask the browser to make our localStorage durable so a parent's swimmers + meets aren't
+// evicted under storage pressure (mainly protects the web PWA — native WebViews already keep
+// localStorage across launches). Fire-and-forget; never blocks startup, harmless if unsupported.
+if (navigator.storage?.persist) {
+  navigator.storage.persisted?.().then((already) => {
+    if (!already) navigator.storage.persist().catch(() => {});
+  }).catch(() => {});
+}
+
 const rootEl = document.getElementById("root")!;
 
 function showFatal(message: string) {
