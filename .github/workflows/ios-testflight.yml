@@ -1,17 +1,24 @@
 name: iOS TestFlight
 
-# Builds the Capacitor iOS app on a macOS runner and uploads to TestFlight.
-# No Mac needed locally. Reuses the ACCOUNT-LEVEL App Store Connect API key from
-# the sibling health-rpg setup — copy these 4 repo secrets over and it just works:
-#   APPSTORE_CONNECT_KEY_ID       App Store Connect API key ID
-#   APPSTORE_CONNECT_ISSUER_ID    Issuer UUID
-#   APPSTORE_CONNECT_KEY_BASE64   base64 of the .p8 key file
-#   APPLE_TEAM_ID                 Apple Developer team ID (10 chars)
-# One-time per app: create the app record in App Store Connect with bundle id
-#   com.chesler410.nextheat  (matches capacitor.config.ts)
-# Signing is automatic (-allowProvisioningUpdates) — Apple mints the profile via
-# the API key, so there are no cert/profile secrets to manage. If that ever churns,
-# switch to the manual-keychain approach used in health-rpg's testflight.yml.
+# Builds the Capacitor iOS app on a macOS runner and uploads to TestFlight. No Mac needed locally.
+#
+# Signing: MANUAL (the durable fix health-rpg adopted after automatic signing churned through
+# Apple's certificate cap). We import ONE distribution cert + the app's provisioning profile into
+# a throwaway keychain and sign with exactly those — NO -allowProvisioningUpdates, so Apple is
+# never asked to mint a Development cert. No more revoking certs.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   APPSTORE_CONNECT_KEY_ID       App Store Connect API key ID        (upload — reuse health-rpg's)
+#   APPSTORE_CONNECT_ISSUER_ID    Issuer UUID                          (upload — reuse health-rpg's)
+#   APPSTORE_CONNECT_KEY_BASE64   base64 of the .p8 key file           (upload — reuse health-rpg's)
+#   APPLE_TEAM_ID                 Apple Developer team ID (10 chars)   (reuse health-rpg's)
+#   DIST_CERT_P12_BASE64          base64 of the "Apple Distribution" .p12  (REUSE health-rpg's —
+#   DIST_CERT_PASSWORD            its export password                        a dist cert is
+#                                                                            account-wide)
+#   PROVISIONING_PROFILE_BASE64   base64 of an App Store profile for com.chesler410.nextheat (NEW —
+#   PROVISIONING_PROFILE_NAME     that profile's name                       make one in the portal
+#                                                                           with the same dist cert)
+# One-time per app: create the app record in App Store Connect with bundle id com.chesler410.nextheat.
 
 on:
   workflow_dispatch:
@@ -80,25 +87,65 @@ jobs:
           mkdir -p "$HOME/.appstoreconnect/private_keys"
           echo "$API_KEY_B64" | base64 -d > "$HOME/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8"
 
+      # Manual signing (durable fix): import the distribution cert + App Store profile into a
+      # throwaway keychain. xcodebuild signs with exactly these — Apple never mints a new cert.
+      - name: Import signing cert + profile
+        env:
+          P12_B64: ${{ secrets.DIST_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.DIST_CERT_PASSWORD }}
+          PROFILE_B64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PWD=$(openssl rand -base64 24)
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+          echo "$P12_B64" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" \
+            -P "$P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/xcodebuild
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PWD" "$KEYCHAIN"
+          # Make our keychain searchable for the build (keep login.keychain too).
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$PROFILE_B64" | base64 -d > \
+            "$HOME/Library/MobileDevice/Provisioning Profiles/heatguardian.mobileprovision"
+
+      - name: Set App-target manual signing
+        env:
+          PROFILE_NAME: ${{ secrets.PROVISIONING_PROFILE_NAME }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Scope signing to the App target ONLY. Global CLI signing settings also hit the Pods
+          # framework targets, which reject an app provisioning profile — the same lesson health-rpg
+          # learned with swift-crypto. They used an xcconfig; Capacitor uses CocoaPods, so we patch
+          # the App target's build settings directly via the xcodeproj gem.
+          gem install xcodeproj --no-document
+          ruby -e '
+            require "xcodeproj"
+            proj = Xcodeproj::Project.open("ios/App/App.xcodeproj")
+            target = proj.targets.find { |t| t.name == "App" }
+            target.build_configurations.each do |c|
+              c.build_settings["CODE_SIGN_STYLE"] = "Manual"
+              c.build_settings["CODE_SIGN_IDENTITY"] = "Apple Distribution"
+              c.build_settings["PROVISIONING_PROFILE_SPECIFIER"] = ENV["PROFILE_NAME"]
+              c.build_settings["DEVELOPMENT_TEAM"] = ENV["TEAM_ID"]
+            end
+            proj.save
+          '
+
       - name: Build number from commit count
         id: bn
         run: echo "build=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Archive
         working-directory: ios/App
-        env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          API_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
-          API_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
         run: |
+          # Manual signing comes from the App target's build settings (set above), NOT the CLI —
+          # CLI signing args would also force the profile onto the CocoaPods framework targets.
           MARKETING=$(node -p "require('../../package.json').version")
           xcodebuild -workspace App.xcworkspace -scheme App \
             -configuration Release -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8" \
-            -authenticationKeyID "$API_KEY_ID" -authenticationKeyIssuerID "$API_ISSUER_ID" \
-            -allowProvisioningUpdates \
-            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
             MARKETING_VERSION="$MARKETING" CURRENT_PROJECT_VERSION='${{ steps.bn.outputs.build }}' \
             archive
 
@@ -106,28 +153,26 @@ jobs:
         working-directory: ios/App
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          API_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
-          API_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
+          PROFILE_NAME: ${{ secrets.PROVISIONING_PROFILE_NAME }}
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
-            <key>method</key><string>app-store-connect</string>
+            <key>method</key><string>app-store</string>
             <key>teamID</key><string>${TEAM_ID}</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.chesler410.nextheat</key><string>${PROFILE_NAME}</string>
+            </dict>
             <key>uploadSymbols</key><true/>
           </dict></plist>
           EOF
-          # The export step needs the SAME App Store Connect API key auth as the archive
-          # step — without it, xcodebuild falls back to a local Xcode account/cert (none on
-          # CI) and fails with "No Accounts / No signing certificate / No profiles".
+          # Manual export signs with the imported cert + profile (no API-key/auto provisioning).
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportPath "$RUNNER_TEMP/ipa" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8" \
-            -authenticationKeyID "$API_KEY_ID" -authenticationKeyIssuerID "$API_ISSUER_ID" \
-            -allowProvisioningUpdates
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
 
       - name: Upload to TestFlight
         env:
