@@ -290,7 +290,7 @@ function EntryCard({
           />
         ) : (
           <button className="inline-link" onClick={() => setEditing(true)}>
-            {result ? t("edittime") : t("addtime")}
+            {result ? t("edittime") : swimmer ? t("addtime_me") : t("addtime")}
           </button>
         )}
       </div>
@@ -1317,13 +1317,33 @@ function Home(props: any) {
           return { race: raceOf(d.e), seed: d.e.seed, result: results[k], cut, note: notes[k] };
         })
         .filter((s) => s.result || s.note);
+  // Coach team summary input — the team's resulted swims across loaded meets, with FIRST names
+  // (the coach needs to know who); no last names / contact / location leave the device.
+  const teamFbSwims = !coach
+    ? []
+    : allGroups
+        .flatMap((g: any) => g.items as DE[])
+        .filter((d: DE) => !d.e.relay && (results[resultKey(d.meetId, d.e.event, d.swimmer)] || notes[resultKey(d.meetId, d.e.event, d.swimmer)]))
+        .map((d: DE) => {
+          const k = resultKey(d.meetId, d.e.event, d.swimmer);
+          const c = cutFor(d, results[k]);
+          const cut = c?.achieved ? `made ${c.achieved}` : c?.champ?.met ? "made SE champ" : "";
+          return { name: firstName(d.swimmer), race: raceOf(d.e), result: results[k], cut };
+        })
+        .slice(0, 60);
   const [fb, setFb] = useState<{ loading: boolean; text: string; err: string }>({ loading: false, text: "", err: "" });
-  async function runFeedback() {
-    if (!fbSwims.length) return;
+  async function runFeedback(kind: "swimmer" | "team" = "swimmer") {
+    const swims = kind === "team" ? teamFbSwims : fbSwims;
+    if (!swims.length) return;
     setFb({ loading: true, text: "", err: "" });
     try {
       const me = swimmers.find((s: Swimmer) => !s.watch);
-      const text = await getFeedback(fbSwims, me?.age, loadProxy() || DEFAULT_PROXY);
+      const text = await getFeedback(
+        swims,
+        kind === "swimmer" ? me?.age : undefined,
+        loadProxy() || DEFAULT_PROXY,
+        kind === "team" ? { kind: "team", teamName: coachTeam } : undefined
+      );
       setFb({ loading: false, text, err: "" });
     } catch (e: any) {
       setFb({ loading: false, text: "", err: t(e?.message || "feedback_failed") });
@@ -1379,6 +1399,17 @@ function Home(props: any) {
                 <div className="stat"><span className="stat-n">{teamStats.achieved}</span><span className="stat-l">{t("ts_cuts")}</span></div>
                 <div className="stat"><span className="stat-n">{teamStats.champ}</span><span className="stat-l">🏆 {t("sechamp")}</span></div>
               </div>
+            </section>
+          )}
+          {coach && teamFbSwims.length > 0 && (
+            <section className="card feedback-card">
+              <h2>✨ {t("fb_team_title")}</h2>
+              {fb.text ? <p className="fb-text">{fb.text}</p> : <p className="muted">{t("fb_team_sub")}</p>}
+              {fb.err && <p className="fb-err">{fb.err}</p>}
+              <button className="primary" disabled={fb.loading} onClick={() => runFeedback("team")}>
+                {fb.loading ? t("fb_loading") : fb.text ? t("fb_again") : t("fb_team_go")}
+              </button>
+              <p className="muted small">{t("fb_disclaimer")}</p>
             </section>
           )}
           {swimmers.length > 1 && (
@@ -1443,7 +1474,7 @@ function Home(props: any) {
               <h2>✨ {t("fb_title")}</h2>
               {fb.text ? <p className="fb-text">{fb.text}</p> : <p className="muted">{t("fb_sub")}</p>}
               {fb.err && <p className="fb-err">{fb.err}</p>}
-              <button className="primary" disabled={fb.loading} onClick={runFeedback}>
+              <button className="primary" disabled={fb.loading} onClick={() => runFeedback()}>
                 {fb.loading ? t("fb_loading") : fb.text ? t("fb_again") : t("fb_go")}
               </button>
               <p className="muted small">{t("fb_disclaimer")}</p>

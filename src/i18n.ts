@@ -18,6 +18,10 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  addtime_me: "+ add the time you swam",
+  fb_team_title: "How did your team do?",
+  fb_team_sub: "Get an encouraging overall summary of your team's meet.",
+  fb_team_go: "✨ Team meet summary",
   share_label: "Share:",
   share_link_w: "Link",
   share_code_w: "Code",
@@ -135,7 +139,7 @@ const en: Dict = {
   addtime: "＋ add the time they swam", edittime: "✎ edit swum time", timeph: "Time swum, e.g. 1:38.50",
   armlegend: "Ev = event, Ht = heat, Ln = lane. FR free · BK back · BR breast · FL fly · IM.",
   arm_qualified: "Qualified: {lvl}", arm_achnote: "Shaded rows = a cut already achieved (color shows the level).", day_n: "Day {n}",
-  team_stats: "Team at a glance", ts_swimmers: "Swimmers", ts_events: "Events", ts_cuts: "Cuts achieved",
+  team_stats: "Your team at a glance", ts_swimmers: "Swimmers", ts_events: "Events", ts_cuts: "Cuts achieved",
   kofi_h: "Support this app", kofi_b: "Heat Guardian is ad-free. If it helps your family, a small tip keeps it going.", kofi_btn: "Buy me a coffee",
   imp_title: "Add a meet",
   imp_tip: "Paste the meet's heat-sheet PDF link — no download needed.",
@@ -224,6 +228,10 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  addtime_me: "+ añade el tiempo que nadaste",
+  fb_team_title: "¿Cómo le fue a tu equipo?",
+  fb_team_sub: "Recibe un resumen general y alentador de la competencia de tu equipo.",
+  fb_team_go: "✨ Resumen del equipo",
   share_label: "Compartir:",
   share_link_w: "Enlace",
   share_code_w: "Código",
@@ -339,7 +347,7 @@ const es: Dict = {
   addtime: "＋ añadir el tiempo que nadó", edittime: "✎ editar tiempo", timeph: "Tiempo nadado, ej. 1:38.50",
   armlegend: "Ev = evento, Se = serie, Ca = carril. FR libre · BK espalda · BR pecho · FL mariposa · IM.",
   arm_qualified: "Logrado: {lvl}", arm_achnote: "Filas sombreadas = marca ya lograda (el color indica el nivel).", day_n: "Día {n}",
-  team_stats: "Resumen del equipo", ts_swimmers: "Nadadores", ts_events: "Pruebas", ts_cuts: "Marcas logradas",
+  team_stats: "Resumen de tu equipo", ts_swimmers: "Nadadores", ts_events: "Pruebas", ts_cuts: "Marcas logradas",
   kofi_h: "Apoya esta app", kofi_b: "Heat Guardian es sin anuncios. Si le sirve a tu familia, una propina ayuda a mantenerla.", kofi_btn: "Invítame un café",
   imp_title: "Añadir una competencia",
   imp_tip: "Pega el enlace del PDF de la hoja de series — sin descargar.",
@@ -427,6 +435,10 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  addtime_me: "+ 添加你游的成绩",
+  fb_team_title: "你的队伍表现如何？",
+  fb_team_sub: "获取你队伍本场比赛的鼓励性总体总结。",
+  fb_team_go: "✨ 团队比赛总结",
   share_label: "分享：",
   share_link_w: "链接",
   share_code_w: "代码",
@@ -542,7 +554,7 @@ const zh: Dict = {
   addtime: "＋ 添加游出的成绩", edittime: "✎ 修改成绩", timeph: "游出成绩，如 1:38.50",
   armlegend: "Ev=项目, Ht=组次, Ln=泳道。FR自由 · BK仰泳 · BR蛙泳 · FL蝶泳 · IM混合。",
   arm_qualified: "已达标：{lvl}", arm_achnote: "底色行＝已达到的标准（颜色表示等级）。", day_n: "第 {n} 天",
-  team_stats: "队伍概览", ts_swimmers: "运动员", ts_events: "项目", ts_cuts: "已达标",
+  team_stats: "你的队伍概览", ts_swimmers: "运动员", ts_events: "项目", ts_cuts: "已达标",
   kofi_h: "支持这个应用", kofi_b: "Heat Guardian 无广告。如果它对你的家庭有帮助，一点小费能让它继续。", kofi_btn: "请我喝杯咖啡",
   imp_title: "添加比赛",
   imp_tip: "粘贴比赛秩序册PDF链接——无需下载。",
@@ -630,6 +642,10 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  addtime_me: "+ adicione o tempo que você nadou",
+  fb_team_title: "Como foi sua equipe?",
+  fb_team_sub: "Receba um resumo geral e motivador da competição da sua equipe.",
+  fb_team_go: "✨ Resumo da equipe",
   share_label: "Compartilhar:",
   share_link_w: "Link",
   share_code_w: "Código",
@@ -745,7 +761,7 @@ const pt: Dict = {
   addtime: "＋ adicionar o tempo nadado", edittime: "✎ editar tempo", timeph: "Tempo nadado, ex. 1:38.50",
   armlegend: "Ev = prova, Sé = série, Ra = raia. FR livre · BK costas · BR peito · FL borb. · IM medley.",
   arm_qualified: "Alcançado: {lvl}", arm_achnote: "Linhas sombreadas = índice já alcançado (a cor mostra o nível).", day_n: "Dia {n}",
-  team_stats: "Resumo da equipe", ts_swimmers: "Nadadores", ts_events: "Provas", ts_cuts: "Índices alcançados",
+  team_stats: "Resumo da sua equipe", ts_swimmers: "Nadadores", ts_events: "Provas", ts_cuts: "Índices alcançados",
   kofi_h: "Apoie este app", kofi_b: "o Heat Guardian é sem anúncios. Se ajuda sua família, uma gorjeta mantém ele de pé.", kofi_btn: "Pague-me um café",
   imp_title: "Adicionar uma prova",
   imp_tip: "Cole o link do PDF da súmula — sem precisar baixar.",
@@ -833,6 +849,10 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  addtime_me: "+ deine geschwommene Zeit eintragen",
+  fb_team_title: "Wie lief dein Team?",
+  fb_team_sub: "Hol dir eine ermutigende Gesamtübersicht des Wettkampfs deines Teams.",
+  fb_team_go: "✨ Team-Zusammenfassung",
   share_label: "Teilen:",
   share_link_w: "Link",
   share_code_w: "Code",
@@ -948,7 +968,7 @@ const de: Dict = {
   addtime: "＋ geschwommene Zeit eintragen", edittime: "✎ Zeit bearbeiten", timeph: "Zeit, z. B. 1:38.50",
   armlegend: "Ev = Wettb., Lf = Lauf, Bn = Bahn. FR Frei · BK Rücken · BR Brust · FL Schmett. · IM Lagen.",
   arm_qualified: "Erreicht: {lvl}", arm_achnote: "Hinterlegte Zeilen = bereits erreichte Norm (Farbe zeigt das Niveau).", day_n: "Tag {n}",
-  team_stats: "Team auf einen Blick", ts_swimmers: "Schwimmer", ts_events: "Disziplinen", ts_cuts: "Erreichte Normen",
+  team_stats: "Dein Team auf einen Blick", ts_swimmers: "Schwimmer", ts_events: "Disziplinen", ts_cuts: "Erreichte Normen",
   kofi_h: "Unterstütze die App", kofi_b: "Heat Guardian ist werbefrei. Wenn es deiner Familie hilft, hält ein kleines Trinkgeld es am Laufen.", kofi_btn: "Spendier mir einen Kaffee",
   imp_title: "Wettkampf hinzufügen",
   imp_tip: "Link zur Meldeliste (PDF) einfügen — kein Download nötig.",
@@ -1036,6 +1056,10 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  addtime_me: "+ thêm thời gian bạn đã bơi",
+  fb_team_title: "Đội của bạn thi đấu thế nào?",
+  fb_team_sub: "Nhận tóm tắt tổng quan, động viên về giải đấu của đội bạn.",
+  fb_team_go: "✨ Tóm tắt đội",
   share_label: "Chia sẻ:",
   share_link_w: "Liên kết",
   share_code_w: "Mã",
@@ -1151,7 +1175,7 @@ const vi: Dict = {
   addtime: "＋ thêm thời gian đã bơi", edittime: "✎ sửa thời gian", timeph: "Thời gian, vd 1:38.50",
   armlegend: "Ev = nội dung, Ht = đợt, Ln = làn. FR tự do · BK ngửa · BR ếch · FL bướm · IM hỗn hợp.",
   arm_qualified: "Đã đạt: {lvl}", arm_achnote: "Hàng được tô màu = đã đạt chuẩn (màu cho biết cấp độ).", day_n: "Ngày {n}",
-  team_stats: "Tổng quan đội", ts_swimmers: "VĐV", ts_events: "Nội dung", ts_cuts: "Chuẩn đã đạt",
+  team_stats: "Tổng quan đội của bạn", ts_swimmers: "VĐV", ts_events: "Nội dung", ts_cuts: "Chuẩn đã đạt",
   kofi_h: "Ủng hộ ứng dụng", kofi_b: "Heat Guardian không quảng cáo. Nếu nó giúp gia đình bạn, một khoản nhỏ giúp duy trì nó.", kofi_btn: "Mời tôi một ly cà phê",
   imp_title: "Thêm một giải",
   imp_tip: "Dán liên kết PDF bảng thi đấu — không cần tải.",
@@ -1239,6 +1263,10 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  addtime_me: "+ ajoute le temps que tu as nagé",
+  fb_team_title: "Comment a fait ton équipe ?",
+  fb_team_sub: "Reçois un résumé général et encourageant de la compétition de ton équipe.",
+  fb_team_go: "✨ Résumé de l'équipe",
   share_label: "Partager :",
   share_link_w: "Lien",
   share_code_w: "Code",
@@ -1302,7 +1330,7 @@ const fr: Dict = {
   soclose: " — si proche ! 🔥",
   armlegend: "Ép = épreuve, Sé = série, Co = couloir. FR libre · BK dos · BR brasse · FL pap · IM 4 nages.",
   arm_qualified: "Atteint : {lvl}", arm_achnote: "Lignes ombrées = minima déjà atteint (la couleur indique le niveau).", day_n: "Jour {n}",
-  team_stats: "Aperçu de l'équipe", ts_swimmers: "Nageurs", ts_events: "Épreuves", ts_cuts: "Minima atteints",
+  team_stats: "Aperçu de ton équipe", ts_swimmers: "Nageurs", ts_events: "Épreuves", ts_cuts: "Minima atteints",
   kofi_h: "Soutenir l'appli", kofi_b: "Heat Guardian est sans pub. Si elle aide votre famille, un petit pourboire la fait vivre.", kofi_btn: "Offrez-moi un café",
   imp_backuptip: "Si un lien ne s'ouvre pas, téléchargez le PDF et choisissez-le ici. Tout est lu sur votre téléphone ; rien n'est envoyé.",
   imp_sd3: "Accepte aussi les fichiers d'export Hy-Tek SD3 (SDIF) — résultats et engagements s'importent de la même façon.",
@@ -1475,6 +1503,10 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  addtime_me: "+ добавь своё время",
+  fb_team_title: "Как выступила твоя команда?",
+  fb_team_sub: "Получи ободряющий общий обзор соревнования твоей команды.",
+  fb_team_go: "✨ Сводка команды",
   share_label: "Поделиться:",
   share_link_w: "Ссылка",
   share_code_w: "Код",
@@ -1538,7 +1570,7 @@ const ru: Dict = {
   soclose: " — так близко! 🔥",
   armlegend: "Ev = вид, Ht = заплыв, Ln = дорожка. FR кроль · BK спина · BR брасс · FL батт · IM комплекс.",
   arm_qualified: "Выполнен: {lvl}", arm_achnote: "Подсвеченные строки = норматив уже выполнен (цвет показывает уровень).", day_n: "День {n}",
-  team_stats: "Команда вкратце", ts_swimmers: "Пловцы", ts_events: "Дисциплины", ts_cuts: "Выполнено нормативов",
+  team_stats: "Твоя команда вкратце", ts_swimmers: "Пловцы", ts_events: "Дисциплины", ts_cuts: "Выполнено нормативов",
   kofi_h: "Поддержать приложение", kofi_b: "Heat Guardian без рекламы. Если оно помогает вашей семье, небольшой донат поможет его развивать.", kofi_btn: "Купите мне кофе",
   imp_backuptip: "Если ссылка не открывается, скачайте PDF и выберите его здесь. Всё читается на вашем телефоне; ничего не загружается.",
   imp_sd3: "Также принимает файлы экспорта Hy-Tek SD3 (SDIF) — результаты и заявки импортируются так же.",

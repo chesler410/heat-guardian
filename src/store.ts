@@ -221,17 +221,17 @@ export async function importMeetCode(code: string, proxy: string): Promise<Impor
 
 // AI post-meet feedback. Caller passes COPPA-minimized swim context only (no name/team).
 export async function getFeedback(
-  swims: { race: string; seed?: string; result?: string; cut?: string; note?: string }[],
+  swims: { race: string; seed?: string; result?: string; cut?: string; note?: string; name?: string }[],
   age: number | undefined,
   proxy: string,
-  appToken?: string
+  opts?: { kind?: "swimmer" | "team"; teamName?: string; appToken?: string }
 ): Promise<string> {
   const base = backendBase(proxy);
   if (!base) throw new Error("feedback_unavailable");
   const res = await fetch(`${base}/feedback`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...(appToken ? { "X-HG-Token": appToken } : {}) },
-    body: JSON.stringify({ swims, age }),
+    headers: { "Content-Type": "application/json", ...(opts?.appToken ? { "X-HG-Token": opts.appToken } : {}) },
+    body: JSON.stringify({ swims, age, kind: opts?.kind, teamName: opts?.teamName }),
   });
   if (res.status === 429) throw new Error("feedback_rate_limited");
   if (!res.ok) throw new Error("feedback_failed");

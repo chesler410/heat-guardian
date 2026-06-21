@@ -129,33 +129,57 @@ async function feedback(env, request) {
     await env.RL.put(key, String(used + 1), { expirationTtl: 86400 });
   }
 
-  // Defensively strip any identity fields the client shouldn't have sent.
-  const lines = swims.map((s) => {
-    const race = String(s.race || s.event || "swim").slice(0, 40);
-    const seed = s.seed ? `seed ${String(s.seed).slice(0, 12)}` : "";
-    const result = s.result ? `swam ${String(s.result).slice(0, 12)}` : "no time yet";
-    const cut = s.cut ? `(${String(s.cut).slice(0, 30)})` : "";
-    const note = s.note ? ` — their note: "${String(s.note).slice(0, 300)}"` : "";
-    return `- ${race}: ${[seed, result, cut].filter(Boolean).join(", ")}${note}`;
-  });
-  const age = Number.isFinite(+data.age) ? ` They are about ${+data.age} years old.` : "";
+  const kind = data.kind === "team" ? "team" : "swimmer";
+  let system, content;
 
-  const system =
-    "You are a warm, encouraging youth swim coach writing brief post-meet feedback for a young " +
-    "swimmer (roughly ages 8-14). You are given only swim data (events, times, cut standards) and " +
-    "the swimmer's own short notes — never their name. Write 2-4 short sentences: celebrate " +
-    "something concrete (a best time, a cut achieved, effort or feeling they noted), then offer ONE " +
-    "gentle, specific thing to try next time. Always positive and age-appropriate — never harsh, " +
-    "never discouraging, no scores or rankings against other kids. Respond with ONLY the feedback " +
-    "text: no preamble, no greeting by name, no headings, no markdown.";
-  const content = `Here is the swimmer's meet.${age}\n\n${lines.join("\n")}\n\nWrite their post-meet feedback.`;
+  if (kind === "team") {
+    // Coach team summary — addressed TO the coach ("you / your team"). First names are included so
+    // the coach knows who, but no last names / contact / location. We store nothing.
+    const lines = swims.map((s) => {
+      const name = String(s.name || "A swimmer").replace(/["\n]/g, "").slice(0, 24);
+      const race = String(s.race || s.event || "swim").slice(0, 40);
+      const result = s.result ? `swam ${String(s.result).slice(0, 12)}` : "no time";
+      const cut = s.cut ? ` (${String(s.cut).slice(0, 30)})` : "";
+      return `- ${name} — ${race}: ${result}${cut}`;
+    });
+    const team = data.teamName ? ` "${String(data.teamName).replace(/["\n]/g, "").slice(0, 40)}"` : "";
+    system =
+      "You are an encouraging assistant to a youth swim coach, writing a short overall summary of " +
+      "your team's meet, addressed directly to the coach (say 'you' and 'your team'). You get each " +
+      "swimmer's first name, event, time, and cut status. In 3-5 short sentences: celebrate the " +
+      "team's wins (best times, new cuts, notable drops — name a few swimmers by first name), then " +
+      "one or two encouraging things to watch next time. Warm, positive, age-appropriate; never " +
+      "harsh; never rank the kids against each other. Respond with ONLY the summary — no preamble, " +
+      "no headings, no markdown.";
+    content = `Here are your team's meet results for${team || " your team"}.\n\n${lines.join("\n")}\n\nWrite the coach's overall summary.`;
+  } else {
+    // Swimmer feedback — addressed TO the swimmer ("you"). No name/team is sent.
+    const lines = swims.map((s) => {
+      const race = String(s.race || s.event || "swim").slice(0, 40);
+      const seed = s.seed ? `seed ${String(s.seed).slice(0, 12)}` : "";
+      const result = s.result ? `swam ${String(s.result).slice(0, 12)}` : "no time yet";
+      const cut = s.cut ? `(${String(s.cut).slice(0, 30)})` : "";
+      const note = s.note ? ` — your note: "${String(s.note).slice(0, 300)}"` : "";
+      return `- ${race}: ${[seed, result, cut].filter(Boolean).join(", ")}${note}`;
+    });
+    const age = Number.isFinite(+data.age) ? ` You are about ${+data.age} years old.` : "";
+    system =
+      "You are a warm, encouraging youth swim coach writing brief post-meet feedback directly to a " +
+      "young swimmer (roughly ages 8-14), speaking to them as 'you'. You get only swim data (events, " +
+      "times, cut standards) and the swimmer's own short notes — never their name. Write 2-4 short " +
+      "sentences: celebrate something concrete (a best time, a cut you reached, effort or a feeling " +
+      "you noted), then offer ONE gentle, specific thing to try next time. Always positive and " +
+      "age-appropriate — never harsh, never discouraging, no scores or rankings against other kids. " +
+      "Respond with ONLY the feedback text: no preamble, no greeting by name, no headings, no markdown.";
+    content = `Here is your meet.${age}\n\n${lines.join("\n")}\n\nWrite my post-meet feedback, speaking to me as 'you'.`;
+  }
 
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
   // Single short generation — Opus 4.8 (swap to "claude-sonnet-4-6" to ~halve cost). Thinking is
   // omitted for speed/cost; the "respond with ONLY" instruction keeps reasoning out of the output.
   const msg = await client.messages.create({
     model: "claude-opus-4-8",
-    max_tokens: 500,
+    max_tokens: kind === "team" ? 700 : 500,
     system,
     messages: [{ role: "user", content }],
   });
