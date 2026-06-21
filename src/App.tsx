@@ -1333,14 +1333,18 @@ function Home(props: any) {
   // Coach view: a quick team-stats summary instead of the parent fueling/prep sections.
   const teamStats = coach
     ? (() => {
+        // Count across the loaded meet(s) INCLUDING past/archived ones — a coach reviews meets
+        // after they happen, so a finished meet should still show real numbers (not 0). "Swimmers"
+        // is the meet's actual attendees (entries), not the full roster.
+        const teamItems = allGroups.flatMap((g: any) => g.items as DE[]);
         let achieved = 0;
         let champ = 0;
-        for (const d of all) {
+        for (const d of teamItems) {
           const c = cutFor(d, resultOf(d));
           if (c?.achieved) achieved++;
           if (c?.champ?.met) champ++;
         }
-        return { swimmers: new Set(all.map((d: DE) => d.swimmer)).size, events: all.length, achieved, champ };
+        return { swimmers: new Set(teamItems.map((d: DE) => d.swimmer)).size, events: teamItems.length, achieved, champ };
       })()
     : null;
 

@@ -1,19 +1,27 @@
-# Heat Guardian 🏊
+# Heat Guardian 🏊🛡️
 
-A free, ad-free **meet-day companion** for swim families. Add your swimmers once, import a
-meet's heat sheet, and see all your kids' events on one page — sectioned by date.
+An **ad-free meet-day companion** for swim families. Add your swimmers once, import a meet's heat
+sheet (or follow live results), and see every kid's events on one calm page — heats, lanes, the
+next time cut to chase, and fueling — sectioned by day.
 
-### ▶️ Live app: https://chesler410.github.io/heat-guardian/  ·  Demo: [?demo](https://chesler410.github.io/heat-guardian/?demo)
+### 📱 iOS (TestFlight) · Android (Play testing) · Web: https://chesler410.github.io/heat-guardian/ · Demo: [?demo](https://chesler410.github.io/heat-guardian/?demo)
 
-It's *not* another stats database (myswimio / SwimCloud already do history). It's built for
-the cold pool deck at 6am: "what's my kid swimming, when, what do they need to beat, and
-when do they eat."
+It's *not* another stats database (SwimCloud already does history). It's built for the cold pool
+deck at 6am: "what's my kid swimming, when, what do they need to beat, and when do they eat."
+Increasingly it's a **live layer** too — live results as they post, team sharing by code, and an
+optional swimmer-facing mode with encouraging AI post-meet feedback.
 
 ## What it does
 
-- **The whole family on one page** — add multiple swimmers, grouped by **session/date**
-- **Parent or Coach mode** — a first-run prompt picks your role (saved on-device). Parents track
-  their own kids; **coaches pick a team and see every swimmer on it** on the home screen.
+- **The whole family on one page** — add multiple swimmers, grouped by **session/date**; the
+  selected swimmer's **name + team** label the screen
+- **Three roles** — a first-run prompt picks **Parent**, **Coach**, or **Swimmer / "My Meet"**
+  (saved on-device). Parents track their kids; **coaches pick a team** and see every swimmer on it;
+  **swimmers** manage their own meet — pick themselves, highlight **friends**, and reflect on each
+  swim ("how did it feel?")
+- **✨ AI post-meet feedback** *(swimmer mode)* — turns a swimmer's own reflections + times into
+  warm, encouraging, age-appropriate feedback. COPPA-minimized: only swim context + their notes are
+  sent (never name/team), through a server-side proxy that holds the API key
 - **Per event:** heat, lane, seed (best), the **next motivational cut** (+delta, ≈ per length),
   and the **🏆 Southeastern championship cut** (qualified ✓ or how much to drop)
 - **Calm two-tab layout** — **Home** and **Swimmers**, with Add-meet, theme, language, and
@@ -37,14 +45,13 @@ when do they eat."
 - **Find a meet near you** — a community meet directory on the Add-meet screen: filter by state or
   tap "Near me" (geolocation), then open/import a listed meet. The list is bundled and refreshed
   from the repo, so meets can be added by PR without an app release
-- **Share a meet** — a Share button makes a link that imports the meet on a teammate's device in
-  one tap (carries the public PDF/results URLs, not your data). Post it in the team chat or site.
-  Sharing in **coach mode** adds your team to the link — the recipient gets a "Coach this team"
-  button that sets up an assistant coach's or team parent's device in one tap
-- **Meet packs** — the 📤 button saves any meet (even one imported from an uploaded PDF) as a
-  small `.heatguardian.json` file with its entries and logged times; teammates import it under
-  Add meet, no re-parsing. Note: the pack carries the same roster info as the heat sheet —
-  it's meant for your own team's chat
+- **Share a meet — by code or link.** **`#️⃣ Code`** uploads the parsed meet to the backend cache
+  and gives a short share code; a teammate types it under *Add a meet* and gets the whole meet (one
+  person parses the big PDF once — phones skip it). **`🔗 Link`** shares the public source URL.
+  Sharing in **coach mode** adds your team so the recipient gets a one-tap "Coach this team" setup.
+- **Meet packs** — the **`📤`** button also saves a meet as a small `.heatguardian.json` file
+  (entries + logged times) for the team chat — no re-parsing on import
+- **No duplicate meets** — re-importing a heat sheet you already have is skipped, not stored twice
 - **8 languages** (EN/ES/ZH/PT/DE/VI/FR/RU — full parity), **light/dark theme**, **team logo**
   (auto-derives a brand color), responsive desktop layout, installable
 
@@ -82,7 +89,9 @@ when do they eat."
   roster/progress), `i18n.ts` (8-language strings), `App.tsx` (UI).
 - `scripts/` — Python builders for the bundled data: `build_standards.py`,
   `build_se_champs.py` (run when standards change), plus the original PyMuPDF parser.
-- `proxy/` — optional Cloudflare Worker so "paste a link" can fetch host-blocked PDFs.
+- `proxy/` — the Cloudflare Worker backend: a CORS fetch proxy for "paste a link", an R2-backed
+  shared-meet cache (`/meet` — the share-by-code feature), and a server-side AI-feedback proxy
+  (`/feedback` — holds the Anthropic key so it never ships in the app).
 - `docs/` — decisions, data-source research, parsing notes, roadmap.
 
 ## Develop
