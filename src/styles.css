@@ -777,3 +777,9 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .un-who { font-weight: 700; }
 .un-where { color: var(--blue); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; background: rgba(21,184,214,0.12); padding: 1px 9px; border-radius: 999px; }
 .theme-dark .un-where { color: #9cc2ff; background: rgba(91,155,255,0.16); }
+
+/* "Import by code" row (shared-meet cache) */
+.code-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.code-or { color: var(--muted); font-size: 0.85rem; }
+.code-input { flex: 1; min-width: 120px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+.code-row .secondary { flex: none; }

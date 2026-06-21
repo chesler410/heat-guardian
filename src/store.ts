@@ -181,6 +181,64 @@ export function parseMeetPack(text: string, fallback = "Meet"): { meet: Meet; re
   }
 }
 
+// --- Backend (Cloudflare Worker): shared meet cache + AI feedback. Same Worker as the fetch
+// proxy, so the base URL is just its origin. Returns null when no proxy/backend is configured —
+// callers degrade gracefully (these features are dark until the owner deploys the backend).
+export function backendBase(proxy: string): string | null {
+  try {
+    return proxy ? new URL(proxy).origin : null;
+  } catch {
+    return null;
+  }
+}
+
+// Push a parsed meet to the shared cache; returns a short code others import with. The heavy PDF
+// parse happens once, on whoever shares — recipients (phones included) just pull the small JSON.
+export async function cacheMeet(meet: Meet, results: Record<string, string>, proxy: string): Promise<string> {
+  const base = backendBase(proxy);
+  if (!base) throw new Error("share_unavailable");
+  const res = await fetch(`${base}/meet`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(buildMeetPack(meet, results)),
+  });
+  if (!res.ok) throw new Error("share_failed");
+  const j = (await res.json()) as { code?: string };
+  if (!j.code) throw new Error("share_failed");
+  return j.code;
+}
+
+export async function importMeetCode(code: string, proxy: string): Promise<ImportOutcome> {
+  const base = backendBase(proxy);
+  if (!base) throw new Error("share_unavailable");
+  const res = await fetch(`${base}/meet/${encodeURIComponent(code.trim().toUpperCase())}`);
+  if (res.status === 404) throw new Error("code_not_found");
+  if (!res.ok) throw new Error("share_failed");
+  const pack = parseMeetPack(await res.text(), "Shared meet");
+  if (!pack) throw new Error("err_no_events");
+  return { kind: "meet", meet: pack.meet, results: pack.results };
+}
+
+// AI post-meet feedback. Caller passes COPPA-minimized swim context only (no name/team).
+export async function getFeedback(
+  swims: { race: string; seed?: string; result?: string; cut?: string; note?: string }[],
+  age: number | undefined,
+  proxy: string,
+  appToken?: string
+): Promise<string> {
+  const base = backendBase(proxy);
+  if (!base) throw new Error("feedback_unavailable");
+  const res = await fetch(`${base}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(appToken ? { "X-HG-Token": appToken } : {}) },
+    body: JSON.stringify({ swims, age }),
+  });
+  if (res.status === 429) throw new Error("feedback_rate_limited");
+  if (!res.ok) throw new Error("feedback_failed");
+  const j = (await res.json()) as { feedback?: string };
+  return j.feedback || "";
+}
+
 export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "upload" | "url", sourceUrl?: string): Promise<ImportOutcome> {
   // SD3 / SDIF and meet packs are plain text (not a PDF). Detect and parse into a meet.
   if (!isPdf(buf)) {

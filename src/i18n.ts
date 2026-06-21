@@ -18,6 +18,14 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   nav_settings: "Settings",
+  share_failed: "Couldn't reach the share service — try again in a moment.",
+  share_unavailable: "Sharing isn't set up yet.",
+  code_not_found: "No meet found for that code.",
+  imp_code_or: "…or a share code:",
+  imp_code_ph: "e.g. AB23CD",
+  imp_code_btn: "Import code",
+  share_code_btn: "Share by code",
+  share_code_msg: "Share code: {code} — others import it under Add a meet.",
   note_ph_me: "How did it feel? What went well, what to work on?",
   note_add_me: "📝 Reflect on this swim",
   upnext: "Up next",
@@ -194,6 +202,14 @@ const en: Dict = {
 
 const es: Dict = {
   nav_settings: "Ajustes",
+  share_failed: "No se pudo conectar al servicio para compartir; inténtalo de nuevo.",
+  share_unavailable: "Compartir aún no está configurado.",
+  code_not_found: "No se encontró ninguna competencia con ese código.",
+  imp_code_or: "…o un código para compartir:",
+  imp_code_ph: "p. ej. AB23CD",
+  imp_code_btn: "Importar código",
+  share_code_btn: "Compartir por código",
+  share_code_msg: "Código: {code} — otros lo importan en Añadir competencia.",
   note_ph_me: "¿Cómo se sintió? ¿Qué salió bien, qué mejorar?",
   note_add_me: "📝 Reflexiona sobre esta prueba",
   upnext: "Próximo",
@@ -367,6 +383,14 @@ const es: Dict = {
 
 const zh: Dict = {
   nav_settings: "设置",
+  share_failed: "无法连接共享服务，请稍后再试。",
+  share_unavailable: "共享功能尚未设置。",
+  code_not_found: "找不到该代码对应的比赛。",
+  imp_code_or: "……或共享代码：",
+  imp_code_ph: "例如 AB23CD",
+  imp_code_btn: "导入代码",
+  share_code_btn: "用代码分享",
+  share_code_msg: "分享代码：{code} —— 他人可在“添加比赛”中导入。",
   note_ph_me: "感觉如何？哪里做得好，哪里要改进？",
   note_add_me: "📝 回顾这次比赛",
   upnext: "接下来",
@@ -540,6 +564,14 @@ const zh: Dict = {
 
 const pt: Dict = {
   nav_settings: "Configurações",
+  share_failed: "Não foi possível acessar o serviço de compartilhamento; tente de novo.",
+  share_unavailable: "Compartilhamento ainda não configurado.",
+  code_not_found: "Nenhuma competição encontrada para esse código.",
+  imp_code_or: "…ou um código de compartilhamento:",
+  imp_code_ph: "ex.: AB23CD",
+  imp_code_btn: "Importar código",
+  share_code_btn: "Compartilhar por código",
+  share_code_msg: "Código: {code} — outros importam em Adicionar competição.",
   note_ph_me: "Como foi? O que deu certo, o que melhorar?",
   note_add_me: "📝 Reflita sobre esta prova",
   upnext: "A seguir",
@@ -713,6 +745,14 @@ const pt: Dict = {
 
 const de: Dict = {
   nav_settings: "Einstellungen",
+  share_failed: "Freigabedienst nicht erreichbar – bitte gleich erneut versuchen.",
+  share_unavailable: "Teilen ist noch nicht eingerichtet.",
+  code_not_found: "Kein Wettkampf zu diesem Code gefunden.",
+  imp_code_or: "…oder ein Freigabecode:",
+  imp_code_ph: "z. B. AB23CD",
+  imp_code_btn: "Code importieren",
+  share_code_btn: "Per Code teilen",
+  share_code_msg: "Freigabecode: {code} — andere importieren ihn unter Wettkampf hinzufügen.",
   note_ph_me: "Wie hat es sich angefühlt? Was lief gut, was üben?",
   note_add_me: "📝 Über dieses Rennen nachdenken",
   upnext: "Als Nächstes",
@@ -886,6 +926,14 @@ const de: Dict = {
 
 const vi: Dict = {
   nav_settings: "Cài đặt",
+  share_failed: "Không kết nối được dịch vụ chia sẻ — thử lại sau giây lát.",
+  share_unavailable: "Tính năng chia sẻ chưa được thiết lập.",
+  code_not_found: "Không tìm thấy giải nào với mã đó.",
+  imp_code_or: "…hoặc mã chia sẻ:",
+  imp_code_ph: "vd: AB23CD",
+  imp_code_btn: "Nhập mã",
+  share_code_btn: "Chia sẻ bằng mã",
+  share_code_msg: "Mã chia sẻ: {code} — người khác nhập ở Thêm giải.",
   note_ph_me: "Cảm giác thế nào? Điều gì tốt, điều gì cần cải thiện?",
   note_add_me: "📝 Ghi lại cảm nhận về lượt bơi này",
   upnext: "Tiếp theo",
@@ -1059,6 +1107,14 @@ const vi: Dict = {
 
 const fr: Dict = {
   nav_settings: "Réglages",
+  share_failed: "Service de partage injoignable — réessaie dans un instant.",
+  share_unavailable: "Le partage n'est pas encore configuré.",
+  code_not_found: "Aucune compétition trouvée pour ce code.",
+  imp_code_or: "…ou un code de partage :",
+  imp_code_ph: "ex. AB23CD",
+  imp_code_btn: "Importer le code",
+  share_code_btn: "Partager par code",
+  share_code_msg: "Code de partage : {code} — à importer dans Ajouter une compétition.",
   note_ph_me: "Comment c'était ? Qu'est-ce qui a marché, quoi travailler ?",
   note_add_me: "📝 Réfléchis à cette course",
   upnext: "À suivre",
@@ -1265,6 +1321,14 @@ const fr: Dict = {
 
 const ru: Dict = {
   nav_settings: "Настройки",
+  share_failed: "Не удалось связаться со службой обмена — повторите попытку.",
+  share_unavailable: "Обмен пока не настроен.",
+  code_not_found: "Соревнование с таким кодом не найдено.",
+  imp_code_or: "…или код для обмена:",
+  imp_code_ph: "напр. AB23CD",
+  imp_code_btn: "Импорт по коду",
+  share_code_btn: "Поделиться кодом",
+  share_code_msg: "Код: {code} — другие импортируют его в «Добавить соревнование».",
   note_ph_me: "Как ощущения? Что удалось, над чем поработать?",
   note_add_me: "📝 Заметка об этом заплыве",
   upnext: "Далее",

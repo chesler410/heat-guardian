@@ -19,6 +19,8 @@ import {
   teamSwimmers,
   importFile,
   importUrl,
+  importMeetCode,
+  cacheMeet,
   buildMeetPack,
   applyResults,
   buildProgress,
@@ -847,6 +849,31 @@ export function App() {
     }
   }
 
+  // Import a meet someone shared via a short code (pulls the cached JSON — no re-parse).
+  async function onCode(code: string) {
+    if (!code.trim()) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      finishImport([await importMeetCode(code, loadProxy() || DEFAULT_PROXY)], "");
+    } catch (e: any) {
+      finishImport([], t(e?.message || "share_failed"));
+    }
+  }
+
+  // Push this meet to the shared cache and show the code to pass to teammates.
+  async function onShareMeet(meet: Meet) {
+    setBusy(true);
+    setMsg("");
+    try {
+      const code = await cacheMeet(meet, results, loadProxy() || DEFAULT_PROXY);
+      setMsg(t("share_code_msg", { code }));
+    } catch (e: any) {
+      setMsg(t(e?.message || "share_failed"));
+    }
+    setBusy(false);
+  }
+
   function finishImport(outcomes: ImportOutcome[], err: string) {
     const newMeets = outcomes.flatMap((o) => (o.kind === "meet" ? [o.meet] : []));
     const resultSets = outcomes.flatMap((o) => (o.kind === "results" ? [o] : []));
@@ -1045,6 +1072,7 @@ export function App() {
           goSwimmers={() => setNav("swimmers")}
           progress={buildProgress(activeSwimmers, meets, results)}
           removeMeet={(id: string) => persistMeets(meets.filter((m) => m.id !== id))}
+          onShareMeet={onShareMeet}
           results={results}
           setResult={setResult}
           goals={goals}
@@ -1068,6 +1096,7 @@ export function App() {
             msg={msg}
             onFiles={onFiles}
             onUrl={onUrl}
+            onCode={onCode}
             goAbout={() => setNav("about")}
             liveUrl={liveUrl}
             liveOn={liveOn}
@@ -1411,6 +1440,9 @@ function Home(props: any) {
                   }}
                 >
                   📤
+                </button>
+                <button className="meet-pack" title={t("share_code_btn")} onClick={() => props.onShareMeet(meet)}>
+                  #️⃣
                 </button>
                 <button className="remove" onClick={() => props.removeMeet(meet.id)}>
                   ✕
@@ -1784,6 +1816,7 @@ function ImportView(props: {
   msg: string;
   onFiles: (f: FileList | null) => void;
   onUrl: (u: string) => void;
+  onCode: (c: string) => void;
   goAbout: () => void;
   liveUrl: string;
   liveOn: boolean;
@@ -1794,6 +1827,7 @@ function ImportView(props: {
   onGoLive: (url: string) => void;
 }) {
   const [url, setUrl] = useState("");
+  const [code, setCode] = useState("");
   const [liveDraft, setLiveDraft] = useState(props.liveUrl);
   return (
     <div>
@@ -1816,6 +1850,20 @@ function ImportView(props: {
           <input type="file" accept="application/pdf,.sd3,.txt,.json,.heatguardian.json,.myswimmer.json,.htm,.html,text/html" multiple disabled={props.busy} onChange={(e) => props.onFiles(e.target.files)} hidden />
         </label>
         <p className="muted small">💡 {t("imp_findfile")}</p>
+        <div className="code-row">
+          <span className="code-or">{t("imp_code_or")}</span>
+          <input
+            className="field code-input"
+            placeholder={t("imp_code_ph")}
+            value={code}
+            maxLength={12}
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ""))}
+            onKeyDown={blurOnEnter}
+          />
+          <button className="secondary" disabled={props.busy || code.trim().length < 4} onClick={() => { props.onCode(code); setCode(""); }}>
+            {t("imp_code_btn")}
+          </button>
+        </div>
       </div>
 
       <Foldable title={<>{props.liveOn ? <span className="live-dot" /> : "⏱ "}{t("live_h")}</>} defaultOpen={props.liveOn}>
