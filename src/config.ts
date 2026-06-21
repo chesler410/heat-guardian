@@ -23,3 +23,9 @@ export const FEEDBACK_URL: string =
 
 // Optional tip jar (free app, no ads). Shown in About.
 export const KOFI_URL: string = import.meta.env.VITE_KOFI_URL || "https://ko-fi.com/chesler410";
+
+// Optional obfuscation token for the AI /feedback endpoint. Empty by default (the endpoint is
+// protected by the Worker's rate limits + your Anthropic spend cap). If you later set the APP_TOKEN
+// secret on the Worker, ALSO rebuild the apps with VITE_APP_TOKEN set to the same value — otherwise
+// feedback returns 403. Leave BOTH unset to rely on rate limits alone (recommended for testing).
+export const APP_TOKEN: string = import.meta.env.VITE_APP_TOKEN || "";

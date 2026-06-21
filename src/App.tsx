@@ -29,7 +29,7 @@ import {
   ImportOutcome,
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, eventMeta, segInfo } from "./cuts.ts";
-import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE } from "./config.ts";
+import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN } from "./config.ts";
 import { Geolocation } from "@capacitor/geolocation";
 import { getTheme, setTheme, Theme } from "./theme.ts";
 import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
@@ -1338,11 +1338,15 @@ function Home(props: any) {
     setFb({ loading: true, text: "", err: "" });
     try {
       const me = swimmers.find((s: Swimmer) => !s.watch);
+      const opts: { kind?: "swimmer" | "team"; teamName?: string; appToken?: string } = {
+        appToken: APP_TOKEN || undefined,
+      };
+      if (kind === "team") { opts.kind = "team"; opts.teamName = coachTeam; }
       const text = await getFeedback(
         swims,
         kind === "swimmer" ? me?.age : undefined,
         loadProxy() || DEFAULT_PROXY,
-        kind === "team" ? { kind: "team", teamName: coachTeam } : undefined
+        opts
       );
       setFb({ loading: false, text, err: "" });
     } catch (e: any) {

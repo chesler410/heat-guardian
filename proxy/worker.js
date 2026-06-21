@@ -13,6 +13,9 @@ const MAX_PDF_BYTES = 30 * 1024 * 1024; // 30 MB
 const MAX_MEET_BYTES = 3 * 1024 * 1024; // 3 MB — a meet-pack JSON is small
 const MAX_FEEDBACK_BYTES = 24 * 1024; // 24 KB of swim context + notes is plenty
 const FEEDBACK_DAILY_CAP = 40; // per-IP/day, when KV is bound
+const FEEDBACK_GLOBAL_DAILY_CAP = 250; // ALL feedback calls/day — a hard spend backstop so abuse or
+// a viral spike can't run up the AI bill; pairs with the monthly cap you set in the Anthropic console.
+const MEET_DAILY_CAP = 60; // per-IP/day share uploads, to deter storage spam
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -29,6 +32,19 @@ const makeCode = () => {
   const b = crypto.getRandomValues(new Uint8Array(6));
   return Array.from(b, (x) => ALPHABET[x % ALPHABET.length]).join("");
 };
+
+const today = () => new Date().toISOString().slice(0, 10);
+const clientIp = (request) => request.headers.get("cf-connecting-ip") || "anon";
+// Best-effort daily counter backed by KV. Returns true if allowed (and increments), false if the
+// cap is hit. No-op (always allows) when the RL namespace isn't bound, so the worker still runs
+// before you enable KV — but enable it for real protection (see wrangler.toml).
+async function underCap(env, key, cap) {
+  if (!env.RL) return true;
+  const used = Number((await env.RL.get(key)) || 0);
+  if (used >= cap) return false;
+  await env.RL.put(key, String(used + 1), { expirationTtl: 86400 });
+  return true;
+}
 
 export default {
   async fetch(request, env) {
@@ -77,6 +93,8 @@ async function proxyPdf(url) {
 
 async function putMeet(env, request) {
   if (!env.MEETS) return text("Meet cache not configured (bind R2 bucket MEETS)", 501);
+  if (!(await underCap(env, `meet:${clientIp(request)}:${today()}`, MEET_DAILY_CAP)))
+    return text("Rate limited — too many shares today.", 429);
   const body = await request.arrayBuffer();
   if (body.byteLength === 0) return text("Empty body", 400);
   if (body.byteLength > MAX_MEET_BYTES) return text("Meet too large", 413);
@@ -120,14 +138,13 @@ async function feedback(env, request) {
   const swims = Array.isArray(data.swims) ? data.swims.slice(0, 30) : [];
   if (!swims.length) return json({ error: "no_swims" }, 400);
 
-  // Best-effort per-IP daily rate limit (only when a KV namespace RL is bound).
-  if (env.RL) {
-    const ip = request.headers.get("cf-connecting-ip") || "anon";
-    const key = `fb:${ip}:${new Date().toISOString().slice(0, 10)}`;
-    const used = Number((await env.RL.get(key)) || 0);
-    if (used >= FEEDBACK_DAILY_CAP) return json({ error: "rate_limited" }, 429);
-    await env.RL.put(key, String(used + 1), { expirationTtl: 86400 });
-  }
+  // Two-layer daily rate limit (best-effort, only enforced when KV namespace RL is bound):
+  //   per-IP  — stops one user/script hammering the endpoint
+  //   global  — a hard ceiling on total AI calls/day = the spend backstop
+  if (!(await underCap(env, `fb:${clientIp(request)}:${today()}`, FEEDBACK_DAILY_CAP)))
+    return json({ error: "rate_limited" }, 429);
+  if (!(await underCap(env, `fbglobal:${today()}`, FEEDBACK_GLOBAL_DAILY_CAP)))
+    return json({ error: "rate_limited" }, 429);
 
   const kind = data.kind === "team" ? "team" : "swimmer";
   let system, content;

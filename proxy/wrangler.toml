@@ -9,9 +9,14 @@ compatibility_flags = ["nodejs_compat"]
 binding = "MEETS"
 bucket_name = "heat-guardian-meets"
 
-# Per-IP daily rate limit for /feedback. OPTIONAL — left off for a frictionless first deploy
-# (/feedback works without it, just unthrottled). To enable later: `wrangler kv namespace create RL`,
-# uncomment the block below, paste the printed id, and `wrangler deploy` again.
+# Rate-limit / spend-protection store. The worker runs fine without it (limits just no-op), but
+# binding this KV namespace turns ON three protections at once: per-IP daily cap on /feedback, a
+# GLOBAL daily ceiling on AI calls (the spend backstop), and a per-IP cap on share uploads.
+# ENABLE IT (recommended before any real/public use):
+#   1) cd proxy && wrangler kv namespace create RL
+#   2) uncomment the 3 lines below and paste the printed id
+#   3) wrangler deploy
+# Also set an account-level monthly spend cap in the Anthropic console — belt and suspenders.
 # [[kv_namespaces]]
 # binding = "RL"
 # id = "PASTE_KV_NAMESPACE_ID_HERE"
