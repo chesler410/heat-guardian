@@ -1,3 +1,16 @@
 name = "my-swimmer-fetch"
 main = "worker.js"
 compatibility_date = "2024-11-01"
+# The Anthropic SDK pulls in a few Node built-ins — this flag makes them available on the edge.
+compatibility_flags = ["nodejs_compat"]
+
+# Shared meet-pack cache. Create with:  wrangler r2 bucket create heat-guardian-meets
+[[r2_buckets]]
+binding = "MEETS"
+bucket_name = "heat-guardian-meets"
+
+# Per-IP daily rate limit for /feedback. Create with:  wrangler kv namespace create RL
+# then paste the printed id below. (Optional — /feedback still works without it, just unthrottled.)
+[[kv_namespaces]]
+binding = "RL"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"

@@ -1,47 +1,165 @@
-// Tiny free CORS fetch-helper for my-swimmer (Cloudflare Worker).
-// It fetches a public heat-sheet PDF and re-serves it with CORS headers so the
-// browser app can read it. Stateless: stores nothing. PDFs only.
+// Heat Guardian backend (Cloudflare Worker). Three routes, all free-tier friendly:
+//   GET  /?url=<pdf>      — stateless CORS fetch-helper for public heat-sheet PDFs (original use)
+//   POST /meet            — store a parsed meet-pack JSON in R2, return a short share code
+//   GET  /meet/<code>     — fetch a shared meet-pack JSON (so phones skip the big-PDF parse)
+//   POST /feedback        — AI post-meet feedback from a swimmer's own notes (COPPA-minimized)
 //
-// Deploy (free, ~5 min):
-//   1. npm i -g wrangler && wrangler login
-//   2. from this folder: wrangler deploy
-//   3. copy the printed URL and paste it in the app's About screen as:
-//        https://<your-worker>.workers.dev/?url={url}
-//
-// Safety: only proxies http(s) URLs that look like PDFs, caps response size.
+// Deploy: see README.md. Bindings (set in wrangler.toml): MEETS (R2 bucket), RL (KV, optional).
+// Secret: ANTHROPIC_API_KEY (wrangler secret put). Optional secret: APP_TOKEN (obfuscation gate).
 
-const MAX_BYTES = 30 * 1024 * 1024; // 30 MB
+import Anthropic from "@anthropic-ai/sdk";
+
+const MAX_PDF_BYTES = 30 * 1024 * 1024; // 30 MB
+const MAX_MEET_BYTES = 3 * 1024 * 1024; // 3 MB — a meet-pack JSON is small
+const MAX_FEEDBACK_BYTES = 24 * 1024; // 24 KB of swim context + notes is plenty
+const FEEDBACK_DAILY_CAP = 40; // per-IP/day, when KV is bound
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "*",
+};
+const json = (obj, status = 200) =>
+  new Response(JSON.stringify(obj), { status, headers: { ...CORS, "Content-Type": "application/json" } });
+const text = (s, status = 200, extra = {}) => new Response(s, { status, headers: { ...CORS, ...extra } });
+
+// Unambiguous code alphabet (no 0/O/1/I) → 6 chars ≈ 1B combos, easy to read aloud/type.
+const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+const makeCode = () => {
+  const b = crypto.getRandomValues(new Uint8Array(6));
+  return Array.from(b, (x) => ALPHABET[x % ALPHABET.length]).join("");
+};
 
 export default {
-  async fetch(request) {
-    const cors = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "*",
-    };
-    if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+  async fetch(request, env) {
+    if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
+    const url = new URL(request.url);
+    const path = url.pathname.replace(/\/+$/, "") || "/";
 
-    const target = new URL(request.url).searchParams.get("url");
-    if (!target || !/^https?:\/\//i.test(target)) {
-      return new Response("Pass ?url=<https pdf link>", { status: 400, headers: cors });
-    }
-
-    let upstream;
     try {
-      upstream = await fetch(target, {
-        headers: { "User-Agent": "Mozilla/5.0", Accept: "application/pdf,*/*" },
-        redirect: "follow",
-      });
+      // --- Shared meet cache (R2) ---
+      const meetMatch = /^\/meet\/([23456789A-HJ-NP-Z]{4,12})$/.exec(path);
+      if (meetMatch && request.method === "GET") return getMeet(env, meetMatch[1]);
+      if (path === "/meet" && request.method === "POST") return putMeet(env, request);
+
+      // --- AI post-meet feedback ---
+      if (path === "/feedback" && request.method === "POST") return feedback(env, request);
+
+      // --- Original PDF fetch-helper (default route) ---
+      return proxyPdf(url);
     } catch (e) {
-      return new Response("Fetch failed: " + e, { status: 502, headers: cors });
+      return text("Server error: " + (e && e.message ? e.message : e), 500);
     }
-    if (!upstream.ok) return new Response("Upstream " + upstream.status, { status: 502, headers: cors });
-
-    const len = Number(upstream.headers.get("content-length") || 0);
-    if (len > MAX_BYTES) return new Response("PDF too large", { status: 413, headers: cors });
-
-    return new Response(upstream.body, {
-      headers: { ...cors, "Content-Type": "application/pdf", "Cache-Control": "public, max-age=3600" },
-    });
   },
 };
+
+// ---------------------------------------------------------------------------
+
+async function proxyPdf(url) {
+  const target = url.searchParams.get("url");
+  if (!target || !/^https?:\/\//i.test(target)) return text("Pass ?url=<https link>", 400);
+  let upstream;
+  try {
+    upstream = await fetch(target, {
+      headers: { "User-Agent": "Mozilla/5.0", Accept: "application/pdf,text/html,*/*" },
+      redirect: "follow",
+    });
+  } catch (e) {
+    return text("Fetch failed: " + e, 502);
+  }
+  if (!upstream.ok) return text("Upstream " + upstream.status, 502);
+  if (Number(upstream.headers.get("content-length") || 0) > MAX_PDF_BYTES) return text("Too large", 413);
+  const ct = upstream.headers.get("content-type") || "application/pdf";
+  return new Response(upstream.body, {
+    headers: { ...CORS, "Content-Type": ct, "Cache-Control": "public, max-age=3600" },
+  });
+}
+
+async function putMeet(env, request) {
+  if (!env.MEETS) return text("Meet cache not configured (bind R2 bucket MEETS)", 501);
+  const body = await request.arrayBuffer();
+  if (body.byteLength === 0) return text("Empty body", 400);
+  if (body.byteLength > MAX_MEET_BYTES) return text("Meet too large", 413);
+  // Validate it's JSON before we store it (don't host arbitrary blobs).
+  try {
+    JSON.parse(new TextDecoder().decode(body));
+  } catch {
+    return text("Body must be JSON", 400);
+  }
+  const code = makeCode();
+  await env.MEETS.put(`meet/${code}.json`, body, {
+    httpMetadata: { contentType: "application/json" },
+    customMetadata: { createdAt: new Date().toISOString() },
+  });
+  return json({ code });
+}
+
+async function getMeet(env, code) {
+  if (!env.MEETS) return text("Meet cache not configured", 501);
+  const obj = await env.MEETS.get(`meet/${code}.json`);
+  if (!obj) return json({ error: "not_found" }, 404);
+  return new Response(obj.body, {
+    headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "public, max-age=120" },
+  });
+}
+
+// COPPA-minimized AI feedback. The app sends ONLY swim context + the swimmer's own notes —
+// never a name or team. We store nothing. Body: { swims: [{race, seed, result, cut, note}], age? }.
+async function feedback(env, request) {
+  if (!env.ANTHROPIC_API_KEY) return text("Feedback not configured (set ANTHROPIC_API_KEY)", 501);
+  if (env.APP_TOKEN && request.headers.get("x-hg-token") !== env.APP_TOKEN) return text("Forbidden", 403);
+
+  const raw = await request.arrayBuffer();
+  if (raw.byteLength > MAX_FEEDBACK_BYTES) return text("Too much input", 413);
+  let data;
+  try {
+    data = JSON.parse(new TextDecoder().decode(raw));
+  } catch {
+    return text("Body must be JSON", 400);
+  }
+  const swims = Array.isArray(data.swims) ? data.swims.slice(0, 30) : [];
+  if (!swims.length) return json({ error: "no_swims" }, 400);
+
+  // Best-effort per-IP daily rate limit (only when a KV namespace RL is bound).
+  if (env.RL) {
+    const ip = request.headers.get("cf-connecting-ip") || "anon";
+    const key = `fb:${ip}:${new Date().toISOString().slice(0, 10)}`;
+    const used = Number((await env.RL.get(key)) || 0);
+    if (used >= FEEDBACK_DAILY_CAP) return json({ error: "rate_limited" }, 429);
+    await env.RL.put(key, String(used + 1), { expirationTtl: 86400 });
+  }
+
+  // Defensively strip any identity fields the client shouldn't have sent.
+  const lines = swims.map((s) => {
+    const race = String(s.race || s.event || "swim").slice(0, 40);
+    const seed = s.seed ? `seed ${String(s.seed).slice(0, 12)}` : "";
+    const result = s.result ? `swam ${String(s.result).slice(0, 12)}` : "no time yet";
+    const cut = s.cut ? `(${String(s.cut).slice(0, 30)})` : "";
+    const note = s.note ? ` — their note: "${String(s.note).slice(0, 300)}"` : "";
+    return `- ${race}: ${[seed, result, cut].filter(Boolean).join(", ")}${note}`;
+  });
+  const age = Number.isFinite(+data.age) ? ` They are about ${+data.age} years old.` : "";
+
+  const system =
+    "You are a warm, encouraging youth swim coach writing brief post-meet feedback for a young " +
+    "swimmer (roughly ages 8-14). You are given only swim data (events, times, cut standards) and " +
+    "the swimmer's own short notes — never their name. Write 2-4 short sentences: celebrate " +
+    "something concrete (a best time, a cut achieved, effort or feeling they noted), then offer ONE " +
+    "gentle, specific thing to try next time. Always positive and age-appropriate — never harsh, " +
+    "never discouraging, no scores or rankings against other kids. Respond with ONLY the feedback " +
+    "text: no preamble, no greeting by name, no headings, no markdown.";
+  const content = `Here is the swimmer's meet.${age}\n\n${lines.join("\n")}\n\nWrite their post-meet feedback.`;
+
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+  // Single short generation — Opus 4.8 (swap to "claude-sonnet-4-6" to ~halve cost). Thinking is
+  // omitted for speed/cost; the "respond with ONLY" instruction keeps reasoning out of the output.
+  const msg = await client.messages.create({
+    model: "claude-opus-4-8",
+    max_tokens: 500,
+    system,
+    messages: [{ role: "user", content }],
+  });
+  if (msg.stop_reason === "refusal") return json({ error: "declined" }, 422);
+  const out = msg.content.find((b) => b.type === "text");
+  return json({ feedback: out ? out.text.trim() : "" });
+}
