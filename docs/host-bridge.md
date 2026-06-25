@@ -69,7 +69,12 @@ swimmers — the same path used for hosts that publish an open Hy-Tek results pa
 
 ## Status
 
-Prototype. Worker routes + watcher + merge are written and unit-tested (round trip green). Not yet
-deployed to the live Worker, and the in-app "enter a live code" affordance isn't wired (today you'd
-paste the `/live/<code>` URL into the live URL field). Next: deploy, then a one-tap "Go live with a
-code" entry in the app.
+- ✅ Worker routes (`/live`) + `mergeRealtime` — unit-tested (`test_live_bridge.mjs`) **and**
+  verified end-to-end against local R2 via `wrangler dev` (create → ingest → bad-token 403 →
+  merged page → 404 on unknown code).
+- ✅ Watcher (`scripts/realtime-bridge.ps1`).
+- ✅ In-app **"…or a live code from the host"** entry under Import → Live results (all 8 languages).
+- ⏳ **Production deploy of the Worker** — pending. Run `cd proxy && npx wrangler deploy`.
+
+After deploy, the only manual step at a meet is: create a session (`POST /live`), run the watcher
+on the meet PC with the code+token, and hand the code to parents.
