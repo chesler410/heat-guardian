@@ -8,8 +8,12 @@
 // Secret: ANTHROPIC_API_KEY (wrangler secret put). Optional secret: APP_TOKEN (obfuscation gate).
 
 import Anthropic from "@anthropic-ai/sdk";
+import { mergeRealtime, sha256 } from "./live.js";
 
 const MAX_PDF_BYTES = 30 * 1024 * 1024; // 30 MB
+const MAX_LIVE_FILE_BYTES = 512 * 1024; // 512 KB — one event's HTML results page is tiny
+const LIVE_FILE_CAP = 400; // max stored files per live meet (events × rounds, generous)
+const LIVE_INGEST_DAILY_CAP = 5000; // per-IP/day pushes — a busy meet uploads each event many times
 const MAX_MEET_BYTES = 3 * 1024 * 1024; // 3 MB — a meet-pack JSON is small
 const MAX_FEEDBACK_BYTES = 24 * 1024; // 24 KB of swim context + notes is plenty
 // Spend math: one Opus 4.8 feedback call ≈ 1.5¢ (~1k tokens in + ~400 out). The owner's Anthropic
@@ -60,6 +64,12 @@ export default {
       const meetMatch = /^\/meet\/([23456789A-HJ-NP-Z]{4,12})$/.exec(path);
       if (meetMatch && request.method === "GET") return getMeet(env, meetMatch[1]);
       if (path === "/meet" && request.method === "POST") return putMeet(env, request);
+
+      // --- Host bridge: live results pushed from the meet computer's c:\realtime folder ---
+      if (path === "/live" && request.method === "POST") return liveCreate(env, request);
+      const liveMatch = /^\/live\/([23456789A-HJ-NP-Z]{4,12})$/.exec(path);
+      if (liveMatch && request.method === "POST") return liveIngest(env, request, liveMatch[1]);
+      if (liveMatch && request.method === "GET") return liveServe(env, liveMatch[1]);
 
       // --- AI post-meet feedback ---
       if (path === "/feedback" && request.method === "POST") return feedback(env, request);
@@ -122,6 +132,68 @@ async function getMeet(env, code) {
   return new Response(obj.body, {
     headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "public, max-age=120" },
   });
+}
+
+// --- Host bridge ----------------------------------------------------------
+// A computer operator runs the watcher agent (scripts/realtime-bridge.ps1) ON the meet PC.
+// It watches c:\realtime and POSTs each changed event file OUTBOUND to /live/<code> — the meet
+// PC is never exposed or polled; it only makes outbound HTTPS calls, exactly like Active's own
+// Meet Mobile uploader. Parents' phones poll GET /live/<code> at the edge, never the meet PC.
+
+// Create a live session: returns { code, token }. The operator enters the code into the watcher
+// (and shares it with parents). The token gates writes; only its SHA-256 hash is stored.
+async function liveCreate(env, request) {
+  if (!env.MEETS) return text("Live cache not configured (bind R2 bucket MEETS)", 501);
+  if (!(await underCap(env, `livenew:${clientIp(request)}:${today()}`, MEET_DAILY_CAP)))
+    return text("Rate limited — too many new live meets today.", 429);
+  let title = "Live results";
+  try {
+    const b = await request.json();
+    if (b && typeof b.title === "string") title = b.title.slice(0, 120);
+  } catch { /* title is optional */ }
+  const code = makeCode();
+  const token = makeCode() + makeCode(); // 12 chars
+  await env.MEETS.put(`live/${code}/_meta.json`, JSON.stringify({ title, tokenHash: await sha256(token), createdAt: new Date().toISOString() }), {
+    httpMetadata: { contentType: "application/json" },
+  });
+  return json({ code, token });
+}
+
+// Ingest one event's HTML (body = raw file, ?name=<filename>). Token-gated so only the operator
+// who created the session can publish — live results are the trusted record, not crowd-writable.
+async function liveIngest(env, request, code) {
+  if (!env.MEETS) return text("Live cache not configured", 501);
+  if (!(await underCap(env, `livein:${clientIp(request)}:${today()}`, LIVE_INGEST_DAILY_CAP)))
+    return text("Rate limited.", 429);
+  const meta = await env.MEETS.get(`live/${code}/_meta.json`);
+  if (!meta) return json({ error: "not_found" }, 404);
+  const { tokenHash } = await meta.json();
+  const token = request.headers.get("x-hg-live-token") || "";
+  if (!token || (await sha256(token)) !== tokenHash) return text("Forbidden", 403);
+  const name = (new URL(request.url).searchParams.get("name") || "event.htm").replace(/[^\w.\-]/g, "_").slice(0, 80);
+  const body = await request.arrayBuffer();
+  if (body.byteLength === 0) return text("Empty body", 400);
+  if (body.byteLength > MAX_LIVE_FILE_BYTES) return text("File too large", 413);
+  await env.MEETS.put(`live/${code}/files/${name}`, body, { httpMetadata: { contentType: "text/html" } });
+  return json({ ok: true, name });
+}
+
+// Serve the merged live results as one Hy-Tek page so the app's existing live poller (which runs
+// parseHytekHtml over a fetched URL) overlays actual times with no app changes — point the live
+// URL at this endpoint, or import the code.
+async function liveServe(env, code) {
+  if (!env.MEETS) return text("Live cache not configured", 501);
+  const meta = await env.MEETS.get(`live/${code}/_meta.json`);
+  if (!meta) return text("Live meet not found", 404);
+  const { title } = await meta.json();
+  const listed = await env.MEETS.list({ prefix: `live/${code}/files/`, limit: LIVE_FILE_CAP });
+  const files = [];
+  for (const o of listed.objects) {
+    const obj = await env.MEETS.get(o.key);
+    if (obj) files.push({ name: o.key.split("/").pop(), text: await obj.text() });
+  }
+  const html = mergeRealtime(files, title || "Live results");
+  return new Response(html, { headers: { ...CORS, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=15" } });
 }
 
 // COPPA-minimized AI feedback. The app sends ONLY swim context + the swimmer's own notes —
