@@ -891,41 +891,55 @@ export function App() {
   }
 
   function finishImport(outcomes: ImportOutcome[], err: string) {
-    // Don't store duplicate copies of the same meet (e.g. re-importing the same heat sheet) —
-    // dedup by title+start against existing meets AND within this batch. Results imports
-    // (kind "results") are untouched: they overlay times onto matched swimmers, not add a meet.
+    // Same-meet files MERGE into one meet keyed by title+start — so importing all of a meet's
+    // session PDFs (Friday Prelims, Saturday, Sunday…) yields ONE meet carrying every session,
+    // and re-importing a sheet is a no-op (identical entries are deduped, not duplicated).
+    // Results imports (kind "results") overlay times onto matched swimmers, not add a meet.
     const meetKey = (m: Meet) => `${m.title.trim().toLowerCase()}|${m.start || ""}`;
-    const seenKeys = new Set(meets.map(meetKey));
-    let dupSkipped = 0;
-    const newMeets = outcomes
-      .flatMap((o) => (o.kind === "meet" ? [o.meet] : []))
-      .filter((m) => {
-        const k = meetKey(m);
-        if (seenKeys.has(k)) { dupSkipped++; return false; }
-        seenKeys.add(k);
-        return true;
-      });
+    const entryKey = (e: Entry) => `${e.event}|${e.heat}|${e.lane}|${e.name}|${e.session ?? ""}`;
+    const incoming = outcomes.flatMap((o) =>
+      o.kind === "meet" ? [{ ...o.meet, entries: [...o.meet.entries] }] : []
+    );
+    const merged = meets.map((m) => ({ ...m, entries: [...m.entries] })); // mutable copies
+    const byKey = new Map<string, Meet>();
+    for (const m of merged) if (!byKey.has(meetKey(m))) byKey.set(meetKey(m), m);
+    const idMap = new Map<string, string>(); // source meet id → final stored meet id
+    const freshMeets: Meet[] = [];
+    let addedEntries = 0;
+    for (const src of incoming) {
+      const k = meetKey(src);
+      let target = byKey.get(k);
+      if (!target) {
+        target = src;
+        byKey.set(k, target);
+        freshMeets.push(target);
+        addedEntries += target.entries.length;
+      } else {
+        const seen = new Set(target.entries.map(entryKey));
+        for (const e of src.entries)
+          if (!seen.has(entryKey(e))) { target.entries.push(e); seen.add(entryKey(e)); addedEntries++; }
+      }
+      idMap.set(src.id, target.id);
+    }
     const resultSets = outcomes.flatMap((o) => (o.kind === "results" ? [o] : []));
     let meetsNext = meets;
-    if (newMeets.length) {
-      meetsNext = [...newMeets, ...meets];
+    if (freshMeets.length || addedEntries) {
+      meetsNext = [...freshMeets, ...merged];
       persistMeets(meetsNext);
     }
     const parts: string[] = [];
-    if (dupSkipped > 0) parts.push(`Skipped ${dupSkipped} meet(s) you'd already imported.`);
-    if (newMeets.length) {
-      const total = newMeets.reduce((n, m) => n + m.entries.length, 0);
-      parts.push(`Imported ${newMeets.length} meet file(s) — ${total} swimmers found.`);
-    }
+    if (freshMeets.length) parts.push(`Imported ${freshMeets.length} meet(s) — ${addedEntries} entries loaded.`);
+    else if (addedEntries) parts.push(`Added ${addedEntries} entries to your meet.`);
+    else if (incoming.length) parts.push(`Those entries were already imported.`);
     // Meet packs bundle a result overlay keyed without the meet id (ids differ per device) —
-    // re-prefix each key with the NEW meet's id before merging.
+    // re-prefix each key with the FINAL meet's id (the new meet, or the one it merged into).
     let r = results;
     let dirty = false;
     for (const o of outcomes)
       if (o.kind === "meet" && o.results)
         for (const [k, v] of Object.entries(o.results)) {
           if (!dirty) { r = { ...results }; dirty = true; }
-          r[`${o.meet.id}|${k}`] = v;
+          r[`${idMap.get(o.meet.id) ?? o.meet.id}|${k}`] = v;
         }
     // Read role/team fresh: "Coach this team" on a share link sets them right before the
     // async import lands, so the closure's `coaching` can be stale here.
@@ -953,8 +967,8 @@ export function App() {
       saveResults(r);
     }
     if (!outcomes.length && err) parts.push(err);
-    if ((newMeets.length || resultSets.length) && (swimmers.length || coachingNow)) setNav("home");
-    else if (newMeets.length && !swimmers.length && !coachingNow) setNav("swimmers");
+    if ((freshMeets.length || addedEntries || resultSets.length) && (swimmers.length || coachingNow)) setNav("home");
+    else if (freshMeets.length && !swimmers.length && !coachingNow) setNav("swimmers");
     setMsg(parts.join(" ").trim());
     setBusy(false);
   }
