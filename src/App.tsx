@@ -21,6 +21,7 @@ import {
   importUrl,
   importMeetCode,
   cacheMeet,
+  backendBase,
   getFeedback,
   buildMeetPack,
   applyResults,
@@ -875,6 +876,18 @@ export function App() {
     }
   }
 
+  // Go live from a host-bridge code: results are served at <backend>/live/<code> as a Hy-Tek page,
+  // so we just point the live poller at that URL — same overlay path as a public results link.
+  function onLiveCode(code: string) {
+    const c = code.trim().toUpperCase();
+    if (!c) return;
+    const base = backendBase(loadProxy() || DEFAULT_PROXY);
+    if (!base) { setMsg(t("share_unavailable")); return; }
+    setLiveUrl(`${base}/live/${encodeURIComponent(c)}`);
+    setLiveOn(true);
+    setNav("home");
+  }
+
   // Push this meet to the shared cache and show the code to pass to teammates.
   async function onShareMeet(meet: Meet) {
     setBusy(true);
@@ -1167,6 +1180,7 @@ export function App() {
             onFiles={onFiles}
             onUrl={onUrl}
             onCode={onCode}
+            onLiveCode={onLiveCode}
             goAbout={() => setNav("about")}
             liveUrl={liveUrl}
             liveOn={liveOn}
@@ -2020,6 +2034,7 @@ function ImportView(props: {
   onFiles: (f: FileList | null) => void;
   onUrl: (u: string) => void;
   onCode: (c: string) => void;
+  onLiveCode: (c: string) => void;
   goAbout: () => void;
   liveUrl: string;
   liveOn: boolean;
@@ -2032,6 +2047,7 @@ function ImportView(props: {
   const [url, setUrl] = useState("");
   const [code, setCode] = useState("");
   const [liveDraft, setLiveDraft] = useState(props.liveUrl);
+  const [liveCode, setLiveCode] = useState("");
   return (
     <div>
       <DiscoverView
@@ -2076,6 +2092,22 @@ function ImportView(props: {
           <button className="secondary" onClick={() => props.setLiveOn(false)}>{t("live_stop")}</button>
         ) : (
           <button className="primary" disabled={!liveDraft.trim()} onClick={() => { props.setLiveUrl(liveDraft.trim()); props.setLiveOn(true); }}>{t("live_start")}</button>
+        )}
+        {!props.liveOn && (
+          <div className="code-row">
+            <span className="code-or">{t("live_code_or")}</span>
+            <input
+              className="field code-input"
+              placeholder={t("imp_code_ph")}
+              value={liveCode}
+              maxLength={12}
+              onChange={(e) => setLiveCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ""))}
+              onKeyDown={blurOnEnter}
+            />
+            <button className="secondary" disabled={liveCode.trim().length < 4} onClick={() => { props.onLiveCode(liveCode); setLiveCode(""); }}>
+              {t("live_code_btn")}
+            </button>
+          </div>
         )}
         {props.liveStatus && <p className="live-status">{props.liveStatus}</p>}
         <p className="muted small">{t("live_tip")}</p>
