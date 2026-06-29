@@ -29,8 +29,7 @@ import {
   SwimmerProgress,
   ImportOutcome,
 } from "./store.ts";
-import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, ageToGroup } from "./cuts.ts";
-import { computeOdds, OddsResult } from "./odds.ts";
+import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED } from "./config.ts";
 import { Geolocation } from "@capacitor/geolocation";
 import { getTheme, setTheme, Theme } from "./theme.ts";
@@ -215,7 +214,6 @@ function EntryCard({
   onNote,
   done,
   onToggleDone,
-  odds,
   swimmer,
 }: {
   d: DE;
@@ -234,7 +232,6 @@ function EntryCard({
   onNote?: (val: string) => void;
   done?: boolean; // heat marked complete on deck (so "Up next" advances without a logged time)
   onToggleDone?: () => void;
-  odds?: OddsResult | null; // seed-based pre-race prediction (shown only before a time is logged)
   swimmer?: boolean; // "My Meet" mode — frame the note as the swimmer's own reflection
 }) {
   const { e } = d;
@@ -260,6 +257,8 @@ function EntryCard({
     return isFinite(a) && isFinite(b) && b > a ? +(b - a).toFixed(2) : null;
   })();
   const age = d.age ?? (parseInt(e.age, 10) || undefined);
+  // Chance of hitting the next motivational cut this race, from the drop still needed.
+  const goalP = !e.relay && !result && cut?.nextCut ? goalChance(parseTime(e.seed), cut.nextCut.needed) : null;
   return (
     <div className={"card event" + (close ? " close" : "") + (result ? " has-result" : "") + (done && !result ? " done" : "")}>
       <div className="ev-top">
@@ -313,18 +312,12 @@ function EntryCard({
       ) : e.relay ? null : (
         <div className="cut muted">{t("nostd")}</div>
       )}
-      {!e.relay && !result && odds && (
+      {!e.relay && !result && cut?.nextCut && goalP != null && (
         <div className="odds">
-          <div className="odds-head">{t("odds_title")}</div>
-          <div className="odds-line">
-            {t("odds_ev_rank", { r: odds.eventRank, n: odds.fieldSize })}
-            {odds.heatSize >= 2 ? " · " + t("odds_ht_rank", { r: odds.heatRank, n: odds.heatSize }) : ""}
-          </div>
           <div className="odds-line odds-win">
-            {t("odds_ev_win", { p: odds.winPct })}
-            {odds.heatSize >= 2 ? " · " + t("odds_ht_win", { p: odds.heatWinPct }) : ""}
+            🎯 {t("goal_chance", { lvl: cut.nextCut.level })} <strong>{goalP}%</strong>
           </div>
-          <div className="odds-note">{t("odds_note")}</div>
+          <div className="odds-note">{t("goal_note", { s: cut.nextCut.needed.toFixed(2) })}</div>
         </div>
       )}
       {!e.relay && (
@@ -1586,42 +1579,6 @@ function Home(props: any) {
   // in the heat tracker — any of those should drop it out of "Up next".
   const doneOf = (d: DE) =>
     !!done[resultKey(d.meetId, d.e.event, d.swimmer)] || !!heatDone[`${d.meetId}|${d.e.event}|${heatOrd(d.e.heat)}`];
-  // Seed-based pre-race odds. Age-group standing compares against same-gender, same-age-group
-  // swimmers by their documented seed times ACROSS the meet (an 11-yr-old swimming up in a
-  // "13 & Over" event is ranked among other 11-12 girls, not the whole open field). Heat standing
-  // uses the actual heatmates (any age). NT/no-seed swimmers are left out.
-  const ageGroupOf = (e: Entry, swAge?: number): string | null => {
-    const a = parseInt(e.age, 10);
-    if (isFinite(a) && a > 0) return ageToGroup(a);
-    return swAge != null ? ageToGroup(swAge) : null;
-  };
-  const oddsFor = (d: DE): OddsResult | null => {
-    if (d.e.relay) return null;
-    const meet = meets.find((m: Meet) => m.id === d.meetId);
-    if (!meet) return null;
-    const myMeta = eventMeta(d.e.desc);
-    if (!myMeta.key) return null;
-    const myGroup = ageGroupOf(d.e, d.age);
-    const myGender = myMeta.gender;
-    // Age-group field: any meet entry of the same stroke/distance/course, same gender, same age group.
-    const groupEntries = meet.entries.filter((e: Entry) => {
-      if (e.relay) return false;
-      const m = eventMeta(e.desc);
-      if (m.key !== myMeta.key || m.course !== myMeta.course) return false;
-      if (myGender && m.gender && m.gender !== myGender) return false;
-      if (myGroup && ageGroupOf(e, undefined) !== myGroup) return false;
-      return true;
-    });
-    const heatEntries = meet.entries.filter(
-      (e: Entry) => !e.relay && e.event === d.e.event && heatOrd(e.heat) === heatOrd(d.e.heat)
-    );
-    // Keep only swimmers with a real (non-NT) seed; me drops out → no odds (handled downstream).
-    const seeded = (arr: Entry[]) => {
-      const v = arr.filter((e) => isFinite(parseTime(e.seed)));
-      return { secs: v.map((e) => parseTime(e.seed)), meIdx: v.indexOf(d.e) };
-    };
-    return computeOdds(seeded(groupEntries), seeded(heatEntries));
-  };
   // Meet lifecycle: a meet auto-tucks into a collapsed "Past meets" archive ~3 days after its
   // last session, so between the bursty meet weekends Home stays focused on the active/upcoming
   // meet and never defaults to a stale one. Records persist — Progress spans every meet, the
@@ -2002,7 +1959,6 @@ function Home(props: any) {
                             asplits={asplits[k]}
                             note={notes[k]}
                             done={!!done[k]}
-                            odds={oddsFor(d)}
                             swimmer={swimmer}
                             onGoal={(v: string) => setMap("goal", d.meetId, d.e.event, d.swimmer, v)}
                             onSplits={(v: string) => setMap("splits", d.meetId, d.e.event, d.swimmer, v)}

@@ -28,10 +28,9 @@ deck-friendly **heat check-off** so "Up next" always reflects where the meet act
   while scrolling stays free). Your swimmers' lanes are **boldly highlighted**, each heat header
   shows its **event**, and the current heat is tagged **now**. Closing a heat also clears your
   swimmer from "Up next". **Filter** the sheet by my swimmers, day/session, age group, or event
-- **🎯 Odds** — a just-for-fun, seed-based standing on each upcoming event card, within the
-  swimmer's **own gender + age group** (compared across the meet by documented seed times, so an
-  11-year-old swimming up is ranked among 11–12s, not the open field) — plus their place in the
-  **heat** and a modeled win chance for each. Kindly disclaimed
+- **🎯 Next-goal chance** — on each upcoming event card, a kind, encouraging probability of
+  hitting the **next motivational cut this race**, modeled from the drop still needed (clamped
+  1–99%, never a brutal 0%). Replaces head-to-head win odds with a self-referential goal
 - **Split by 25 / 50** toggle on the goal-splits table (a 100 LC splits by 50 → 2, or by 25 → 4),
   plus a **time-dropped** badge (entry → finals) on each swum result
 - **Age shown next to every swimmer** — cards, Up next, chips, heat-tracker lanes, and Progress

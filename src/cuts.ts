@@ -137,6 +137,27 @@ export function splitDeltas(cum: string[]): string[] {
   });
 }
 
+// Standard-normal CDF (Abramowitz & Stegun 7.1.26 erf approximation) — good to ~1e-7.
+function normalCdf(z: number): number {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp(-z * z / 2);
+  let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  if (z > 0) p = 1 - p;
+  return p;
+}
+
+// Kind, self-referential "chance of hitting the next goal this race" from the drop needed.
+// Models the swimmer's next-swim improvement as Normal(≈1.5% of their time, σ≈3%) — generous,
+// since age-group kids drop real time — and returns P(improvement ≥ needed), clamped to 1–99 so
+// it's never a brutal 0% or a cocky 100%. needed/seed in seconds; null when not computable.
+export function goalChance(seedSec: number, neededSec: number): number | null {
+  if (!isFinite(seedSec) || !isFinite(neededSec) || seedSec <= 0) return null;
+  if (neededSec <= 0) return 99; // already at or under the goal time
+  const r = neededSec / seedSec; // fraction of their time they need to drop
+  const p = normalCdf((0.015 - r) / 0.03);
+  return Math.max(1, Math.min(99, Math.round(p * 100)));
+}
+
 export function computeCut(
   desc: string,
   seed: string,
