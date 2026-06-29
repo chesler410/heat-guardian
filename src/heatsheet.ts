@@ -64,6 +64,12 @@ function columnLefts(words: Word[]): number[] {
   // "Heat N of M" prints once per column at the column's left edge — and unlike the Lane
   // header it appears for EVERY tiled column, so it recovers columns a sparse Lane row misses.
   for (const h of words.filter((w) => /^Heat\b/.test(w.s))) cand.push(h.x);
+  // RESULTS sheets have no Lane/Heat but a "Name Age Team …" header per column. Seed from each
+  // "Name" (shifted left of the leading place number); and anchor the leftmost column at the page
+  // margin (0) so flush-left event titles aren't clipped. On heat sheets these cluster out harmlessly.
+  const names = words.filter((w) => /^Name$/.test(w.s));
+  for (const n of names) cand.push(n.x - 20);
+  if (names.length) cand.push(0);
   cand.sort((a, b) => a - b);
   const lefts: number[] = [];
   for (const x of cand) if (!lefts.length || x - lefts[lefts.length - 1] > 40) lefts.push(x);
@@ -233,8 +239,25 @@ function findTitle(words: Word[]): string {
 }
 
 const EVENT_RES = /Event\s+(\d+)\s+(.+)/;
-const TIME_TOK = /^\d{0,2}:?\d{2}\.\d{2}$/;
+const TIME_TOK_G = /\d{0,2}:?\d{1,2}\.\d{2}/g;
 const NAME_RES = /[A-Za-z'.\-]+,\s+[A-Za-z'.\-]+(?:\s+[A-Za-z]\b)?/;
+// Compact results event header with no "Event N" — e.g. "Girls 10&U 50 Meter Free",
+// "Boys 11-12 100 Yard Back". A gender word, then a distance + Yard/Meter + stroke word.
+const EVENT_RES_COMPACT = /^(?:Girls|Boys|Women|Men|Mixed)\b.*?\b\d+\s+(?:Yard|Meter)\s+[A-Za-z]/;
+// A finisher line = has a "Last, First" name and ends with a finals time. Works for both the
+// "place Name age TEAM finals" layout and the "TeamName place Name age seed finals" layout.
+const ENDS_TIME = /\d{1,2}\.\d{2}\s*$/;
+// Expand a compact header to the full phrase eventMeta() keys on. "Meter" → "LC Meter" (US meets
+// that write bare "Meter" are long-course; SCM is rare); "Yard" → "SC Yard"; strokes spelled out.
+function normResultsDesc(line: string): string {
+  return line
+    .replace(/(?<!SC )(?<!LC )\bYard\b/g, "SC Yard")
+    .replace(/(?<!SC )(?<!LC )\bMeter\b/g, "LC Meter")
+    .replace(/\bFree\b/g, "Freestyle")
+    .replace(/\bBack\b/g, "Backstroke")
+    .replace(/\bBreast\b/g, "Breaststroke")
+    .replace(/\bFly\b/g, "Butterfly");
+}
 
 // Build the parsed result from already-extracted per-page words.
 export function buildParsed(pages: Word[][], title: string): ParsedPdf {
@@ -261,34 +284,27 @@ export function buildParsed(pages: Word[][], title: string): ParsedPdf {
 
 export { findTitle };
 
-// Pick, per finisher row, the time nearest the "Finals" column (vs the Seed column).
+// Parse results COLUMN-MAJOR (results are often tiled 2-3 across the page, like the heat sheets),
+// so events/finishers read in true order instead of interleaving columns. Within a column each
+// finisher line carries its place + name + the finals time (splits are on their own line beneath).
 function parseResultsPages(pages: Word[][]): Finisher[] {
   const out: Finisher[] = [];
-  let ev: number | null = null;
+  let ev = 0;
   let desc = "";
   for (const words of pages) {
-    const finalsXs = words.filter((w) => /Finals/.test(w.s)).map((w) => w.x);
-    const fx = finalsXs.length ? finalsXs[0] : 1e9;
-    const rows = new Map<number, Word[]>();
-    for (const w of words) {
-      const k = Math.round(w.y / 2);
-      if (!rows.has(k)) rows.set(k, []);
-      rows.get(k)!.push(w);
-    }
-    for (const k of [...rows.keys()].sort((a, b) => b - a)) {
-      const row = rows.get(k)!.sort((a, b) => a.x - b.x);
-      const txt = row.map((w) => w.s).join(" ");
-      const em = EVENT_RES.exec(txt);
-      if (em) {
-        ev = parseInt(em[1], 10);
-        desc = em[2].trim();
-        continue;
-      }
-      const nm = NAME_RES.exec(txt);
-      const times = row.filter((w) => TIME_TOK.test(w.s));
-      if (nm && times.length && ev != null) {
-        const finals = times.reduce((b, t) => (Math.abs(t.x - fx) < Math.abs(b.x - fx) ? t : b)).s;
-        out.push({ event: ev, desc, name: nm[0].trim(), finals });
+    const lefts = columnLefts(words);
+    for (let c = 0; c < lefts.length; c++) {
+      for (const raw of linesForColumn(words, c, lefts)) {
+        const line = raw.trim();
+        if (!line) continue;
+        const em = EVENT_RES.exec(line); // "Event 7 Girls 10 & Under 50 LC Meter Freestyle"
+        if (em) { ev = parseInt(em[1], 10); desc = em[2].trim(); continue; }
+        if (EVENT_RES_COMPACT.test(line)) { ev++; desc = normResultsDesc(line); continue; } // compact header
+        const nm = NAME_RES.exec(line);
+        if (desc && nm && ENDS_TIME.test(line)) {
+          const times = line.match(TIME_TOK_G);
+          if (times && times.length) out.push({ event: ev, desc, name: nm[0].replace(/\s+/g, " ").trim(), finals: times[times.length - 1] });
+        }
       }
     }
   }
