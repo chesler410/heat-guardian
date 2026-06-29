@@ -507,12 +507,12 @@ function EntryCard({
                 </table>
               )}
               {timerDists && seg && (
-                <button className="timer-open" onClick={() => setShowTimer(true)}>⏱ {t("timer_live")}</button>
-              )}
-              {splitDists && seg && (
                 <div className="splitrows">
-                  <span className="tf-lbl">{t("actual_lbl")}</span>
-                  {splitDists.map((dist, i) => (
+                  <div className="splitrows-head">
+                    <span className="tf-lbl">{t("actual_lbl")}</span>
+                    <button className="timer-open" onClick={() => setShowTimer(true)}>⏱ {t("timer_live")}</button>
+                  </div>
+                  {timerDists.map((dist, i) => (
                     <div className="splitrow" key={i}>
                       <span className="splitrow-d mono">{dist}{seg.unit}</span>
                       <TimeFields value={actualArr[i] || ""} onChange={(v) => setSplitRow(i, v)} />

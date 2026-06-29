@@ -998,3 +998,7 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .timer-cum { font-weight: 800; }
 .timer-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: min(92vw, 420px); }
 .timer-actions button { flex: 1; min-width: 90px; }
+
+/* Manual split rows header: label on the left, "Time it live" button on the right */
+.splitrows-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.splitrows-head .timer-open { width: auto; margin: 0; padding: 7px 12px; font-size: 0.85rem; white-space: nowrap; }
