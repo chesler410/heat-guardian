@@ -50,8 +50,9 @@ deck-friendly **heat check-off** so "Up next" always reflects where the meet act
   tracker + Up next) to the left edge for one-handed lefties
 - **Per event:** heat, lane, seed (best), the **next motivational cut** (+delta, ≈ per length),
   and the **🏆 Southeastern championship cut** (qualified ✓ or how much to drop)
-- **Calm two-tab layout** — **Home** and **Swimmers**, with Add-meet, theme, language, and
-  About tucked behind a **⚙ Settings** gear so meet day stays uncluttered
+- **Calm three-tab layout** — **Home**, **Swimmers**, and **🏊 Live** (the follow-along heat
+  tracker gets its own home), with Add-meet, theme, language, and About tucked behind a
+  **⚙ Settings** gear so meet day stays uncluttered
 - **One Swimmers hub** — your **My swimmers** and your **Watch list** in one place; find a
   swimmer by **search** *or* by **browsing teams**, then add as yours or to watch
 - **Per-swimmer Progress** — current **best time** per event across every meet (seed or swum,

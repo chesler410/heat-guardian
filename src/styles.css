@@ -974,3 +974,9 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .fb-box textarea { width: 100%; margin-bottom: 8px; }
 .fb-box .primary { width: auto; }
 .rate-btn { display: inline-block; margin-top: 12px; }
+
+/* Live tab — meet picker for the heat tracker */
+.live-pick { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; font: inherit; cursor: pointer; }
+.live-pick-title { font-weight: 800; font-size: 1.02rem; }
+.live-pick-go { color: var(--blue); font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
+.theme-dark .live-pick-go { color: #9cc2ff; }

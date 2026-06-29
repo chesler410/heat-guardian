@@ -67,9 +67,10 @@ try {
     return false;
   };
 
-  // --- Nav is now exactly two tabs, plus a gear ---
+  // --- Nav is Home / Swimmers / Live, plus a gear ---
   const tabs = await page.$$eval(".tabs button", (bs) => bs.map((b) => b.textContent.trim()));
-  ok(tabs.length === 2, `Two primary tabs (got ${tabs.length}: ${tabs.join("|")})`);
+  ok(tabs.length === 3, `Three primary tabs (got ${tabs.length}: ${tabs.join("|")})`);
+  ok(tabs.some((t) => /live/i.test(t)), "Live tab present");
   ok(!tabs.some((t) => /watch|progress|team|about|add meet/i.test(t)), "No Watching/Progress/Teams/About/Add-meet tabs");
   ok((await page.$(".gear-btn")) !== null, "Gear (settings) button present");
 

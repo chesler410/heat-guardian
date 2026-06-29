@@ -82,14 +82,23 @@ export interface CutResult {
 }
 
 // Number/size of pool lengths for an event (for per-length pace math).
+// Pool length + unit from the course phrase. Independent of the cut-standard course (which only
+// knows LCM/SCY) so SC Meter (a 25 m pool) still gets splits even though it has no USA-S standards.
+export function poolOf(desc: string): { len: number; unit: string } | null {
+  if (/LC Meter/i.test(desc)) return { len: 50, unit: "m" };
+  if (/SC Meter/i.test(desc)) return { len: 25, unit: "m" };
+  if (/SC Yard/i.test(desc)) return { len: 25, unit: "y" };
+  return null;
+}
+
 export function segInfo(desc: string): { dist: number; len: number; unit: string; n: number } | null {
   const m = eventMeta(desc);
-  if (!m.course || !m.key) return null;
+  const pool = poolOf(desc);
+  if (!m.key || !pool) return null;
   const dist = parseInt(m.key, 10);
-  const len = m.course === "LCM" ? 50 : 25;
-  const unit = m.course === "LCM" ? "m" : "y";
-  const n = Math.round(dist / len);
-  return { dist, len, unit, n };
+  if (!dist) return null;
+  const n = Math.round(dist / pool.len);
+  return { dist, len: pool.len, unit: pool.unit, n };
 }
 
 // Goal pacing per pool length. "even" = equal pace; "realistic" = mild positive split (first
@@ -103,9 +112,10 @@ export function goalSplits(
 ): { dist: number; each: string; cum: string }[] | null {
   if (!goal) return null;
   const m = eventMeta(desc);
-  if (!m.course || !m.key) return null;
+  const pool = poolOf(desc);
+  if (!m.key || !pool) return null;
   const dist = parseInt(m.key, 10);
-  const poolLen = m.course === "LCM" ? 50 : 25; // length of pool
+  const poolLen = pool.len; // length of pool (LCM 50, SCY/SCM 25)
   // Use the chosen split length when it divides the distance evenly; else fall back to the pool.
   const len = splitLen && dist % splitLen === 0 ? splitLen : poolLen;
   const n = Math.round(dist / len);

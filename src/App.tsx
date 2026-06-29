@@ -38,7 +38,7 @@ import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
 import day from "./day.json";
 import meetsDirectory from "./meets.json";
 
-type Nav = "home" | "import" | "swimmers" | "watching" | "progress" | "teams" | "about" | "settings";
+type Nav = "home" | "live" | "import" | "swimmers" | "watching" | "progress" | "teams" | "about" | "settings";
 
 // 🫧 Easter egg: tap the 🏊 logo 5× fast for a random pre-race taunt to psych yourself up.
 // Tiered by edge: "mild" is wholesome (safe for the 8-and-unders and the default), "medium"
@@ -294,18 +294,23 @@ function EntryCard({
   const [editing, setEditing] = useState(false);
   const [showSplits, setShowSplits] = useState(false);
   const [editNote, setEditNote] = useState(false);
-  const splits = e.relay ? null : goalSplits(e.desc, goal || "", pacing || "even", splitBy ? +splitBy : undefined);
   // Keep blank positions so each entered split stays aligned with its length (no filter).
   const actualArr = (asplits || "").split(",").map((x) => x.trim());
   const hasActual = actualArr.some(Boolean);
-  const seg = e.relay ? null : segInfo(e.desc);
-  // Split-by options: the pool length plus a finer half-length when it divides the distance
-  // evenly (e.g. a 100 LC pool-splits by 50 → 2, or by 25 → 4). Only offered when there's a choice.
-  const splitOpts = seg && seg.dist % (seg.len / 2) === 0 ? [seg.len / 2, seg.len].sort((a, b) => a - b) : null;
-  const effSplit = splitBy && seg && seg.dist % +splitBy === 0 ? +splitBy : seg?.len;
-  // Per-length cumulative distances (course + split-by aware): a 100 LC by 50 → [50,100]; by 25 → [25,50,75,100].
-  const splitN = seg && effSplit ? Math.round(seg.dist / effSplit) : 0;
-  const splitDists = splitN >= 2 ? Array.from({ length: splitN }, (_, i) => (i + 1) * (effSplit as number)) : null;
+  // segInfo works for ANY course (incl. SC Meter) + ANY distance; relays get leg splits too.
+  const seg = segInfo(e.desc);
+  // A split length is valid only if it's a whole number of pool lengths (you can't split finer than
+  // a length) AND it divides the race into ≥2 pieces. Offer pool-length / 50 / 100 where they fit.
+  const splitOk = (c: number) => !!seg && c % seg.len === 0 && seg.dist % c === 0 && seg.dist / c >= 2;
+  const splitOpts = seg ? [...new Set([seg.len, 50, 100])].filter(splitOk).sort((a, b) => a - b) : [];
+  // Default to per-50 (the universal split convention: 200→4, 500→10, 1500→30) when it fits, so
+  // distance events don't explode into per-25 rows; else the pool length; else the coarsest option.
+  const defSplit = splitOpts.includes(50) ? 50 : splitOpts.includes(seg?.len ?? 0) ? seg!.len : (splitOpts[splitOpts.length - 1] || 0);
+  const effSplit = splitBy && splitOk(+splitBy) ? +splitBy : defSplit;
+  const splitN = effSplit ? Math.round((seg?.dist ?? 0) / effSplit) : 0;
+  const splitDists = seg && splitN >= 2 ? Array.from({ length: splitN }, (_, i) => (i + 1) * effSplit) : null;
+  // Goal splits are for individual races only (relays have a team time, not a personal goal).
+  const splits = e.relay ? null : goalSplits(e.desc, goal || "", pacing || "even", effSplit || undefined);
   const setSplitRow = (i: number, v: string) => {
     const arr = (asplits || "").split(",").map((x) => x.trim());
     while (arr.length < splitN) arr.push("");
@@ -418,7 +423,7 @@ function EntryCard({
         )}
       </div>
       )}
-      {!e.relay && (
+      {(!e.relay || splitDists) && (
         <div className="splits-sec">
           <button className="inline-link" onClick={() => setShowSplits((v) => !v)}>
             {t("splits_toggle")}
@@ -439,10 +444,12 @@ function EntryCard({
                   )}
                 </div>
               )}
-              <div className="tf-row">
-                <span className="tf-lbl">{t("goal_lbl")}</span>
-                <TimeFields value={goal || ""} onChange={(v) => onGoal?.(v)} />
-              </div>
+              {!e.relay && (
+                <div className="tf-row">
+                  <span className="tf-lbl">{t("goal_lbl")}</span>
+                  <TimeFields value={goal || ""} onChange={(v) => onGoal?.(v)} />
+                </div>
+              )}
               {splits && setPacing && (
                 <div className="seg pace-seg">
                   <span className="pace-label">{t("pace_label")}</span>
@@ -454,7 +461,7 @@ function EntryCard({
                   </button>
                 </div>
               )}
-              {splitOpts && setSplitBy && seg && (
+              {splitOpts.length > 1 && setSplitBy && seg && (
                 <div className="seg pace-seg">
                   <span className="pace-label">{t("split_by")}</span>
                   {splitOpts.map((len) => (
@@ -1245,7 +1252,7 @@ export function App() {
         </div>
         {role && !(role === "coach" && !coachTeam) && (
           <nav className="tabs">
-            {((coaching ? ["home"] : ["home", "swimmers"]) as Nav[]).map((tb) => (
+            {((coaching ? ["home", "live"] : ["home", "swimmers", "live"]) as Nav[]).map((tb) => (
               <button key={tb} className={nav === tb ? "on" : ""} onClick={() => setNav(tb)}>
                 {t("nav_" + tb)}
               </button>
@@ -1333,6 +1340,16 @@ export function App() {
           coach={coaching}
           coachTeam={coaching ? coachTeam : ""}
           swimmer={role === "swimmer"}
+        />
+      )}
+      {gated && nav === "live" && (
+        <LiveView
+          meets={meets}
+          swimmers={activeSwimmers}
+          myTeam={myTeam}
+          heatDone={heatDone}
+          setHeatsDone={setHeatsDone}
+          goImport={() => setNav("import")}
         />
       )}
       {gated && nav === "import" && (
@@ -1642,6 +1659,42 @@ function FollowHeats({ meet, swimmers, myTeam, heatDone, setHeatsDone, onClose }
           ))
         )}
       </div>
+    </div>
+  );
+}
+
+// The "Live" tab — a first-class home for the follow-along heatsheet. Lists your meets (active
+// ones first); tap one to open the heat tracker. The per-meet "Follow heats" button still works.
+function LiveView({ meets, swimmers, myTeam, heatDone, setHeatsDone, goImport }: {
+  meets: Meet[];
+  swimmers: Swimmer[];
+  myTeam: string;
+  heatDone: Record<string, string>;
+  setHeatsDone: (meetId: string, heats: { event: number; ho: number }[], on: boolean) => void;
+  goImport: () => void;
+}) {
+  const [sel, setSel] = useState<Meet | null>(null);
+  if (sel) {
+    return <FollowHeats meet={sel} swimmers={swimmers} myTeam={myTeam} heatDone={heatDone} setHeatsDone={setHeatsDone} onClose={() => setSel(null)} />;
+  }
+  if (!meets.length) {
+    return <Empty title={t("em_nomeet_t")} body={t("em_nomeet_b")} cta={t("sw_addmeet")} onCta={goImport} />;
+  }
+  const todayMid = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+  const ordered = [...meets].sort((a, b) => {
+    const ap = ((meetEndMs(a) ?? Infinity) + 3 * 86400000 < todayMid) ? 1 : 0;
+    const bp = ((meetEndMs(b) ?? Infinity) + 3 * 86400000 < todayMid) ? 1 : 0;
+    return ap - bp || b.importedAt - a.importedAt;
+  });
+  return (
+    <div className="live-view">
+      <p className="section-title">🏊 {t("live_pick")}</p>
+      {ordered.map((m) => (
+        <button key={m.id} className="card live-pick" onClick={() => setSel(m)}>
+          <span className="live-pick-title">{m.title}</span>
+          <span className="live-pick-go">{t("follow_heats")} ›</span>
+        </button>
+      ))}
     </div>
   );
 }
