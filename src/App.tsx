@@ -125,6 +125,44 @@ const parseTime = (t?: string): number => {
   if (s.includes(":")) { const [m, sec] = s.split(":"); return parseInt(m, 10) * 60 + parseFloat(sec); }
   return parseFloat(s);
 };
+// Split a "M:SS.hh" / "SS.hh" time into its three parts (for the mobile field UI).
+const parseTimeParts = (v: string): { m: string; s: string; c: string } => {
+  const mm = /^(?:(\d+):)?(\d{1,2})(?:\.(\d{1,2}))?$/.exec((v || "").trim());
+  return mm ? { m: mm[1] || "", s: mm[2] || "", c: mm[3] || "" } : { m: "", s: "", c: "" };
+};
+// Reassemble three fields into a canonical time string ("" when all blank).
+const composeTime = (m: string, s: string, c: string): string => {
+  if (!m && !s && !c) return "";
+  const cc = c ? c.padEnd(2, "0").slice(0, 2) : "00";
+  return m ? `${m}:${(s || "0").padStart(2, "0")}.${cc}` : `${s || "0"}.${cc}`;
+};
+
+// Mobile-friendly time entry: three numeric fields (min : sec . hundredths) instead of one
+// free-text box you'd have to hunt ":" and "." for. Syncs if the value is set externally
+// (e.g. tapping a "splits for BB" goal chip) without stealing focus while you type.
+function TimeFields({ value, onChange, autoFocus }: { value: string; onChange: (v: string) => void; autoFocus?: boolean }) {
+  const p = parseTimeParts(value);
+  const [m, setM] = useState(p.m);
+  const [s, setS] = useState(p.s);
+  const [c, setC] = useState(p.c);
+  useEffect(() => {
+    if (value !== composeTime(m, s, c)) { const q = parseTimeParts(value); setM(q.m); setS(q.s); setC(q.c); }
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  const digits = (v: string, n: number) => v.replace(/\D/g, "").slice(0, n);
+  return (
+    <span className="timefields">
+      <input className="tf tf-m" inputMode="numeric" placeholder="m" maxLength={2} autoFocus={autoFocus}
+        value={m} onChange={(e) => { const v = digits(e.target.value, 2); setM(v); onChange(composeTime(v, s, c)); }} />
+      <span className="tf-sep">:</span>
+      <input className="tf tf-s" inputMode="numeric" placeholder="ss" maxLength={2}
+        value={s} onChange={(e) => { const v = digits(e.target.value, 2); setS(v); onChange(composeTime(m, v, c)); }} />
+      <span className="tf-sep">.</span>
+      <input className="tf tf-c" inputMode="numeric" placeholder="hh" maxLength={2}
+        value={c} onChange={(e) => { const v = digits(e.target.value, 2); setC(v); onChange(composeTime(m, s, v)); }} />
+    </span>
+  );
+}
+
 // A swimmer's age for display — prefer the saved swimmer's age, fall back to the meet entry's.
 const deAge = (d: DE): number | undefined => d.age ?? (parseInt(d.e.age, 10) || undefined);
 const ageTag = (a?: number): string => (a != null ? ` · ${a}` : "");
@@ -239,12 +277,25 @@ function EntryCard({
   const [showSplits, setShowSplits] = useState(false);
   const [editNote, setEditNote] = useState(false);
   const splits = e.relay ? null : goalSplits(e.desc, goal || "", pacing || "even", splitBy ? +splitBy : undefined);
-  const actualArr = (asplits || "").split(",").map((x) => x.trim()).filter(Boolean);
+  // Keep blank positions so each entered split stays aligned with its length (no filter).
+  const actualArr = (asplits || "").split(",").map((x) => x.trim());
+  const hasActual = actualArr.some(Boolean);
   const seg = e.relay ? null : segInfo(e.desc);
   // Split-by options: the pool length plus a finer half-length when it divides the distance
   // evenly (e.g. a 100 LC pool-splits by 50 → 2, or by 25 → 4). Only offered when there's a choice.
   const splitOpts = seg && seg.dist % (seg.len / 2) === 0 ? [seg.len / 2, seg.len].sort((a, b) => a - b) : null;
   const effSplit = splitBy && seg && seg.dist % +splitBy === 0 ? +splitBy : seg?.len;
+  // Per-length cumulative distances (course + split-by aware): a 100 LC by 50 → [50,100]; by 25 → [25,50,75,100].
+  const splitN = seg && effSplit ? Math.round(seg.dist / effSplit) : 0;
+  const splitDists = splitN >= 2 ? Array.from({ length: splitN }, (_, i) => (i + 1) * (effSplit as number)) : null;
+  const setSplitRow = (i: number, v: string) => {
+    const arr = (asplits || "").split(",").map((x) => x.trim());
+    while (arr.length < splitN) arr.push("");
+    arr[i] = v;
+    let end = arr.length;
+    while (end > 0 && !arr[end - 1]) end--;
+    onSplits?.(arr.slice(0, end).join(", "));
+  };
   const time = result || e.seed;
   const cut = cutFor(d, result);
   const close = cut?.nextCut && cut.nextCut.needed <= 1.0;
@@ -323,18 +374,10 @@ function EntryCard({
       {!e.relay && (
       <div className="result-entry">
         {editing ? (
-          <input
-            className="field result-input"
-            autoFocus
-            defaultValue={result || ""}
-            placeholder={t("timeph")}
-            inputMode="text"
-            onBlur={(ev) => {
-              onSetResult(ev.target.value.trim());
-              setEditing(false);
-            }}
-            onKeyDown={blurOnEnter}
-          />
+          <span className="tf-edit">
+            <TimeFields value={result || ""} onChange={(v) => onSetResult(v)} autoFocus />
+            <button className="inline-link" onClick={() => setEditing(false)}>✓</button>
+          </span>
         ) : (
           <button className="inline-link" onClick={() => setEditing(true)}>
             {result ? t("edittime") : swimmer ? t("addtime_me") : t("addtime")}
@@ -368,15 +411,10 @@ function EntryCard({
                   )}
                 </div>
               )}
-              <input
-                key={"g" + (goal || "")}
-                className="field result-input"
-                defaultValue={goal || ""}
-                placeholder={t("goal_ph")}
-                inputMode="text"
-                onBlur={(ev) => onGoal?.(ev.target.value.trim())}
-                onKeyDown={blurOnEnter}
-              />
+              <div className="tf-row">
+                <span className="tf-lbl">{t("goal_lbl")}</span>
+                <TimeFields value={goal || ""} onChange={(v) => onGoal?.(v)} />
+              </div>
               {splits && setPacing && (
                 <div className="seg pace-seg">
                   <span className="pace-label">{t("pace_label")}</span>
@@ -388,7 +426,7 @@ function EntryCard({
                   </button>
                 </div>
               )}
-              {splits && splitOpts && setSplitBy && seg && (
+              {splitOpts && setSplitBy && seg && (
                 <div className="seg pace-seg">
                   <span className="pace-label">{t("split_by")}</span>
                   {splitOpts.map((len) => (
@@ -405,8 +443,8 @@ function EntryCard({
                       <th>m</th>
                       <th>{t("splits_each")}</th>
                       <th>{t("splits_total")}</th>
-                      {actualArr.length > 0 && <th>{t("swam")} · {t("splits_each")}</th>}
-                      {actualArr.length > 0 && <th>{t("swam")} · {t("splits_total")}</th>}
+                      {hasActual && <th>{t("swam")} · {t("splits_each")}</th>}
+                      {hasActual && <th>{t("swam")} · {t("splits_total")}</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -415,20 +453,24 @@ function EntryCard({
                         <td className="mono">{s.dist}</td>
                         <td className="mono">{s.each}</td>
                         <td className="mono">{s.cum}</td>
-                        {actualArr.length > 0 && <td className="mono actual">{actualEach[i] || "—"}</td>}
-                        {actualArr.length > 0 && <td className="mono actual">{actualArr[i] || "—"}</td>}
+                        {hasActual && <td className="mono actual">{actualEach[i] || "—"}</td>}
+                        {hasActual && <td className="mono actual">{actualArr[i] || "—"}</td>}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
-              <input
-                className="field result-input"
-                defaultValue={asplits || ""}
-                placeholder={t("actual_ph")}
-                onBlur={(ev) => onSplits?.(ev.target.value.trim())}
-                onKeyDown={blurOnEnter}
-              />
+              {splitDists && seg && (
+                <div className="splitrows">
+                  <span className="tf-lbl">{t("actual_lbl")}</span>
+                  {splitDists.map((dist, i) => (
+                    <div className="splitrow" key={i}>
+                      <span className="splitrow-d mono">{dist}{seg.unit}</span>
+                      <TimeFields value={actualArr[i] || ""} onChange={(v) => setSplitRow(i, v)} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

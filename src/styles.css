@@ -935,3 +935,16 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .app.lefty .fh-filters { flex-direction: row-reverse; }
 .app.lefty .un-row { flex-direction: row-reverse; }
 .app.lefty .un-who { text-align: right; }
+
+/* Mobile time entry: separate min : sec . hundredths numeric fields */
+.timefields { display: inline-flex; align-items: center; gap: 3px; }
+.tf { width: 2.6em; text-align: center; font: inherit; font-variant-numeric: tabular-nums; font-weight: 700; padding: 8px 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); }
+.tf-m { width: 2.2em; }
+.theme-dark .tf { color: #e8f0f8; background: #16222e; border-color: #28384a; }
+.tf-sep { font-weight: 800; color: var(--muted); }
+.tf-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
+.tf-lbl { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+.tf-edit { display: inline-flex; align-items: center; gap: 8px; }
+.splitrows { margin: 6px 0; }
+.splitrow { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+.splitrow-d { min-width: 3.2em; color: var(--muted); font-size: 0.85rem; }
