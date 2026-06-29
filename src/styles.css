@@ -948,3 +948,7 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .splitrows { margin: 6px 0; }
 .splitrow { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
 .splitrow-d { min-width: 3.2em; color: var(--muted); font-size: 0.85rem; }
+
+/* Teammate lane (your team, even if not added as a swimmer) — lighter than a saved swimmer */
+.fh-lane.teammate { background: rgba(11,61,145,0.06); border-left-color: var(--blue); border-left-style: solid; }
+.theme-dark .fh-lane.teammate { background: rgba(91,155,255,0.10); border-left-color: #5b9bff; }

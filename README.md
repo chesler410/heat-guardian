@@ -27,7 +27,9 @@ deck-friendly **heat check-off** so "Up next" always reflects where the meet act
   over"** to close it (which also **auto-completes every earlier heat** and **glides to the next**,
   while scrolling stays free). Your swimmers' lanes are **boldly highlighted**, each heat header
   shows its **event**, and the current heat is tagged **now**. Closing a heat also clears your
-  swimmer from "Up next". **Filter** the sheet by my swimmers, day/session, age group, or event
+  swimmer from "Up next". **Filter** the sheet by my swimmers, day/session, age group, or event.
+  **Your whole team is highlighted** on deck (a lighter tint than your own swimmers) — even
+  teammates you haven't added — for team-wide visibility, the way coaches already see it
 - **🎯 Next-goal chance** — on each upcoming event card, a kind, encouraging probability of
   hitting the **next motivational cut this race**, modeled from the drop still needed (clamped
   1–99%, never a brutal 0%). Replaces head-to-head win odds with a self-referential goal

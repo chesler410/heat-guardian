@@ -1424,6 +1424,10 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
   onClose: () => void;
 }) {
   const swimmerFor = (name: string) => swimmers.find((s) => matchesName(s.name, name)) || null;
+  // Your team(s) — from your OWN swimmers (not watch-list rivals). Every teammate on deck gets a
+  // lighter highlight even if you haven't added them, for team-wide visibility (coaches see this
+  // for free since their roster IS the team; this brings the same to parents).
+  const myTeams = useMemo(() => new Set(swimmers.filter((s) => !s.watch && s.team).map((s) => s.team)), [swimmers]);
   // "now", cascade, and completion are computed on the FULL program (true meet position) so a
   // filtered view never loses track of where the meet actually is.
   const fullProgram = useMemo(() => buildProgram(meet.entries), [meet]);
@@ -1534,8 +1538,9 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
                     <div className="fh-lanes">
                       {h.lanes.map((e, i) => {
                         const sw = swimmerFor(e.name);
+                        const teammate = !sw && !e.relay && !!e.team && myTeams.has(e.team);
                         return (
-                          <div className={"fh-lane" + (sw ? " mine" : "")} key={i} style={sw ? { borderLeftColor: sw.color } : undefined}>
+                          <div className={"fh-lane" + (sw ? " mine" : teammate ? " teammate" : "")} key={i} style={sw ? { borderLeftColor: sw.color } : undefined}>
                             <span className="fh-ln" style={sw ? { background: sw.color, color: "#fff", borderColor: sw.color } : undefined}>{e.lane}</span>
                             <span className="fh-nm">{sw && <span className="fh-you" style={{ color: sw.color }}>★ </span>}{e.relay ? e.team : displayName(e.name)}{!e.relay && parseInt(e.age, 10) > 0 ? <span className="fh-age"> · {parseInt(e.age, 10)}</span> : null}</span>
                             {!e.relay && <span className="fh-team">{e.team}</span>}
