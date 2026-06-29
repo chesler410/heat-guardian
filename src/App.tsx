@@ -252,6 +252,7 @@ function EntryCard({
   onNote,
   done,
   onToggleDone,
+  showProb,
   swimmer,
 }: {
   d: DE;
@@ -270,6 +271,7 @@ function EntryCard({
   onNote?: (val: string) => void;
   done?: boolean; // heat marked complete on deck (so "Up next" advances without a logged time)
   onToggleDone?: () => void;
+  showProb?: boolean; // parent opted in to next-goal probability snapshots (off in coach mode)
   swimmer?: boolean; // "My Meet" mode — frame the note as the swimmer's own reflection
 }) {
   const { e } = d;
@@ -308,6 +310,7 @@ function EntryCard({
     return isFinite(a) && isFinite(b) && b > a ? +(b - a).toFixed(2) : null;
   })();
   const age = d.age ?? (parseInt(e.age, 10) || undefined);
+  const isDQ = result === "DQ"; // a disqualification logged on deck (stored as the result "DQ")
   // Chance of hitting the next motivational cut this race, from the drop still needed.
   const goalP = !e.relay && !result && cut?.nextCut ? goalChance(parseTime(e.seed), cut.nextCut.needed) : null;
   return (
@@ -325,9 +328,13 @@ function EntryCard({
       <div className="ev-meta">
         <span>{e.heat ?? t("heat_tbd")}</span>
         <span className="lane">{t("lane", { n: e.lane })}</span>
-        <span className={!e.relay && result ? "swam-val" : undefined}>
-          {e.relay ? t("team_label") : result ? t("swam") : t("seed")} <strong>{time}</strong>
-        </span>
+        {isDQ ? (
+          <span className="dq-tag">DQ</span>
+        ) : (
+          <span className={!e.relay && result ? "swam-val" : undefined}>
+            {e.relay ? t("team_label") : result ? t("swam") : t("seed")} <strong>{time}</strong>
+          </span>
+        )}
         {dropped != null && <span className="dropped-badge">▼ {dropped.toFixed(2)} {t("dropped")}</span>}
       </div>
       {e.relay && <div className="cut muted">🏁 {t("relaylbl")} — {e.team}</div>}
@@ -363,7 +370,7 @@ function EntryCard({
       ) : e.relay ? null : (
         <div className="cut muted">{t("nostd")}</div>
       )}
-      {!e.relay && !result && cut?.nextCut && goalP != null && (
+      {showProb && !e.relay && !result && cut?.nextCut && goalP != null && goalP >= 60 && (
         <div className="odds">
           <div className="odds-line odds-win">
             🎯 {t("goal_chance", { lvl: cut.nextCut.level })} <strong>{goalP}%</strong>
@@ -375,13 +382,18 @@ function EntryCard({
       <div className="result-entry">
         {editing ? (
           <span className="tf-edit">
-            <TimeFields value={result || ""} onChange={(v) => onSetResult(v)} autoFocus />
+            <TimeFields value={isDQ ? "" : result || ""} onChange={(v) => onSetResult(v)} autoFocus />
             <button className="inline-link" onClick={() => setEditing(false)}>✓</button>
           </span>
+        ) : isDQ ? (
+          <button className="inline-link" onClick={() => onSetResult("")}>DQ ✕</button>
         ) : (
-          <button className="inline-link" onClick={() => setEditing(true)}>
-            {result ? t("edittime") : swimmer ? t("addtime_me") : t("addtime")}
-          </button>
+          <>
+            <button className="inline-link" onClick={() => setEditing(true)}>
+              {result ? t("edittime") : swimmer ? t("addtime_me") : t("addtime")}
+            </button>
+            {!result && <button className="dq-link" onClick={() => onSetResult("DQ")} title="Disqualified">DQ</button>}
+          </>
         )}
         {!result && onToggleDone && (
           <button className={"done-toggle" + (done ? " on" : "")} onClick={onToggleDone}>
@@ -837,6 +849,7 @@ export function App() {
   const [pacing, setPacing] = useStored<"even" | "realistic">("pacing", "even");
   const [splitBy, setSplitBy] = useStored<string>("splitBy", ""); // "" = pool length; "25"/"50" override
   const [lefty, setLefty] = useStored<string>("lefty", ""); // "1" = left-handed layout (controls mirrored)
+  const [probSnap, setProbSnap] = useStored<string>("probSnap", ""); // "1" = show next-goal probability snapshots (opt-in, off by default)
   const [logo, setLogo] = useStored("teamLogo", "");
   const [brand, setBrand] = useStored("brandColor", "");
   // 🫧 taunt easter egg: 5 quick taps on the logo → a random taunt toast (see TAUNTS).
@@ -1296,6 +1309,7 @@ export function App() {
           setPacing={setPacing}
           splitBy={splitBy}
           setSplitBy={setSplitBy}
+          probSnap={probSnap}
           liveOn={liveOn}
           liveStatus={liveStatus}
           coach={coaching}
@@ -1347,6 +1361,8 @@ export function App() {
           setTauntTier={setTauntTier}
           lefty={lefty}
           setLefty={setLefty}
+          probSnap={probSnap}
+          setProbSnap={setProbSnap}
           role={role}
           onChangeRole={() => setRole(null)}
           logo={logo}
@@ -1610,7 +1626,10 @@ function SessionBlock(props: { head: string | null; count: number; grid: boolean
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatsDone, setMap, pacing, setPacing, splitBy, setSplitBy, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatsDone, setMap, pacing, setPacing, splitBy, setSplitBy, probSnap, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
+  // Next-goal probability shows only when the parent opted in AND not in coach mode (it would
+  // clutter a coach's already-full team view, and coaches don't need the per-kid encouragement).
+  const showProb = probSnap === "1" && !coach;
   const [followMeet, setFollowMeet] = useState<Meet | null>(null);
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
   const [shareMsg, showToast] = useToast();
@@ -2011,6 +2030,7 @@ function Home(props: any) {
                             asplits={asplits[k]}
                             note={notes[k]}
                             done={!!done[k]}
+                            showProb={showProb}
                             swimmer={swimmer}
                             onGoal={(v: string) => setMap("goal", d.meetId, d.e.event, d.swimmer, v)}
                             onSplits={(v: string) => setMap("splits", d.meetId, d.e.event, d.swimmer, v)}
@@ -2691,6 +2711,8 @@ function SettingsView(props: {
   setTauntTier: (v: TauntTier) => void;
   lefty: string;
   setLefty: (v: string) => void;
+  probSnap: string;
+  setProbSnap: (v: string) => void;
   role: Role | null;
   onChangeRole: () => void;
   logo: string;
@@ -2730,6 +2752,12 @@ function SettingsView(props: {
         <div className="seg full">
           <button className={props.lefty !== "1" ? "on" : ""} onClick={() => props.setLefty("")}>👉 {t("hand_right")}</button>
           <button className={props.lefty === "1" ? "on" : ""} onClick={() => props.setLefty("1")}>👈 {t("hand_left")}</button>
+        </div>
+        <label className="set-label">🎯 {t("set_prob")}</label>
+        <p className="muted small">{t("set_prob_b")}</p>
+        <div className="seg full">
+          <button className={props.probSnap !== "1" ? "on" : ""} onClick={() => props.setProbSnap("")}>{t("prob_off")}</button>
+          <button className={props.probSnap === "1" ? "on" : ""} onClick={() => props.setProbSnap("1")}>{t("prob_on")}</button>
         </div>
       </div>
 

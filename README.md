@@ -30,9 +30,12 @@ deck-friendly **heat check-off** so "Up next" always reflects where the meet act
   swimmer from "Up next". **Filter** the sheet by my swimmers, day/session, age group, or event.
   **Your whole team is highlighted** on deck (a lighter tint than your own swimmers) — even
   teammates you haven't added — for team-wide visibility, the way coaches already see it
-- **🎯 Next-goal chance** — on each upcoming event card, a kind, encouraging probability of
-  hitting the **next motivational cut this race**, modeled from the drop still needed (clamped
-  1–99%, never a brutal 0%). Replaces head-to-head win odds with a self-referential goal
+- **🎯 Next-goal chance** *(opt-in)* — an encouraging probability of hitting the **next
+  motivational cut this race**, modeled from the drop needed. **Off by default** (Settings →
+  "probability snapshots"), only ever shown when it's **≥60%** (no discouraging long-shots), and
+  hidden in coach mode. Self-referential, never head-to-head
+- **Subtle DQ** — quietly mark a swim **DQ** on its card (a small tag; it drops out of "Up next"
+  and never counts as a swim time in Progress)
 - **Split by 25 / 50** toggle on the goal-splits table (a 100 LC splits by 50 → 2, or by 25 → 4),
   plus a **time-dropped** badge (entry → finals) on each swum result
 - **Mobile-friendly time entry** — swum time, goal, and each split are entered as separate

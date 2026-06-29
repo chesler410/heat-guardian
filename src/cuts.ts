@@ -146,15 +146,16 @@ function normalCdf(z: number): number {
   return p;
 }
 
-// Kind, self-referential "chance of hitting the next goal this race" from the drop needed.
-// Models the swimmer's next-swim improvement as Normal(≈1.5% of their time, σ≈3%) — generous,
-// since age-group kids drop real time — and returns P(improvement ≥ needed), clamped to 1–99 so
-// it's never a brutal 0% or a cocky 100%. needed/seed in seconds; null when not computable.
+// Kind, OPTIMISTIC "chance of hitting the next goal this race" from the drop needed. Models the
+// swimmer's next-swim improvement as Normal(≈2.5% of their time, σ≈4%) — generous on purpose,
+// since age-group kids drop real time — and returns P(improvement ≥ needed), clamped 1–99. The
+// UI only ever SHOWS it when it clears an encouraging threshold (≥60%) and the parent opts in, so
+// a little one never sees a discouraging long-shot number. needed/seed in seconds; null if N/A.
 export function goalChance(seedSec: number, neededSec: number): number | null {
   if (!isFinite(seedSec) || !isFinite(neededSec) || seedSec <= 0) return null;
   if (neededSec <= 0) return 99; // already at or under the goal time
   const r = neededSec / seedSec; // fraction of their time they need to drop
-  const p = normalCdf((0.015 - r) / 0.03);
+  const p = normalCdf((0.025 - r) / 0.04);
   return Math.max(1, Math.min(99, Math.round(p * 100)));
 }
 
