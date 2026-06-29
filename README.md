@@ -23,9 +23,14 @@ deck-friendly **heat check-off** so "Up next" always reflects where the meet act
   → lane** order); tap **✓** on a row (or **Mark done** on a card) to check a race off as swum, so
   the list advances even when you haven't had a second to log a time
 - **🏊 Follow heats** — a full-screen **follow-along heatsheet** of the whole meet (every lane,
-  not just yours), the way people mark up the paper sheet on deck: **tap a heat to slash it off**
-  when it finishes, your swimmers' lanes are **highlighted**, and the first un-slashed heat is
-  tagged **now**. Slashing a heat also clears your swimmer from "Up next"
+  not just yours), the way people mark up the paper sheet on deck: **tap a heat → "✓ This heat is
+  over"** to close it (which also **auto-completes every earlier heat** and **glides to the next**,
+  while scrolling stays free). Your swimmers' lanes are **boldly highlighted**, each heat header
+  shows its **event**, and the current heat is tagged **now**. Closing a heat also clears your
+  swimmer from "Up next"
+- **🎲 Win-odds** — a just-for-fun, seed-based prediction on each upcoming event card: predicted
+  place in the **age group** and in the **heat**, plus a modeled **win chance** for each. Clearly
+  disclaimed — winning a heat isn't the same as winning the age group (heats are seeded by time)
 - **Per event:** heat, lane, seed (best), the **next motivational cut** (+delta, ≈ per length),
   and the **🏆 Southeastern championship cut** (qualified ✓ or how much to drop)
 - **Calm two-tab layout** — **Home** and **Swimmers**, with Add-meet, theme, language, and

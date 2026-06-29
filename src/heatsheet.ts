@@ -24,6 +24,11 @@ export interface RawEntry {
 
 const HEADER = /^#(\d+)\s+(.+?)\s*$/;
 const HEAT = /Heat\s+(\d+)\s+of\s+(\d+)\s+(\w+)/;
+// Continuation running-header at the top of a column/page that carries an event mid-break:
+// "Heat 8 (#3 Girls 13 & Over 200 LC Meter Freestyle)". It has NO "of M", so HEAT misses it
+// and the block's swimmers would otherwise inherit the PREVIOUS heat's number (two heats merge).
+// We treat it as a heat boundary AND re-assert the event, since the "#N …" line may not repeat.
+const HEAT_CONT = /^Heat\s+(\d+)\s+\(#(\d+)\s+(.+?)\)/;
 // Relay team row: "4 PAC-LA W109 A 2:04.11" -> lane, team, (code), letter, seed
 const RELAY_TEAM = /^(\d{1,2})\s+([A-Z0-9\-]+)\s+[A-Z0-9]+\s+[A-Z]\s+([\d:]+\.\d{2}|NT)$/;
 // Relay member(s): "Smith, Amelia A 16 Lard, Kinlee G 16" (two per line)
@@ -120,6 +125,15 @@ function parseLines(lines: string[], out: RawEntry[]) {
       ev = h[1];
       desc = h[2].trim();
       heat = null;
+      isRelay = /relay/i.test(desc);
+      relayTeam = null;
+      continue;
+    }
+    const hc = HEAT_CONT.exec(line);
+    if (hc) {
+      heat = `Heat ${hc[1]}`; // total ("of M") isn't in this header; the number is what we group on
+      ev = hc[2]; // re-assert the event in case the page break dropped the "#N …" header
+      desc = hc[3].trim();
       isRelay = /relay/i.test(desc);
       relayTeam = null;
       continue;

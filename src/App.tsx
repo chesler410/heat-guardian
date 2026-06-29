@@ -30,6 +30,7 @@ import {
   ImportOutcome,
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo } from "./cuts.ts";
+import { computeOdds, OddsResult } from "./odds.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED } from "./config.ts";
 import { Geolocation } from "@capacitor/geolocation";
 import { getTheme, setTheme, Theme } from "./theme.ts";
@@ -202,6 +203,7 @@ function EntryCard({
   onNote,
   done,
   onToggleDone,
+  odds,
   swimmer,
 }: {
   d: DE;
@@ -218,6 +220,7 @@ function EntryCard({
   onNote?: (val: string) => void;
   done?: boolean; // heat marked complete on deck (so "Up next" advances without a logged time)
   onToggleDone?: () => void;
+  odds?: OddsResult | null; // seed-based pre-race prediction (shown only before a time is logged)
   swimmer?: boolean; // "My Meet" mode — frame the note as the swimmer's own reflection
 }) {
   const { e } = d;
@@ -282,6 +285,20 @@ function EntryCard({
         <div className="cut muted">{t("topstd")}</div>
       ) : e.relay ? null : (
         <div className="cut muted">{t("nostd")}</div>
+      )}
+      {!e.relay && !result && odds && (
+        <div className="odds">
+          <div className="odds-head">{t("odds_title")}</div>
+          <div className="odds-line">
+            {t("odds_ev_rank", { r: odds.eventRank, n: odds.fieldSize })}
+            {odds.heatSize >= 2 ? " · " + t("odds_ht_rank", { r: odds.heatRank, n: odds.heatSize }) : ""}
+          </div>
+          <div className="odds-line odds-win">
+            {t("odds_ev_win", { p: odds.winPct })}
+            {odds.heatSize >= 2 ? " · " + t("odds_ht_win", { p: odds.heatWinPct }) : ""}
+          </div>
+          <div className="odds-note">{t("odds_note")}</div>
+        </div>
       )}
       {!e.relay && (
       <div className="result-entry">
@@ -732,10 +749,14 @@ export function App() {
   // meetId|event|heatNum. Separate from per-swim `done`; both feed "Up next" so a slashed heat
   // also clears your swimmer from what's coming.
   const [heatDone, setHeatDoneState] = useState<Record<string, string>>(() => loadMap("heatdone"));
-  function setHeatDone(meetId: string, event: number, heat: number, on: boolean) {
+  // Bulk so the heat tracker can complete a run of heats at once (marking a heat done also
+  // sweeps every earlier heat done — if heat 10 just swam, 1–9 are over too).
+  function setHeatsDone(meetId: string, heats: { event: number; ho: number }[], on: boolean) {
     const next = { ...heatDone };
-    const k = `${meetId}|${event}|${heat}`;
-    if (on) next[k] = "1"; else delete next[k];
+    for (const h of heats) {
+      const k = `${meetId}|${h.event}|${h.ho}`;
+      if (on) next[k] = "1"; else delete next[k];
+    }
     setHeatDoneState(next);
     localStorage.setItem("heatdone", JSON.stringify(next));
   }
@@ -1195,7 +1216,7 @@ export function App() {
           notes={notes}
           done={done}
           heatDone={heatDone}
-          setHeatDone={setHeatDone}
+          setHeatsDone={setHeatsDone}
           setMap={setMap}
           pacing={pacing}
           setPacing={setPacing}
@@ -1306,14 +1327,15 @@ function buildProgram(meet: Meet): ProgEvent[] {
 // Full-screen follow-along heatsheet: the paper-deck workflow on a phone. Tap a heat box to
 // "slash" it off when it finishes; your own/watched swimmers' lanes are highlighted (the pen
 // circle); the first un-slashed heat is tagged "now". Heat completion persists + feeds Up next.
-function FollowHeats({ meet, swimmers, heatDone, setHeatDone, onClose }: {
+function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
   meet: Meet;
   swimmers: Swimmer[];
   heatDone: Record<string, string>;
-  setHeatDone: (meetId: string, event: number, heat: number, on: boolean) => void;
+  setHeatsDone: (meetId: string, heats: { event: number; ho: number }[], on: boolean) => void;
   onClose: () => void;
 }) {
   const program = useMemo(() => buildProgram(meet), [meet]);
+  const flat = useMemo(() => program.flatMap((ev) => ev.heats.map((h) => ({ event: ev.event, ho: h.ho }))), [program]);
   const nowRef = useRef<HTMLDivElement | null>(null);
   const isDone = (event: number, ho: number) => !!heatDone[`${meet.id}|${event}|${ho}`];
   // First incomplete heat in program order = what's swimming now.
@@ -1322,9 +1344,21 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatDone, onClose }: {
     for (const h of ev.heats) if (!isDone(ev.event, h.ho)) { nowId = `${ev.event}|${h.ho}`; break; }
     if (nowId) break;
   }
+  // Marking a heat done sweeps it AND every earlier heat done (skipping ahead closes the past);
+  // undo clears just that one. Either way the list shrinks, so "now" naturally moves forward.
+  const toggleHeat = (event: number, ho: number, currentlyDone: boolean) => {
+    if (currentlyDone) {
+      setHeatsDone(meet.id, [{ event, ho }], false);
+    } else {
+      const idx = flat.findIndex((f) => f.event === event && f.ho === ho);
+      setHeatsDone(meet.id, flat.slice(0, idx + 1), true);
+    }
+  };
   const swimmerFor = (name: string) => swimmers.find((s) => matchesName(s.name, name)) || null;
   const jumpNow = () => nowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  useEffect(() => { nowRef.current?.scrollIntoView({ block: "center" }); }, []);
+  // Auto-advance: when the current heat closes, glide to the new "now". Scrolling stays free —
+  // this only fires when nowId actually changes (open, or a heat marked done), not while you browse.
+  useEffect(() => { nowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }, [nowId]);
 
   return (
     <div className="fh-overlay">
@@ -1351,20 +1385,23 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatDone, onClose }: {
                     key={id}
                     ref={now ? nowRef : undefined}
                   >
-                    <button className="fh-heat-head" onClick={() => setHeatDone(meet.id, ev.event, h.ho, !done)}>
+                    <button className={"fh-heat-head" + (done ? " done" : "")} onClick={() => toggleHeat(ev.event, h.ho, done)}>
                       <span className="fh-heat-label">
-                        {h.ho >= 9999 ? t("heat_tbd") : t("heat_n", { n: h.ho }) + (h.total > 1 ? ` / ${h.total}` : "")}
+                        <span className="fh-heat-ev">#{ev.event} {ev.race}</span>
+                        <span className="fh-heat-no">
+                          {h.ho >= 9999 ? t("heat_tbd") : t("heat_n", { n: h.ho }) + (h.total > 1 ? ` / ${h.total}` : "")}
+                          {now && <span className="fh-now-tag">⏱ {t("fh_now")}</span>}
+                        </span>
                       </span>
-                      {now && <span className="fh-now-tag">⏱ {t("fh_now")}</span>}
-                      <span className="fh-check">{done ? "✓" : "○"}</span>
+                      <span className={"fh-donebtn" + (done ? " on" : "")}>{done ? t("fh_heat_undo") : t("fh_heat_done")}</span>
                     </button>
                     <div className="fh-lanes">
                       {h.lanes.map((e, i) => {
                         const sw = swimmerFor(e.name);
                         return (
-                          <div className={"fh-lane" + (sw ? " mine" : "")} key={i}>
+                          <div className={"fh-lane" + (sw ? " mine" : "")} key={i} style={sw ? { borderLeftColor: sw.color } : undefined}>
                             <span className="fh-ln" style={sw ? { background: sw.color, color: "#fff", borderColor: sw.color } : undefined}>{e.lane}</span>
-                            <span className="fh-nm">{e.relay ? e.team : displayName(e.name)}</span>
+                            <span className="fh-nm">{sw && <span className="fh-you" style={{ color: sw.color }}>★ </span>}{e.relay ? e.team : displayName(e.name)}</span>
                             {!e.relay && <span className="fh-team">{e.team}</span>}
                             <span className="fh-seed mono">{e.seed}</span>
                           </div>
@@ -1432,7 +1469,7 @@ function SessionBlock(props: { head: string | null; count: number; grid: boolean
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatDone, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatsDone, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
   const [followMeet, setFollowMeet] = useState<Meet | null>(null);
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
   const [shareMsg, showToast] = useToast();
@@ -1453,6 +1490,15 @@ function Home(props: any) {
   // in the heat tracker — any of those should drop it out of "Up next".
   const doneOf = (d: DE) =>
     !!done[resultKey(d.meetId, d.e.event, d.swimmer)] || !!heatDone[`${d.meetId}|${d.e.event}|${heatOrd(d.e.heat)}`];
+  // Seed-based pre-race odds for one of your swims: rank + win chance within the full event field.
+  const oddsFor = (d: DE): OddsResult | null => {
+    if (d.e.relay) return null;
+    const meet = meets.find((m: Meet) => m.id === d.meetId);
+    if (!meet) return null;
+    const field = meet.entries.filter((e: Entry) => e.event === d.e.event && !e.relay);
+    const idx = field.indexOf(d.e);
+    return idx < 0 ? null : computeOdds(field, idx);
+  };
   // Meet lifecycle: a meet auto-tucks into a collapsed "Past meets" archive ~3 days after its
   // last session, so between the bursty meet weekends Home stays focused on the active/upcoming
   // meet and never defaults to a stale one. Records persist — Progress spans every meet, the
@@ -1564,7 +1610,7 @@ function Home(props: any) {
           meet={followMeet}
           swimmers={swimmers}
           heatDone={heatDone}
-          setHeatDone={setHeatDone}
+          setHeatsDone={setHeatsDone}
           onClose={() => setFollowMeet(null)}
         />
       )}
@@ -1832,6 +1878,7 @@ function Home(props: any) {
                             asplits={asplits[k]}
                             note={notes[k]}
                             done={!!done[k]}
+                            odds={oddsFor(d)}
                             swimmer={swimmer}
                             onGoal={(v: string) => setMap("goal", d.meetId, d.e.event, d.swimmer, v)}
                             onSplits={(v: string) => setMap("splits", d.meetId, d.e.event, d.swimmer, v)}

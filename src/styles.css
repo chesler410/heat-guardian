@@ -883,20 +883,33 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .fh-heat.done::after { content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(159deg, transparent calc(50% - 1.4px), rgba(194,24,91,0.85) calc(50% - 1.4px), rgba(194,24,91,0.85) calc(50% + 1.4px), transparent calc(50% + 1.4px)); }
 
-.fh-heat-head { width: 100%; display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: rgba(11,61,145,0.05); border: none; border-bottom: 1px solid var(--line); font: inherit; cursor: pointer; text-align: left; }
+.fh-heat-head { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: rgba(11,61,145,0.05); border: none; border-bottom: 1px solid var(--line); font: inherit; cursor: pointer; text-align: left; }
 .theme-dark .fh-heat-head { background: rgba(91,155,255,0.08); }
-.fh-heat-label { font-weight: 800; }
+.fh-heat-label { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.fh-heat-ev { font-size: 0.74rem; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fh-heat-no { font-weight: 800; display: flex; align-items: center; gap: 8px; }
 .fh-now-tag { background: var(--blue); color: #fff; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 2px 8px; border-radius: 999px; }
-.fh-check { margin-left: auto; font-size: 1.1rem; font-weight: 800; color: var(--muted); }
-.fh-heat.done .fh-check { color: var(--close); }
+/* The clear "mark this heat over" affordance — looks like a button; the whole header taps it */
+.fh-donebtn { flex: none; border: 1.5px solid var(--close); color: var(--close); background: transparent; font-size: 0.78rem; font-weight: 800; padding: 5px 11px; border-radius: 999px; white-space: nowrap; }
+.fh-donebtn.on { background: var(--close); color: #fff; }
 
 .fh-lanes { padding: 2px 0; }
-.fh-lane { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-top: 1px solid var(--line); }
+.fh-lane { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-top: 1px solid var(--line); border-left: 4px solid transparent; }
 .fh-lane:first-child { border-top: none; }
-.fh-lane.mine { background: rgba(244,180,0,0.12); }
-.theme-dark .fh-lane.mine { background: rgba(244,180,0,0.10); }
+.fh-lane.mine { background: rgba(244,180,0,0.18); border-left-style: solid; }
+.theme-dark .fh-lane.mine { background: rgba(244,180,0,0.16); }
+.fh-you { font-weight: 900; }
 .fh-ln { flex: none; width: 26px; height: 26px; border-radius: 999px; border: 1.5px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
 .fh-nm { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fh-lane.mine .fh-nm { font-weight: 800; }
 .fh-team { color: var(--muted); font-size: 0.78rem; max-width: 30%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fh-seed { flex: none; color: var(--muted); font-size: 0.85rem; }
+
+/* Win-odds — playful seed-based race prediction on an event card (pre-race only) */
+.odds { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: rgba(244,180,0,0.10); border: 1px solid rgba(244,180,0,0.35); }
+.theme-dark .odds { background: rgba(244,180,0,0.08); border-color: rgba(244,180,0,0.28); }
+.odds-head { font-weight: 800; font-size: 0.85rem; margin-bottom: 2px; }
+.odds-line { font-size: 0.85rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.theme-dark .odds-line { color: #e8f0f8; }
+.odds-win { font-weight: 700; }
+.odds-note { font-size: 0.72rem; color: var(--muted); margin-top: 4px; line-height: 1.3; }
