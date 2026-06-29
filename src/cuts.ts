@@ -98,13 +98,16 @@ export function segInfo(desc: string): { dist: number; len: number; unit: string
 export function goalSplits(
   desc: string,
   goal: string,
-  pacing: "even" | "realistic" = "even"
+  pacing: "even" | "realistic" = "even",
+  splitLen?: number // override the segment length (e.g. split a 100 LC by 25 → 4 splits)
 ): { dist: number; each: string; cum: string }[] | null {
   if (!goal) return null;
   const m = eventMeta(desc);
   if (!m.course || !m.key) return null;
   const dist = parseInt(m.key, 10);
-  const len = m.course === "LCM" ? 50 : 25; // length of pool
+  const poolLen = m.course === "LCM" ? 50 : 25; // length of pool
+  // Use the chosen split length when it divides the distance evenly; else fall back to the pool.
+  const len = splitLen && dist % splitLen === 0 ? splitLen : poolLen;
   const n = Math.round(dist / len);
   const g = toSec(goal);
   if (!(n >= 2) || !g || isNaN(g)) return null;

@@ -29,7 +29,7 @@ import {
   SwimmerProgress,
   ImportOutcome,
 } from "./store.ts";
-import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo } from "./cuts.ts";
+import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, ageToGroup } from "./cuts.ts";
 import { computeOdds, OddsResult } from "./odds.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED } from "./config.ts";
 import { Geolocation } from "@capacitor/geolocation";
@@ -119,6 +119,16 @@ const swimAbbr = (race: string) => {
 // nickname fix, whose stored race may still read "Butterfly").
 const raceOf = (e: Entry) => eventMeta(e.desc).race + (e.relay ? " Relay" : "");
 const heatNum = (h: string | null) => h?.match(/Heat\s+(\d+)/)?.[1] ?? "—";
+// Parse a swim time ("1:38.50" / "30.90" / "NT") to seconds; NaN when not a real time.
+const parseTime = (t?: string): number => {
+  const s = (t || "").replace("*", "").trim();
+  if (!s || /^nt$/i.test(s)) return NaN;
+  if (s.includes(":")) { const [m, sec] = s.split(":"); return parseInt(m, 10) * 60 + parseFloat(sec); }
+  return parseFloat(s);
+};
+// A swimmer's age for display — prefer the saved swimmer's age, fall back to the meet entry's.
+const deAge = (d: DE): number | undefined => d.age ?? (parseInt(d.e.age, 10) || undefined);
+const ageTag = (a?: number): string => (a != null ? ` · ${a}` : "");
 // Numeric heat for ordering: real swim order is event → heat → lane. Heats with no number
 // (TBD / not yet seeded) sort to the end so assigned heats lead.
 const heatOrd = (h: string | null) => { const m = h?.match(/Heat\s+(\d+)/); return m ? parseInt(m[1], 10) : 9999; };
@@ -199,6 +209,8 @@ function EntryCard({
   onSplits,
   pacing,
   setPacing,
+  splitBy,
+  setSplitBy,
   note,
   onNote,
   done,
@@ -216,6 +228,8 @@ function EntryCard({
   onSplits?: (val: string) => void;
   pacing?: "even" | "realistic";
   setPacing?: (p: "even" | "realistic") => void;
+  splitBy?: string; // "" = pool length; "25"/"50" override the split segment length
+  setSplitBy?: (v: string) => void;
   note?: string;
   onNote?: (val: string) => void;
   done?: boolean; // heat marked complete on deck (so "Up next" advances without a logged time)
@@ -227,19 +241,31 @@ function EntryCard({
   const [editing, setEditing] = useState(false);
   const [showSplits, setShowSplits] = useState(false);
   const [editNote, setEditNote] = useState(false);
-  const splits = e.relay ? null : goalSplits(e.desc, goal || "", pacing || "even");
+  const splits = e.relay ? null : goalSplits(e.desc, goal || "", pacing || "even", splitBy ? +splitBy : undefined);
   const actualArr = (asplits || "").split(",").map((x) => x.trim()).filter(Boolean);
   const seg = e.relay ? null : segInfo(e.desc);
+  // Split-by options: the pool length plus a finer half-length when it divides the distance
+  // evenly (e.g. a 100 LC pool-splits by 50 → 2, or by 25 → 4). Only offered when there's a choice.
+  const splitOpts = seg && seg.dist % (seg.len / 2) === 0 ? [seg.len / 2, seg.len].sort((a, b) => a - b) : null;
+  const effSplit = splitBy && seg && seg.dist % +splitBy === 0 ? +splitBy : seg?.len;
   const time = result || e.seed;
   const cut = cutFor(d, result);
   const close = cut?.nextCut && cut.nextCut.needed <= 1.0;
   const actualEach = splitDeltas(actualArr);
+  // Time dropped vs the seed/entry time — the satisfying "got faster" number (à la Meet Mobile).
+  const dropped = (() => {
+    if (e.relay || !result) return null;
+    const a = parseTime(result);
+    const b = parseTime(e.seed);
+    return isFinite(a) && isFinite(b) && b > a ? +(b - a).toFixed(2) : null;
+  })();
+  const age = d.age ?? (parseInt(e.age, 10) || undefined);
   return (
     <div className={"card event" + (close ? " close" : "") + (result ? " has-result" : "") + (done && !result ? " done" : "")}>
       <div className="ev-top">
         {showSwimmer && (
           <span className="kid-tag" style={{ background: d.color }}>
-            {firstName(d.swimmer)}
+            {firstName(d.swimmer)}{age != null ? ` · ${age}` : ""}
           </span>
         )}
         <span className="ev-num">#{e.event}</span>
@@ -252,6 +278,7 @@ function EntryCard({
         <span className={!e.relay && result ? "swam-val" : undefined}>
           {e.relay ? t("team_label") : result ? t("swam") : t("seed")} <strong>{time}</strong>
         </span>
+        {dropped != null && <span className="dropped-badge">▼ {dropped.toFixed(2)} {t("dropped")}</span>}
       </div>
       {e.relay && <div className="cut muted">🏁 {t("relaylbl")} — {e.team}</div>}
       {/* SE championship cut shown first — it's the priority target */}
@@ -366,6 +393,16 @@ function EntryCard({
                   <button className={pacing === "realistic" ? "on" : ""} onClick={() => setPacing("realistic")}>
                     {t("pace_real")}
                   </button>
+                </div>
+              )}
+              {splits && splitOpts && setSplitBy && seg && (
+                <div className="seg pace-seg">
+                  <span className="pace-label">{t("split_by")}</span>
+                  {splitOpts.map((len) => (
+                    <button key={len} className={effSplit === len ? "on" : ""} onClick={() => setSplitBy(String(len))}>
+                      {len}{seg.unit}
+                    </button>
+                  ))}
                 </div>
               )}
               {splits && (
@@ -763,6 +800,7 @@ export function App() {
   const [theme, setThemeState] = useState<Theme>(getTheme);
   const [lang, setLangState] = useState<Lang>(getLang);
   const [pacing, setPacing] = useStored<"even" | "realistic">("pacing", "even");
+  const [splitBy, setSplitBy] = useStored<string>("splitBy", ""); // "" = pool length; "25"/"50" override
   const [logo, setLogo] = useStored("teamLogo", "");
   const [brand, setBrand] = useStored("brandColor", "");
   // 🫧 taunt easter egg: 5 quick taps on the logo → a random taunt toast (see TAUNTS).
@@ -1220,6 +1258,8 @@ export function App() {
           setMap={setMap}
           pacing={pacing}
           setPacing={setPacing}
+          splitBy={splitBy}
+          setSplitBy={setSplitBy}
           liveOn={liveOn}
           liveStatus={liveStatus}
           coach={coaching}
@@ -1454,7 +1494,7 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
                         return (
                           <div className={"fh-lane" + (sw ? " mine" : "")} key={i} style={sw ? { borderLeftColor: sw.color } : undefined}>
                             <span className="fh-ln" style={sw ? { background: sw.color, color: "#fff", borderColor: sw.color } : undefined}>{e.lane}</span>
-                            <span className="fh-nm">{sw && <span className="fh-you" style={{ color: sw.color }}>★ </span>}{e.relay ? e.team : displayName(e.name)}</span>
+                            <span className="fh-nm">{sw && <span className="fh-you" style={{ color: sw.color }}>★ </span>}{e.relay ? e.team : displayName(e.name)}{!e.relay && parseInt(e.age, 10) > 0 ? <span className="fh-age"> · {parseInt(e.age, 10)}</span> : null}</span>
                             {!e.relay && <span className="fh-team">{e.team}</span>}
                             <span className="fh-seed mono">{e.seed}</span>
                           </div>
@@ -1522,7 +1562,7 @@ function SessionBlock(props: { head: string | null; count: number; grid: boolean
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatsDone, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatsDone, setMap, pacing, setPacing, splitBy, setSplitBy, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
   const [followMeet, setFollowMeet] = useState<Meet | null>(null);
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
   const [shareMsg, showToast] = useToast();
@@ -1543,14 +1583,41 @@ function Home(props: any) {
   // in the heat tracker — any of those should drop it out of "Up next".
   const doneOf = (d: DE) =>
     !!done[resultKey(d.meetId, d.e.event, d.swimmer)] || !!heatDone[`${d.meetId}|${d.e.event}|${heatOrd(d.e.heat)}`];
-  // Seed-based pre-race odds for one of your swims: rank + win chance within the full event field.
+  // Seed-based pre-race odds. Age-group standing compares against same-gender, same-age-group
+  // swimmers by their documented seed times ACROSS the meet (an 11-yr-old swimming up in a
+  // "13 & Over" event is ranked among other 11-12 girls, not the whole open field). Heat standing
+  // uses the actual heatmates (any age). NT/no-seed swimmers are left out.
+  const ageGroupOf = (e: Entry, swAge?: number): string | null => {
+    const a = parseInt(e.age, 10);
+    if (isFinite(a) && a > 0) return ageToGroup(a);
+    return swAge != null ? ageToGroup(swAge) : null;
+  };
   const oddsFor = (d: DE): OddsResult | null => {
     if (d.e.relay) return null;
     const meet = meets.find((m: Meet) => m.id === d.meetId);
     if (!meet) return null;
-    const field = meet.entries.filter((e: Entry) => e.event === d.e.event && !e.relay);
-    const idx = field.indexOf(d.e);
-    return idx < 0 ? null : computeOdds(field, idx);
+    const myMeta = eventMeta(d.e.desc);
+    if (!myMeta.key) return null;
+    const myGroup = ageGroupOf(d.e, d.age);
+    const myGender = myMeta.gender;
+    // Age-group field: any meet entry of the same stroke/distance/course, same gender, same age group.
+    const groupEntries = meet.entries.filter((e: Entry) => {
+      if (e.relay) return false;
+      const m = eventMeta(e.desc);
+      if (m.key !== myMeta.key || m.course !== myMeta.course) return false;
+      if (myGender && m.gender && m.gender !== myGender) return false;
+      if (myGroup && ageGroupOf(e, undefined) !== myGroup) return false;
+      return true;
+    });
+    const heatEntries = meet.entries.filter(
+      (e: Entry) => !e.relay && e.event === d.e.event && heatOrd(e.heat) === heatOrd(d.e.heat)
+    );
+    // Keep only swimmers with a real (non-NT) seed; me drops out → no odds (handled downstream).
+    const seeded = (arr: Entry[]) => {
+      const v = arr.filter((e) => isFinite(parseTime(e.seed)));
+      return { secs: v.map((e) => parseTime(e.seed)), meIdx: v.indexOf(d.e) };
+    };
+    return computeOdds(seeded(groupEntries), seeded(heatEntries));
   };
   // Meet lifecycle: a meet auto-tucks into a collapsed "Past meets" archive ~3 days after its
   // last session, so between the bursty meet weekends Home stays focused on the active/upcoming
@@ -1720,7 +1787,7 @@ function Home(props: any) {
                     style={on ? { background: k.color, borderColor: k.color, color: "#fff" } : {}}
                     onClick={() => toggleFilter(k.id)}
                   >
-                    {firstName(k.name)}
+                    {firstName(k.name)}{ageTag(k.age)}
                   </button>
                 );
               })}
@@ -1729,6 +1796,7 @@ function Home(props: any) {
           {focused && (
             <div className="focus-swimmer">
               🏊 <strong>{displayName(focused.name)}</strong>
+              {focused.age != null ? <span className="fs-team"> · {focused.age}</span> : null}
               {focused.team ? <span className="fs-team"> · {focused.team}</span> : null}
             </div>
           )}
@@ -1740,7 +1808,7 @@ function Home(props: any) {
                 return (
                   <div className="un-row" key={i}>
                     <span className="un-who">
-                      {swimmers.length > 1 ? <strong>{firstName(d.swimmer)} </strong> : null}{d.e.race}
+                      {swimmers.length > 1 ? <strong>{firstName(d.swimmer)}{ageTag(deAge(d))} </strong> : null}{d.e.race}
                     </span>
                     <span className="un-where">
                       {hn ? t("heat_n", { n: hn }) + " · " : ""}{t("lane", { n: d.e.lane })}
@@ -1763,7 +1831,7 @@ function Home(props: any) {
               {closest.map(({ d, cut }: any, i: number) => (
                 <div className="hl-row" key={i}>
                   <span>
-                    {swimmers.length > 1 ? `${firstName(d.swimmer)} · ` : ""}
+                    {swimmers.length > 1 ? `${firstName(d.swimmer)}${ageTag(deAge(d))} · ` : ""}
                     {d.e.race}
                   </span>
                   <span className="hl-need">
@@ -1939,6 +2007,8 @@ function Home(props: any) {
                             onToggleDone={() => setMap("done", d.meetId, d.e.event, d.swimmer, done[k] ? "" : "1")}
                             pacing={pacing}
                             setPacing={setPacing}
+                            splitBy={splitBy}
+                            setSplitBy={setSplitBy}
                           />
                         );
                       })
@@ -2248,7 +2318,7 @@ function ProgressSection({ progress }: { progress: SwimmerProgress[] }) {
         <div className="prog-card" key={sp.swimmer.id}>
           <div className="prog-head">
             <span className="kid-tag" style={{ background: sp.swimmer.color }}>
-              {firstName(sp.swimmer.name)}
+              {firstName(sp.swimmer.name)}{ageTag(sp.swimmer.age)}
             </span>
             {sp.swimmer.watch && <span className="ts-tag watch">{t("nav_watching")}</span>}
           </div>

@@ -923,3 +923,7 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .theme-dark .fh-fsel { color: #cfe6ff; background: var(--card); }
 .fh-fclear { border: none; background: none; color: var(--blue); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 5px 4px; }
 .theme-dark .fh-fclear { color: #9cc2ff; }
+
+/* "dropped X.XX" — the satisfying got-faster delta next to a swum time */
+.dropped-badge { color: var(--close); font-weight: 700; font-size: 0.8rem; background: rgba(22,168,95,0.12); border-radius: 999px; padding: 1px 9px; }
+.fh-age { color: var(--muted); font-weight: 600; }

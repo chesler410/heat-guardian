@@ -7,34 +7,14 @@
 // heats are seeded by time, so the fastest swimmers can be spread across heats. We surface both
 // the heat placing and the full-event (age-group) placing precisely so that's never confusing.
 
-export interface OddsEntry {
-  seed: string;
-  heat: string | null;
-}
-
 export interface OddsResult {
-  fieldSize: number; // entries in the event with a usable seed
-  eventRank: number; // 1-based predicted place across the whole event (= the age group)
-  heatSize: number; // entries in this heat with a usable seed
-  heatRank: number; // 1-based predicted place within the heat
-  winPct: number; // modeled chance of being fastest in the event (0–100)
+  fieldSize: number; // same-gender, same-age-group swimmers in this event (with a usable seed)
+  eventRank: number; // 1-based predicted place within that gender + age group
+  heatSize: number; // swimmers in this heat with a usable seed
+  heatRank: number; // 1-based predicted place within the heat (actual heatmates, any age)
+  winPct: number; // modeled chance of being fastest in the age group (0–100)
   heatWinPct: number; // modeled chance of being fastest in the heat (0–100)
 }
-
-function toSec(t: string): number {
-  const s = (t || "").replace("*", "").trim();
-  if (!s || /^nt$/i.test(s)) return NaN;
-  if (s.includes(":")) {
-    const [m, sec] = s.split(":");
-    return parseInt(m, 10) * 60 + parseFloat(sec);
-  }
-  return parseFloat(s);
-}
-
-const heatOf = (h: string | null): number => {
-  const m = h?.match(/Heat\s+(\d+)/);
-  return m ? parseInt(m[1], 10) : 0;
-};
 
 // Tiny deterministic PRNG + standard normal, so a given field always yields the same odds.
 function mulberry32(a: number) {
@@ -57,52 +37,40 @@ function gauss(rng: () => number): number {
 const SIGMA_REL = 0.025; // ~2.5% race-to-race variability around the seed time
 const TRIALS = 3000;
 
-export function computeOdds(field: OddsEntry[], meIdx: number): OddsResult | null {
-  const me = field[meIdx];
-  const mySec = me ? toSec(me.seed) : NaN;
-  if (!isFinite(mySec)) return null;
-  const myHeat = heatOf(me.heat);
+// 1-based seed rank of me within a list of seed-seconds (ties share by strict "faster than me").
+const rankOf = (secs: number[], meIdx: number): number =>
+  1 + secs.filter((s, i) => i !== meIdx && s < secs[meIdx]).length;
 
-  // Only swimmers with a real seed can be modeled; NT/blank are unknowns we leave out.
-  const seeded = field
-    .map((f, i) => ({ sec: toSec(f.seed), heat: heatOf(f.heat), isMe: i === meIdx }))
-    .filter((f) => isFinite(f.sec));
-  if (seeded.length < 2) return null;
-
-  const heatField = seeded.filter((f) => f.heat === myHeat);
-
-  const eventRank = 1 + seeded.filter((f) => !f.isMe && f.sec < mySec).length;
-  const heatRank = 1 + heatField.filter((f) => !f.isMe && f.sec < mySec).length;
-
-  const rng = mulberry32(Math.round(mySec * 1000) ^ (seeded.length * 2654435761));
-  let eventWins = 0;
-  let heatWins = 0;
+// Monte-Carlo chance that `me` posts the fastest time, modeling each swim as Normal(seed, ~2.5%).
+function winShare(secs: number[], meIdx: number, salt: number): number {
+  const rng = mulberry32((Math.round(secs[meIdx] * 1000) ^ (secs.length * 2654435761) ^ salt) >>> 0);
+  let wins = 0;
   for (let trial = 0; trial < TRIALS; trial++) {
     let best = Infinity;
-    let bestIsMe = false;
-    let heatBest = Infinity;
-    let heatBestIsMe = false;
-    for (const f of seeded) {
-      const time = f.sec * (1 + SIGMA_REL * gauss(rng));
-      if (time < best) {
-        best = time;
-        bestIsMe = f.isMe;
-      }
-      if (f.heat === myHeat && time < heatBest) {
-        heatBest = time;
-        heatBestIsMe = f.isMe;
-      }
+    let bestI = -1;
+    for (let i = 0; i < secs.length; i++) {
+      const time = secs[i] * (1 + SIGMA_REL * gauss(rng));
+      if (time < best) { best = time; bestI = i; }
     }
-    if (bestIsMe) eventWins++;
-    if (heatBestIsMe) heatWins++;
+    if (bestI === meIdx) wins++;
   }
+  return Math.round((wins / TRIALS) * 100);
+}
 
+// `group` = same gender + age-group field (for age-group standing); `heat` = actual heatmates.
+// Each is a list of seed-seconds with the index of the swimmer in question. group needs ≥2.
+export function computeOdds(
+  group: { secs: number[]; meIdx: number },
+  heat: { secs: number[]; meIdx: number }
+): OddsResult | null {
+  if (group.meIdx < 0 || group.secs.length < 2 || !isFinite(group.secs[group.meIdx])) return null;
+  const heatOk = heat.meIdx >= 0 && heat.secs.length >= 2;
   return {
-    fieldSize: seeded.length,
-    eventRank,
-    heatSize: heatField.length,
-    heatRank,
-    winPct: Math.round((eventWins / TRIALS) * 100),
-    heatWinPct: Math.round((heatWins / TRIALS) * 100),
+    fieldSize: group.secs.length,
+    eventRank: rankOf(group.secs, group.meIdx),
+    winPct: winShare(group.secs, group.meIdx, 1),
+    heatSize: heatOk ? heat.secs.length : 0,
+    heatRank: heatOk ? rankOf(heat.secs, heat.meIdx) : 0,
+    heatWinPct: heatOk ? winShare(heat.secs, heat.meIdx, 2) : 0,
   };
 }
