@@ -1231,7 +1231,7 @@ export function App() {
       </header>
 
       {role === null && (
-        <RolePicker onPick={(r) => { setRole(r); if (r !== "coach") setCoachTeam(""); }} />
+        <RolePicker onPick={(r) => { setRole(r); if (r !== "coach") setCoachTeam(""); setNav("home"); }} />
       )}
       {role === "coach" && !coachTeam && (
         <CoachTeamPicker
@@ -1347,12 +1347,17 @@ export function App() {
           setTauntTier={setTauntTier}
           lefty={lefty}
           setLefty={setLefty}
+          role={role}
+          onChangeRole={() => setRole(null)}
+          logo={logo}
+          setLogo={setLogo}
+          setBrand={setBrand}
         />
       )}
       {gated && nav === "about" && (
         <>
           <button className="back-link" onClick={() => setNav("settings")}>‹ {t("nav_settings")}</button>
-          <About logo={logo} setLogo={setLogo} setBrand={setBrand} role={role} onChangeRole={() => setRole(null)} />
+          <About />
         </>
       )}
     </div>
@@ -2681,6 +2686,11 @@ function SettingsView(props: {
   setTauntTier: (v: TauntTier) => void;
   lefty: string;
   setLefty: (v: string) => void;
+  role: Role | null;
+  onChangeRole: () => void;
+  logo: string;
+  setLogo: (v: string) => void;
+  setBrand: (v: string) => void;
 }) {
   const themes: Theme[] = ["auto", "light", "dark"];
   const tiers: TauntTier[] = ["mild", "medium", "savage"];
@@ -2730,6 +2740,36 @@ function SettingsView(props: {
         </div>
       </div>
 
+      <div className="card">
+        <h3>👤 {props.role === "coach" ? t("role_coach") : props.role === "swimmer" ? t("role_swimmer") : t("role_parent")}</h3>
+        <button className="secondary" onClick={props.onChangeRole}>{t("role_change")}</button>
+      </div>
+
+      <div className="card">
+        <h3>{t("logo_h")}</h3>
+        {props.logo && <img className="team-logo lg" src={props.logo} alt="team logo" />}
+        <div>
+          <label className="secondary filelabel">
+            {t("logo_add")}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) processLogo(f, (url, color) => { props.setLogo(url); props.setBrand(color || ""); });
+              }}
+            />
+          </label>
+          {props.logo && (
+            <button className="link" onClick={() => { props.setLogo(""); props.setBrand(""); }}>
+              {t("logo_remove")}
+            </button>
+          )}
+        </div>
+        <p className="muted small">{t("logo_note")}</p>
+      </div>
+
       <button className="settings-row" onClick={props.goAbout}>
         <span className="settings-ico">ℹ️</span>
         <span className="settings-tx">
@@ -2742,16 +2782,11 @@ function SettingsView(props: {
   );
 }
 
-function About({ logo, setLogo, setBrand, role, onChangeRole }: { logo: string; setLogo: (v: string) => void; setBrand: (v: string) => void; role: Role | null; onChangeRole: () => void }) {
+function About() {
   return (
     <div className="card about">
       <h2>{t("ab_title")}</h2>
       <p>{t("ab_intro")}</p>
-
-      <div className="role-line">
-        <span className="muted">{role === "coach" ? "🧑‍🏫 " + t("role_coach") : role === "swimmer" ? "🏊 " + t("role_swimmer") : "👪 " + t("role_parent")}</span>
-        <button className="inline-link" onClick={onChangeRole}>{t("role_change")}</button>
-      </div>
 
       <a className="primary feedback-btn" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">
         {t("fb_send")}
@@ -2766,29 +2801,6 @@ function About({ logo, setLogo, setBrand, role, onChangeRole }: { logo: string; 
           </a>
         </>
       )}
-
-      <h3>{t("logo_h")}</h3>
-      {logo && <img className="team-logo lg" src={logo} alt="team logo" />}
-      <div>
-        <label className="secondary filelabel">
-          {t("logo_add")}
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) processLogo(f, (url, color) => { setLogo(url); setBrand(color || ""); });
-            }}
-          />
-        </label>
-        {logo && (
-          <button className="link" onClick={() => { setLogo(""); setBrand(""); }}>
-            {t("logo_remove")}
-          </button>
-        )}
-      </div>
-      <p className="muted small">{t("logo_note")}</p>
 
       <h3>{t("ab_howto")}</h3>
       <ol className="howto">
