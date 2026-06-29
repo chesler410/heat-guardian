@@ -239,6 +239,23 @@ export async function getFeedback(
   return j.feedback || "";
 }
 
+// In-app feedback → the Worker /report endpoint (which notifies the developer + logs to R2).
+// Just the user's note + small app context (no names). Returns false if the backend isn't up.
+export async function sendReport(text: string, ctx: string, proxy: string): Promise<boolean> {
+  const base = backendBase(proxy);
+  if (!base) return false;
+  try {
+    const res = await fetch(`${base}/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, ctx }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "upload" | "url", sourceUrl?: string): Promise<ImportOutcome> {
   // SD3 / SDIF and meet packs are plain text (not a PDF). Detect and parse into a meet.
   if (!isPdf(buf)) {

@@ -28,6 +28,7 @@ import {
   buildProgress,
   SwimmerProgress,
   ImportOutcome,
+  sendReport,
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED, rateUrl } from "./config.ts";
@@ -161,6 +162,21 @@ function TimeFields({ value, onChange, autoFocus }: { value: string; onChange: (
         value={c} onChange={(e) => { const v = digits(e.target.value, 2); setC(v); onChange(composeTime(m, s, v)); }} />
     </span>
   );
+}
+
+// Native in-app review (StoreKit / Play) popup at a positive moment (marking a meet complete),
+// once ever. No-op on web (the About "Rate" link covers that). Lazy-imported + guarded so the
+// web build never touches the native plugin.
+async function maybeAskReview() {
+  if (!IS_NATIVE) return;
+  try {
+    if (localStorage.getItem("reviewAsked") === "1") return;
+    localStorage.setItem("reviewAsked", "1");
+    const mod = await import("@capacitor-community/in-app-review");
+    await mod.InAppReview.requestReview();
+  } catch {
+    /* plugin unavailable — fine, the About rate link still works */
+  }
 }
 
 // A swimmer's age for display — prefer the saved swimmer's age, fall back to the meet entry's.
@@ -1492,7 +1508,11 @@ function FollowHeats({ meet, swimmers, myTeam, heatDone, setHeatsDone, onClose }
     return `${((hh + 11) % 12) + 1}:${String(mm).padStart(2, "0")}${hh < 12 ? "a" : "p"}`;
   };
   const allDone = flat.length > 0 && flat.every((f) => isDone(f.event, f.ho));
-  const toggleComplete = () => setHeatsDone(meet.id, flat, !allDone);
+  const toggleComplete = () => {
+    const completing = !allDone;
+    setHeatsDone(meet.id, flat, completing);
+    if (completing) maybeAskReview(); // a meet just wrapped — a good moment to ask for a rating
+  };
   const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
   const overdue = startMin != null && !allDone && nowMin > startMin + est.total + 20;
 
@@ -2877,14 +2897,46 @@ function SettingsView(props: {
   );
 }
 
+// In-app feedback composer → the Worker /report endpoint (which pings the developer in real time).
+function FeedbackBox() {
+  const [txt, setTxt] = useState("");
+  const [status, setStatus] = useState<"" | "sending" | "ok" | "fail">("");
+  const send = async () => {
+    if (!txt.trim() || status === "sending") return;
+    setStatus("sending");
+    const ctx = `${getLang()} ${IS_NATIVE ? "app" : "web"} ${localStorage.getItem("role") || "?"}`;
+    const ok = await sendReport(txt.trim(), ctx, loadProxy() || DEFAULT_PROXY);
+    setStatus(ok ? "ok" : "fail");
+    if (ok) setTxt("");
+  };
+  return (
+    <div className="fb-box">
+      <textarea
+        className="field note-input"
+        rows={3}
+        placeholder={t("fb_inapp_ph")}
+        value={txt}
+        onChange={(e) => { setTxt(e.target.value); if (status) setStatus(""); }}
+      />
+      <button className="primary" disabled={!txt.trim() || status === "sending"} onClick={send}>
+        {status === "sending" ? t("fb_loading") : t("fb_inapp_send")}
+      </button>
+      {status === "ok" && <p className="fb-text">{t("fb_inapp_thanks")}</p>}
+      {status === "fail" && <p className="fb-err">{t("fb_inapp_fail")}</p>}
+    </div>
+  );
+}
+
 function About() {
   return (
     <div className="card about">
       <h2>{t("ab_title")}</h2>
       <p>{t("ab_intro")}</p>
 
-      <a className="primary feedback-btn" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">
-        {t("fb_send")}
+      <h3>💬 {t("fb_inapp_h")}</h3>
+      <FeedbackBox />
+      <a className="inline-link" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">
+        {t("fb_inapp_or")}
       </a>
 
       {rateUrl() && (

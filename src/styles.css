@@ -968,3 +968,9 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .fh-overdue { display: block; width: calc(100% - 28px); margin: 0 14px 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--gold); background: rgba(244,180,0,0.12); color: var(--ink); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-align: left; }
 .theme-dark .fh-overdue { color: #e8f0f8; }
 .fh-est { color: var(--muted); font-weight: 600; font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+
+/* In-app feedback composer (About) */
+.fb-box { margin: 6px 0; }
+.fb-box textarea { width: 100%; margin-bottom: 8px; }
+.fb-box .primary { width: auto; }
+.rate-btn { display: inline-block; margin-top: 12px; }

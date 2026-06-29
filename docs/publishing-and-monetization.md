@@ -58,8 +58,17 @@ e.g. $1.99 / $4.99 / $9.99).
 - **App Store / Play reviews** — public; **reply** to them from the consoles.
 - **Keep a TestFlight beta track running in parallel** post-launch — engaged parents stay there and
   give rich, screenshot feedback before each update.
-- **Optional upgrade:** route in-app feedback through the Cloudflare Worker → email/push you
-  (uses the Cloudflare Email Service). More reliable notifications than the form. Build when ready.
+- **In-app feedback → real-time notifications (BUILT).** About now has an in-app feedback box that
+  POSTs to the Worker `/report`. To turn on notifications:
+  1. `cd proxy && wrangler deploy` (ships the new `/report` route).
+  2. **Easiest (no domain) — Discord/Slack push:** create an incoming webhook in your server, then
+     `wrangler secret put REPORT_WEBHOOK` and paste the URL. Done — every report pings your phone.
+  3. **Or email:** `wrangler email sending enable <yourdomain>`, uncomment the `[[send_email]]`
+     binding in `wrangler.toml`, then `wrangler secret put REPORT_TO` and `REPORT_FROM`.
+  Every report is also logged to R2 (`report/…`) regardless, so nothing is ever lost. Until you
+  deploy, the in-app box degrades gracefully (offers the web form). The native **in-app review
+  popup** fires once when a parent marks a meet complete (needs `@capacitor-community/in-app-review`,
+  already added; reaches devices on the next native build).
 
 ## 5. Notes / guardrails
 

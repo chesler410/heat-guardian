@@ -20,3 +20,15 @@ bucket_name = "heat-guardian-meets"
 [[kv_namespaces]]
 binding = "RL"
 id = "3e20e61bd3a04f0ca4b112de606d06fe"
+
+# In-app feedback (/report) notifications. Every report is logged to R2 (MEETS) regardless.
+# Pick ONE notify channel:
+#   • EASIEST (no domain): a Discord/Slack incoming webhook → instant phone push.
+#       wrangler secret put REPORT_WEBHOOK   # paste the webhook URL
+#   • Email (needs a domain onboarded to Cloudflare Email Sending):
+#       wrangler email sending enable <yourdomain.com>
+#       then uncomment the send_email binding below and set:
+#       wrangler secret put REPORT_TO        # e.g. ches.hughes@gmail.com
+#       wrangler secret put REPORT_FROM      # e.g. feedback@yourdomain.com (onboarded domain)
+# [[send_email]]
+# name = "EMAIL"

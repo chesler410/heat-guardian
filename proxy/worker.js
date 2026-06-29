@@ -23,6 +23,8 @@ const FEEDBACK_DAILY_CAP = 40; // per-IP/day (~$0.60/IP) — stops one user/scri
 const FEEDBACK_GLOBAL_DAILY_CAP = 150; // ALL feedback calls/day ≈ $2.25/day max — generous headroom
 // for a real meet day (normal pilot use is well under this), but sized so it can't blow the ~$20/mo.
 const MEET_DAILY_CAP = 60; // per-IP/day share uploads, to deter storage spam (no AI cost)
+const MAX_REPORT_BYTES = 8 * 1024; // a feedback note + small context
+const REPORT_DAILY_CAP = 50; // per-IP/day in-app feedback reports
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -70,6 +72,9 @@ export default {
       const liveMatch = /^\/live\/([23456789A-HJ-NP-Z]{4,12})$/.exec(path);
       if (liveMatch && request.method === "POST") return liveIngest(env, request, liveMatch[1]);
       if (liveMatch && request.method === "GET") return liveServe(env, liveMatch[1]);
+
+      // --- In-app feedback report → notify the developer (webhook/email) + durable R2 log ---
+      if (path === "/report" && request.method === "POST") return report(env, request);
 
       // --- AI post-meet feedback ---
       if (path === "/feedback" && request.method === "POST") return feedback(env, request);
@@ -194,6 +199,46 @@ async function liveServe(env, code) {
   }
   const html = mergeRealtime(files, title || "Live results");
   return new Response(html, { headers: { ...CORS, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=15" } });
+}
+
+// In-app feedback → reach the developer in real time. Body: { text, ctx? }. Notifies via,
+// in order of whatever you've configured, all best-effort and graceful:
+//   1) R2 — a durable log of every report (so nothing is ever lost), if MEETS is bound
+//   2) REPORT_WEBHOOK (secret) — a Discord/Slack incoming-webhook URL → instant phone push, ZERO
+//      DNS setup (recommended). Discord wants {content}, Slack wants {text}; we send both keys.
+//   3) EMAIL (send_email binding) + REPORT_TO + REPORT_FROM — email, if you onboarded a domain to
+//      Cloudflare Email Sending (wrangler email sending enable <domain>).
+// No PII is required — it's just the note the user typed plus app context (version/lang/role).
+async function report(env, request) {
+  if (!(await underCap(env, `report:${clientIp(request)}:${today()}`, REPORT_DAILY_CAP)))
+    return json({ error: "rate_limited" }, 429);
+  const raw = await request.arrayBuffer();
+  if (raw.byteLength === 0) return text("Empty body", 400);
+  if (raw.byteLength > MAX_REPORT_BYTES) return text("Too long", 413);
+  let data;
+  try { data = JSON.parse(new TextDecoder().decode(raw)); } catch { return text("Body must be JSON", 400); }
+  const msg = String(data.text || "").slice(0, 4000).trim();
+  if (!msg) return json({ error: "empty" }, 400);
+  const ctx = String(data.ctx || "").replace(/[\r\n]+/g, " ").slice(0, 200);
+  const when = new Date().toISOString();
+  const note = `🏊 Heat Guardian feedback\n${when}\n${ctx ? `Context: ${ctx}\n` : ""}\n${msg}\n`;
+
+  if (env.MEETS) { try { await env.MEETS.put(`report/${when}-${makeCode()}.txt`, note, { httpMetadata: { contentType: "text/plain" } }); } catch { /* logging is best-effort */ } }
+  if (env.REPORT_WEBHOOK) {
+    try { await fetch(env.REPORT_WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: note, text: note }) }); } catch { /* best-effort */ }
+  }
+  if (env.EMAIL && env.REPORT_TO && env.REPORT_FROM) {
+    try {
+      await env.EMAIL.send({
+        to: env.REPORT_TO,
+        from: { email: env.REPORT_FROM, name: "Heat Guardian" },
+        subject: "Heat Guardian feedback",
+        text: note,
+        html: `<pre style="font:14px/1.5 sans-serif;white-space:pre-wrap">${note.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</pre>`,
+      });
+    } catch { /* best-effort */ }
+  }
+  return json({ ok: true });
 }
 
 // COPPA-minimized AI feedback. The app sends ONLY swim context + the swimmer's own notes —
