@@ -1298,9 +1298,15 @@ function buildDisplay(meets: Meet[], swimmers: Swimmer[], filter: Set<string>) {
 // the follow-along heatsheet renders. Heats with no number (TBD) sort last via heatOrd.
 interface ProgHeat { ho: number; label: string; total: number; lanes: Entry[] }
 interface ProgEvent { event: number; race: string; heats: ProgHeat[] }
-function buildProgram(meet: Meet): ProgEvent[] {
+// The age-group phrase from an event desc, e.g. "Girls 13 & Over 200 LC Meter Free" → "13 & Over"
+// (for the heat-tracker age filter — meets often run "12 & Under" and "13 & Over" sessions).
+function agePhrase(desc: string): string {
+  const m = /^(?:Girls|Boys|Women|Men|Mixed|Open)\s+(.+?)\s+\d{2,4}\s+(?:LC|SC)\b/i.exec(desc);
+  return m ? m[1].trim() : "";
+}
+function buildProgram(entries: Entry[]): ProgEvent[] {
   const events = new Map<number, { race: string; heats: Map<number, Entry[]> }>();
-  for (const e of meet.entries) {
+  for (const e of entries) {
     if (!events.has(e.event)) events.set(e.event, { race: e.race, heats: new Map() });
     const ev = events.get(e.event)!;
     const ho = heatOrd(e.heat);
@@ -1334,16 +1340,40 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
   setHeatsDone: (meetId: string, heats: { event: number; ho: number }[], on: boolean) => void;
   onClose: () => void;
 }) {
-  const program = useMemo(() => buildProgram(meet), [meet]);
-  const flat = useMemo(() => program.flatMap((ev) => ev.heats.map((h) => ({ event: ev.event, ho: h.ho }))), [program]);
+  const swimmerFor = (name: string) => swimmers.find((s) => matchesName(s.name, name)) || null;
+  // "now", cascade, and completion are computed on the FULL program (true meet position) so a
+  // filtered view never loses track of where the meet actually is.
+  const fullProgram = useMemo(() => buildProgram(meet.entries), [meet]);
+  const flat = useMemo(() => fullProgram.flatMap((ev) => ev.heats.map((h) => ({ event: ev.event, ho: h.ho }))), [fullProgram]);
   const nowRef = useRef<HTMLDivElement | null>(null);
   const isDone = (event: number, ho: number) => !!heatDone[`${meet.id}|${event}|${ho}`];
-  // First incomplete heat in program order = what's swimming now.
   let nowId: string | null = null;
-  for (const ev of program) {
+  for (const ev of fullProgram) {
     for (const h of ev.heats) if (!isDone(ev.event, h.ho)) { nowId = `${ev.event}|${h.ho}`; break; }
     if (nowId) break;
   }
+
+  // ---- Filters: my swimmers, day/session, age group, event ----
+  const [fMine, setFMine] = useState(false);
+  const [fDay, setFDay] = useState("");
+  const [fAge, setFAge] = useState("");
+  const [fEvent, setFEvent] = useState("");
+  const days = useMemo(() => [...new Set(meet.entries.map((e) => e.session).filter(Boolean))] as string[], [meet]);
+  const ages = useMemo(() => [...new Set(meet.entries.map((e) => agePhrase(e.desc)).filter(Boolean))].sort(), [meet]);
+  const hasFilter = fMine || !!fDay || !!fAge || !!fEvent;
+  const program = useMemo(() => {
+    if (!hasFilter) return fullProgram;
+    const mineHeats = new Set<string>();
+    if (fMine) for (const e of meet.entries) if (swimmerFor(e.name)) mineHeats.add(`${e.event}|${heatOrd(e.heat)}`);
+    const keep = meet.entries.filter((e) => {
+      if (fEvent && e.event !== +fEvent) return false;
+      if (fDay && e.session !== fDay) return false;
+      if (fAge && agePhrase(e.desc) !== fAge) return false;
+      if (fMine && !mineHeats.has(`${e.event}|${heatOrd(e.heat)}`)) return false;
+      return true;
+    });
+    return buildProgram(keep);
+  }, [fullProgram, meet, fMine, fDay, fAge, fEvent, hasFilter, swimmers]);
   // Marking a heat done sweeps it AND every earlier heat done (skipping ahead closes the past);
   // undo clears just that one. Either way the list shrinks, so "now" naturally moves forward.
   const toggleHeat = (event: number, ho: number, currentlyDone: boolean) => {
@@ -1354,7 +1384,6 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
       setHeatsDone(meet.id, flat.slice(0, idx + 1), true);
     }
   };
-  const swimmerFor = (name: string) => swimmers.find((s) => matchesName(s.name, name)) || null;
   const jumpNow = () => nowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   // Auto-advance: when the current heat closes, glide to the new "now". Scrolling stays free —
   // this only fires when nowId actually changes (open, or a heat marked done), not while you browse.
@@ -1368,9 +1397,33 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
         {nowId && <button className="fh-jump" onClick={jumpNow}>⏱ {t("fh_jump_now")}</button>}
       </div>
       <p className="fh-hint">{t("fh_tap")}</p>
+      <div className="fh-filters">
+        <button className={"fh-fchip" + (fMine ? " on" : "")} onClick={() => setFMine((v) => !v)}>★ {t("fh_f_mine")}</button>
+        {days.length > 1 && (
+          <select className="fh-fsel" value={fDay} onChange={(e) => setFDay(e.target.value)}>
+            <option value="">{t("fh_f_day")}</option>
+            {days.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        )}
+        {ages.length > 1 && (
+          <select className="fh-fsel" value={fAge} onChange={(e) => setFAge(e.target.value)}>
+            <option value="">{t("fh_f_age")}</option>
+            {ages.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+        )}
+        {fullProgram.length > 1 && (
+          <select className="fh-fsel" value={fEvent} onChange={(e) => setFEvent(e.target.value)}>
+            <option value="">{t("fh_f_event")}</option>
+            {fullProgram.map((ev) => <option key={ev.event} value={ev.event}>#{ev.event} {ev.race}</option>)}
+          </select>
+        )}
+        {hasFilter && (
+          <button className="fh-fclear" onClick={() => { setFMine(false); setFDay(""); setFAge(""); setFEvent(""); }}>✕ {t("fh_f_clear")}</button>
+        )}
+      </div>
       <div className="fh-scroll">
         {program.length === 0 ? (
-          <p className="muted fh-empty">{t("fh_empty")}</p>
+          <p className="muted fh-empty">{hasFilter ? t("fh_f_none") : t("fh_empty")}</p>
         ) : (
           program.map((ev) => (
             <div className="fh-event" key={ev.event}>

@@ -27,7 +27,7 @@ deck-friendly **heat check-off** so "Up next" always reflects where the meet act
   over"** to close it (which also **auto-completes every earlier heat** and **glides to the next**,
   while scrolling stays free). Your swimmers' lanes are **boldly highlighted**, each heat header
   shows its **event**, and the current heat is tagged **now**. Closing a heat also clears your
-  swimmer from "Up next"
+  swimmer from "Up next". **Filter** the sheet by my swimmers, day/session, age group, or event
 - **🎲 Win-odds** — a just-for-fun, seed-based prediction on each upcoming event card: predicted
   place in the **age group** and in the **heat**, plus a modeled **win chance** for each. Clearly
   disclaimed — winning a heat isn't the same as winning the age group (heats are seeded by time)
