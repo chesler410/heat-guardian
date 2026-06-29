@@ -850,6 +850,7 @@ export function App() {
   const [splitBy, setSplitBy] = useStored<string>("splitBy", ""); // "" = pool length; "25"/"50" override
   const [lefty, setLefty] = useStored<string>("lefty", ""); // "1" = left-handed layout (controls mirrored)
   const [probSnap, setProbSnap] = useStored<string>("probSnap", ""); // "1" = show next-goal probability snapshots (opt-in, off by default)
+  const [myTeam, setMyTeam] = useStored<string>("myTeam", ""); // your team — sticks until you change it; highlights the whole team on deck
   const [logo, setLogo] = useStored("teamLogo", "");
   const [brand, setBrand] = useStored("brandColor", "");
   // 🫧 taunt easter egg: 5 quick taps on the logo → a random taunt toast (see TAUNTS).
@@ -1310,6 +1311,7 @@ export function App() {
           splitBy={splitBy}
           setSplitBy={setSplitBy}
           probSnap={probSnap}
+          myTeam={myTeam}
           liveOn={liveOn}
           liveStatus={liveStatus}
           coach={coaching}
@@ -1363,6 +1365,9 @@ export function App() {
           setLefty={setLefty}
           probSnap={probSnap}
           setProbSnap={setProbSnap}
+          myTeam={myTeam}
+          setMyTeam={setMyTeam}
+          teams={buildTeams(meets).map((t) => t.team)}
           role={role}
           onChangeRole={() => setRole(null)}
           logo={logo}
@@ -1432,18 +1437,23 @@ function buildProgram(entries: Entry[]): ProgEvent[] {
 // Full-screen follow-along heatsheet: the paper-deck workflow on a phone. Tap a heat box to
 // "slash" it off when it finishes; your own/watched swimmers' lanes are highlighted (the pen
 // circle); the first un-slashed heat is tagged "now". Heat completion persists + feeds Up next.
-function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
+function FollowHeats({ meet, swimmers, myTeam, heatDone, setHeatsDone, onClose }: {
   meet: Meet;
   swimmers: Swimmer[];
+  myTeam: string;
   heatDone: Record<string, string>;
   setHeatsDone: (meetId: string, heats: { event: number; ho: number }[], on: boolean) => void;
   onClose: () => void;
 }) {
   const swimmerFor = (name: string) => swimmers.find((s) => matchesName(s.name, name)) || null;
-  // Your team(s) — from your OWN swimmers (not watch-list rivals). Every teammate on deck gets a
-  // lighter highlight even if you haven't added them, for team-wide visibility (coaches see this
-  // for free since their roster IS the team; this brings the same to parents).
-  const myTeams = useMemo(() => new Set(swimmers.filter((s) => !s.watch && s.team).map((s) => s.team)), [swimmers]);
+  // Your team(s) — your saved (non-watch) swimmers' teams PLUS your sticky "my team" pick. Every
+  // teammate on deck gets a lighter highlight even if you haven't added them, for team-wide
+  // visibility (coaches see this for free since their roster IS the team; parents get it too).
+  const myTeams = useMemo(() => {
+    const s = new Set(swimmers.filter((sw) => !sw.watch && sw.team).map((sw) => sw.team));
+    if (myTeam) s.add(myTeam);
+    return s;
+  }, [swimmers, myTeam]);
   // "now", cascade, and completion are computed on the FULL program (true meet position) so a
   // filtered view never loses track of where the meet actually is.
   const fullProgram = useMemo(() => buildProgram(meet.entries), [meet]);
@@ -1455,6 +1465,36 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
     for (const h of ev.heats) if (!isDone(ev.event, h.ho)) { nowId = `${ev.event}|${h.ho}`; break; }
     if (nowId) break;
   }
+
+  // ---- Meet start time + loose per-heat clock estimate + meet-complete ----
+  const [startT, setStartT] = useState<string>(() => { try { return JSON.parse(localStorage.getItem("meetstart") || "{}")[meet.id] || ""; } catch { return ""; } });
+  const saveStart = (v: string) => {
+    setStartT(v);
+    try { const m = JSON.parse(localStorage.getItem("meetstart") || "{}"); if (v) m[meet.id] = v; else delete m[meet.id]; localStorage.setItem("meetstart", JSON.stringify(m)); } catch { /* ignore */ }
+  };
+  const startMin = (() => { const m = /^(\d{1,2}):(\d{2})$/.exec(startT); return m ? +m[1] * 60 + +m[2] : null; })();
+  // Loose estimate: each heat ≈ distance-scaled swim + ~1 min of starts/turnover. Deliberately rough.
+  const est = useMemo(() => {
+    const offset: Record<string, number> = {};
+    let cum = 0;
+    for (const ev of fullProgram) {
+      const dist = parseInt(ev.race, 10);
+      const per = (isFinite(dist) ? dist : 50) / 100 * 1.4 + 1.0;
+      for (const h of ev.heats) { offset[`${ev.event}|${h.ho}`] = cum; cum += per; }
+    }
+    return { offset, total: cum };
+  }, [fullProgram]);
+  const clockOf = (id: string): string | null => {
+    if (startMin == null) return null;
+    const mins = startMin + (est.offset[id] || 0);
+    const hh = Math.floor(mins / 60) % 24;
+    const mm = Math.round(mins % 60);
+    return `${((hh + 11) % 12) + 1}:${String(mm).padStart(2, "0")}${hh < 12 ? "a" : "p"}`;
+  };
+  const allDone = flat.length > 0 && flat.every((f) => isDone(f.event, f.ho));
+  const toggleComplete = () => setHeatsDone(meet.id, flat, !allDone);
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  const overdue = startMin != null && !allDone && nowMin > startMin + est.total + 20;
 
   // ---- Filters: my swimmers, day/session, age group, event ----
   const [fMine, setFMine] = useState(false);
@@ -1500,6 +1540,15 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
         {nowId && <button className="fh-jump" onClick={jumpNow}>⏱ {t("fh_jump_now")}</button>}
       </div>
       <p className="fh-hint">{t("fh_tap")}</p>
+      <div className="fh-meta">
+        <label className="fh-start">⏰ {t("meet_start")} <input type="time" value={startT} onChange={(e) => saveStart(e.target.value)} /></label>
+        <button className={"fh-complete" + (allDone ? " on" : "")} onClick={toggleComplete}>
+          {allDone ? "✓ " + t("meet_complete_done") : t("meet_complete")}
+        </button>
+      </div>
+      {overdue && (
+        <button className="fh-overdue" onClick={toggleComplete}>{t("meet_over_q")}</button>
+      )}
       <div className="fh-filters">
         <button className={"fh-fchip" + (fMine ? " on" : "")} onClick={() => setFMine((v) => !v)}>★ {t("fh_f_mine")}</button>
         {days.length > 1 && (
@@ -1547,6 +1596,7 @@ function FollowHeats({ meet, swimmers, heatDone, setHeatsDone, onClose }: {
                         <span className="fh-heat-no">
                           {h.ho >= 9999 ? t("heat_tbd") : t("heat_n", { n: h.ho }) + (h.total > 1 ? ` / ${h.total}` : "")}
                           {now && <span className="fh-now-tag">⏱ {t("fh_now")}</span>}
+                          {!done && clockOf(id) && <span className="fh-est">~{clockOf(id)}</span>}
                         </span>
                       </span>
                       <span className={"fh-donebtn" + (done ? " on" : "")}>{done ? t("fh_heat_undo") : t("fh_heat_done")}</span>
@@ -1626,7 +1676,7 @@ function SessionBlock(props: { head: string | null; count: number; grid: boolean
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatsDone, setMap, pacing, setPacing, splitBy, setSplitBy, probSnap, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatsDone, setMap, pacing, setPacing, splitBy, setSplitBy, probSnap, myTeam, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
   // Next-goal probability shows only when the parent opted in AND not in coach mode (it would
   // clutter a coach's already-full team view, and coaches don't need the per-kid encouragement).
   const showProb = probSnap === "1" && !coach;
@@ -1760,6 +1810,7 @@ function Home(props: any) {
         <FollowHeats
           meet={followMeet}
           swimmers={swimmers}
+          myTeam={myTeam}
           heatDone={heatDone}
           setHeatsDone={setHeatsDone}
           onClose={() => setFollowMeet(null)}
@@ -2713,6 +2764,9 @@ function SettingsView(props: {
   setLefty: (v: string) => void;
   probSnap: string;
   setProbSnap: (v: string) => void;
+  myTeam: string;
+  setMyTeam: (v: string) => void;
+  teams: string[];
   role: Role | null;
   onChangeRole: () => void;
   logo: string;
@@ -2776,6 +2830,14 @@ function SettingsView(props: {
       <div className="card">
         <h3>👤 {props.role === "coach" ? t("role_coach") : props.role === "swimmer" ? t("role_swimmer") : t("role_parent")}</h3>
         <button className="secondary" onClick={props.onChangeRole}>{t("role_change")}</button>
+        <label className="set-label">🏊 {t("set_team")}</label>
+        <p className="muted small">{t("set_team_b")}</p>
+        <select className="field" value={props.myTeam} onChange={(e) => props.setMyTeam(e.target.value)}>
+          <option value="">{t("team_none")}</option>
+          {(props.myTeam && !props.teams.includes(props.myTeam) ? [props.myTeam, ...props.teams] : props.teams).map((tm) => (
+            <option key={tm} value={tm}>{tm}</option>
+          ))}
+        </select>
       </div>
 
       <div className="card">

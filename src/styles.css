@@ -957,3 +957,14 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .dq-tag { background: rgba(194,24,91,0.12); color: #c2185b; font-weight: 800; font-size: 0.8rem; border-radius: 999px; padding: 2px 10px; letter-spacing: .5px; }
 .theme-dark .dq-tag { color: #ff7aab; }
 .dq-link { border: none; background: none; color: var(--muted); font: inherit; font-size: 0.82rem; cursor: pointer; padding: 0; margin-left: 12px; text-decoration: underline; }
+
+/* Meet start time + complete + estimate (heat tracker) */
+.fh-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 0 14px 8px; }
+.fh-start { font-size: 0.82rem; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.fh-start input { font: inherit; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.theme-dark .fh-start input { color: #cfe6ff; background: #16222e; border-color: #28384a; }
+.fh-complete { border: 1.5px solid var(--close); color: var(--close); background: transparent; font: inherit; font-size: 0.8rem; font-weight: 800; padding: 5px 11px; border-radius: 999px; cursor: pointer; }
+.fh-complete.on { background: var(--close); color: #fff; }
+.fh-overdue { display: block; width: calc(100% - 28px); margin: 0 14px 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--gold); background: rgba(244,180,0,0.12); color: var(--ink); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-align: left; }
+.theme-dark .fh-overdue { color: #e8f0f8; }
+.fh-est { color: var(--muted); font-weight: 600; font-size: 0.78rem; font-variant-numeric: tabular-nums; }

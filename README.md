@@ -29,7 +29,11 @@ deck-friendly **heat check-off** so "Up next" always reflects where the meet act
   shows its **event**, and the current heat is tagged **now**. Closing a heat also clears your
   swimmer from "Up next". **Filter** the sheet by my swimmers, day/session, age group, or event.
   **Your whole team is highlighted** on deck (a lighter tint than your own swimmers) — even
-  teammates you haven't added — for team-wide visibility, the way coaches already see it
+  teammates you haven't added — for team-wide visibility, the way coaches already see it. Set a
+  **meet start time** for loose **~clock estimates** of when each heat will swim, and **Mark meet
+  complete** (or tap the prompt when the clock says it's over) to close the whole thing out
+- **Your team** *(Settings)* — pick your team once (from teams seen in your meets); it sticks and
+  highlights everyone on your squad on deck, even before you add any swimmers
 - **🎯 Next-goal chance** *(opt-in)* — an encouraging probability of hitting the **next
   motivational cut this race**, modeled from the drop needed. **Off by default** (Settings →
   "probability snapshots"), only ever shown when it's **≥60%** (no discouraging long-shots), and
