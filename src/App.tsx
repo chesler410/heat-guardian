@@ -30,7 +30,7 @@ import {
   ImportOutcome,
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance } from "./cuts.ts";
-import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED } from "./config.ts";
+import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED, rateUrl } from "./config.ts";
 import { Geolocation } from "@capacitor/geolocation";
 import { getTheme, setTheme, Theme } from "./theme.ts";
 import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
@@ -2886,6 +2886,12 @@ function About() {
       <a className="primary feedback-btn" href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">
         {t("fb_send")}
       </a>
+
+      {rateUrl() && (
+        <a className="secondary rate-btn" href={rateUrl()} target="_blank" rel="noopener noreferrer">
+          ⭐ {t("rate_btn")}
+        </a>
+      )}
 
       {!IS_NATIVE && (
         <>

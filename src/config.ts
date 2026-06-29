@@ -24,6 +24,18 @@ export const FEEDBACK_URL: string =
 // Optional tip jar (free app, no ads). Shown in About.
 export const KOFI_URL: string = import.meta.env.VITE_KOFI_URL || "https://ko-fi.com/chesler410";
 
+// Store listing URLs for the "Rate Heat Guardian ⭐" prompt. EMPTY until the apps are published —
+// the rate button only appears once the relevant store URL is set (per platform). After launch,
+// set these (env or here) to the App Store / Play listing. `rateUrl()` picks the right one.
+export const APP_STORE_URL: string = import.meta.env.VITE_APP_STORE_URL || "";
+export const PLAY_STORE_URL: string = import.meta.env.VITE_PLAY_STORE_URL || "";
+export function rateUrl(): string {
+  const p = Capacitor.getPlatform();
+  if (p === "ios") return APP_STORE_URL;
+  if (p === "android") return PLAY_STORE_URL;
+  return APP_STORE_URL || PLAY_STORE_URL; // web PWA → whichever exists
+}
+
 // AI post-meet feedback (swimmer + coach team summary) is DISABLED for now: it was costing
 // per-tap Anthropic spend and, with the current context-gathering, kept summarizing only one
 // swimmer. Kept dark behind this flag (UI hidden, Worker route untouched) so it can be switched
