@@ -35,6 +35,8 @@ deck-friendly **heat check-off** so "Up next" always reflects where the meet act
 - **Split by 25 / 50** toggle on the goal-splits table (a 100 LC splits by 50 → 2, or by 25 → 4),
   plus a **time-dropped** badge (entry → finals) on each swum result
 - **Age shown next to every swimmer** — cards, Up next, chips, heat-tracker lanes, and Progress
+- **Left-handed mode** — Settings → Appearance → Handedness mirrors the on-deck controls (heat
+  tracker + Up next) to the left edge for one-handed lefties
 - **Per event:** heat, lane, seed (best), the **next motivational cut** (+delta, ≈ per length),
   and the **🏆 Southeastern championship cut** (qualified ✓ or how much to drop)
 - **Calm two-tab layout** — **Home** and **Swimmers**, with Add-meet, theme, language, and

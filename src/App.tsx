@@ -801,6 +801,7 @@ export function App() {
   const [lang, setLangState] = useState<Lang>(getLang);
   const [pacing, setPacing] = useStored<"even" | "realistic">("pacing", "even");
   const [splitBy, setSplitBy] = useStored<string>("splitBy", ""); // "" = pool length; "25"/"50" override
+  const [lefty, setLefty] = useStored<string>("lefty", ""); // "1" = left-handed layout (controls mirrored)
   const [logo, setLogo] = useStored("teamLogo", "");
   const [brand, setBrand] = useStored("brandColor", "");
   // 🫧 taunt easter egg: 5 quick taps on the logo → a random taunt toast (see TAUNTS).
@@ -1122,7 +1123,7 @@ export function App() {
   }, [liveOn, liveUrl]);
 
   return (
-    <div className="app">
+    <div className={"app" + (lefty === "1" ? " lefty" : "")}>
       <UpdateBanner />
       {taunt && <div className="taunt-pop" onClick={() => setTaunt("")}>{taunt}</div>}
       {msg && <div className="app-toast" onClick={() => setMsg("")}>{msg}</div>}
@@ -1309,6 +1310,8 @@ export function App() {
           changeLang={changeLang}
           tauntTier={tauntTier}
           setTauntTier={setTauntTier}
+          lefty={lefty}
+          setLefty={setLefty}
         />
       )}
       {gated && nav === "about" && (
@@ -2678,6 +2681,8 @@ function SettingsView(props: {
   changeLang: (l: Lang) => void;
   tauntTier: TauntTier;
   setTauntTier: (v: TauntTier) => void;
+  lefty: string;
+  setLefty: (v: string) => void;
 }) {
   const themes: Theme[] = ["auto", "light", "dark"];
   const tiers: TauntTier[] = ["mild", "medium", "savage"];
@@ -2708,6 +2713,11 @@ function SettingsView(props: {
             <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
           ))}
         </select>
+        <label className="set-label">{t("set_hand")}</label>
+        <div className="seg full">
+          <button className={props.lefty !== "1" ? "on" : ""} onClick={() => props.setLefty("")}>👉 {t("hand_right")}</button>
+          <button className={props.lefty === "1" ? "on" : ""} onClick={() => props.setLefty("1")}>👈 {t("hand_left")}</button>
+        </div>
       </div>
 
       <div className="card">
