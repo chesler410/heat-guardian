@@ -33,7 +33,7 @@ try {
     localStorage.clear();
     localStorage.setItem("role", "parent");
     localStorage.setItem("view", "cards");
-    localStorage.setItem("swimmers", JSON.stringify([{ id: "s1", name: "Hughes", team: "TNT-SE", age: 10, gender: "Girls", color: "#0b3d91" }]));
+    localStorage.setItem("swimmers", JSON.stringify([{ id: "s1", name: "Sample Swimmer", team: "DEMO-SE", age: 10, gender: "Girls", color: "#0b3d91" }]));
   });
   await page.reload({ waitUntil: "networkidle0" });
   for (const h of await page.$$(".tabs button")) { const t = await page.evaluate((el) => el.textContent.trim(), h); if (/add meet|import/i.test(t)) { await h.click(); break; } }
