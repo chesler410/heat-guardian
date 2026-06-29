@@ -710,6 +710,16 @@ table.arm th, table.arm td { padding-right: 14px; }
 /* import note callout */
 .imp-note { background: #eaf4ff; border: 1px solid #cfe5fb; border-radius: 10px; padding: 8px 10px; font-size: 0.85rem; margin: 0 0 6px; color: #134; }
 .theme-dark .imp-note { background: #13283d; border-color: #244a6b; color: #cfe6ff; }
+/* Divided "what can I add" legend so psych / heat / results / others are explicit. */
+.imp-types { margin: 4px 0 12px; }
+.imp-types-h { font-weight: 700; font-size: 0.85rem; margin: 0 0 4px; }
+.imp-types ul { list-style: none; margin: 0; padding: 0; }
+.imp-types li { font-size: 0.85rem; color: var(--muted); padding: 3px 0; border-top: 1px solid var(--line); }
+.imp-types li:first-child { border-top: none; }
+/* Front-and-center "got a code?" card — the fastest path in, so it stands out. */
+.code-card { border: 2px solid var(--blue); background: linear-gradient(150deg, #eef5ff 0%, var(--card) 70%); }
+.theme-dark .code-card { background: linear-gradient(150deg, #122033 0%, var(--card) 70%); border-color: #2d5fb0; }
+.code-card h2 { margin-top: 0; }
 
 /* ---- header gear + back link (simplified nav) ---- */
 .gear-btn {
@@ -786,9 +796,18 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .un-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 0; border-top: 1px dashed #d6e0f0; }
 .un-row:first-of-type { border-top: none; }
 .theme-dark .un-row { border-top-color: #233443; }
-.un-who { font-weight: 700; }
+.un-who { font-weight: 700; flex: 1; }
 .un-where { color: var(--blue); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; background: rgba(21,184,214,0.12); padding: 1px 9px; border-radius: 999px; }
 .theme-dark .un-where { color: #9cc2ff; background: rgba(91,155,255,0.16); }
+/* Quick "check it off" on an Up-next row — once done, that race drops out of the list. */
+.un-done { flex: none; border: 1px solid #cdddfb; background: #fff; color: var(--blue); width: 28px; height: 28px; border-radius: 999px; font-size: 0.95rem; font-weight: 800; cursor: pointer; line-height: 1; }
+.un-done:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+.theme-dark .un-done { background: var(--card); border-color: #1d3047; color: #9cc2ff; }
+
+/* "Mark done" toggle on an event card (for races with no logged time). */
+.done-toggle { margin-left: 14px; border: none; background: none; color: var(--muted); font: inherit; cursor: pointer; padding: 0; }
+.done-toggle.on { color: var(--green, #1f9d57); font-weight: 700; }
+.event.done { border-left: 4px solid var(--muted); opacity: 0.82; }
 
 /* "Import by code" row (shared-meet cache) */
 .code-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
@@ -837,3 +856,47 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 /* per-meet "Add results" button — accented so it reads as an action, not just an icon */
 .mh-results { font-size: 0.8rem; background: rgba(21,184,214,0.14); border-radius: 8px; padding: 3px 9px; color: var(--blue); font-weight: 700; }
 .theme-dark .mh-results { color: #9cc2ff; background: rgba(91,155,255,0.18); }
+
+/* "Follow heats" button on the meet header — accented like the Results action */
+.mh-follow { font-size: 0.8rem; background: rgba(11,61,145,0.12); border-radius: 8px; padding: 3px 9px; color: var(--blue); font-weight: 700; }
+.theme-dark .mh-follow { color: #9cc2ff; background: rgba(91,155,255,0.18); }
+
+/* ===== Follow-along heatsheet (the slash-the-heat tracker) ===== */
+.fh-overlay { position: fixed; inset: 0; z-index: 1000; background: var(--bg); display: flex; flex-direction: column; }
+.fh-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
+.fh-close { flex: none; border: 1px solid var(--line); background: var(--card); color: var(--ink); width: 34px; height: 34px; border-radius: 999px; font-size: 1rem; cursor: pointer; }
+.theme-dark .fh-close { color: #cfe6ff; }
+.fh-title { flex: 1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fh-jump { flex: none; border: 1px solid #cdddfb; background: rgba(11,61,145,0.08); color: var(--blue); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+.theme-dark .fh-jump { color: #9cc2ff; border-color: #1d3047; background: rgba(91,155,255,0.14); }
+.fh-hint { margin: 0; padding: 8px 14px; font-size: 0.82rem; color: var(--muted); }
+.fh-scroll { flex: 1; overflow-y: auto; padding: 0 12px 80px; -webkit-overflow-scrolling: touch; }
+.fh-empty { padding: 24px 8px; text-align: center; }
+.fh-event { margin: 14px 0; }
+.fh-evhead { margin: 0 0 6px; font-size: 0.95rem; position: sticky; top: 0; background: var(--bg); padding: 4px 2px; z-index: 1; }
+
+.fh-heat { position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--card); margin-bottom: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.fh-heat.now { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(11,61,145,0.18); }
+.theme-dark .fh-heat.now { border-color: #5b9bff; box-shadow: 0 0 0 2px rgba(91,155,255,0.25); }
+/* the "slash" — one diagonal pen line across the whole heat box, plus a dim */
+.fh-heat.done { opacity: 0.55; }
+.fh-heat.done::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(159deg, transparent calc(50% - 1.4px), rgba(194,24,91,0.85) calc(50% - 1.4px), rgba(194,24,91,0.85) calc(50% + 1.4px), transparent calc(50% + 1.4px)); }
+
+.fh-heat-head { width: 100%; display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: rgba(11,61,145,0.05); border: none; border-bottom: 1px solid var(--line); font: inherit; cursor: pointer; text-align: left; }
+.theme-dark .fh-heat-head { background: rgba(91,155,255,0.08); }
+.fh-heat-label { font-weight: 800; }
+.fh-now-tag { background: var(--blue); color: #fff; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 2px 8px; border-radius: 999px; }
+.fh-check { margin-left: auto; font-size: 1.1rem; font-weight: 800; color: var(--muted); }
+.fh-heat.done .fh-check { color: var(--close); }
+
+.fh-lanes { padding: 2px 0; }
+.fh-lane { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-top: 1px solid var(--line); }
+.fh-lane:first-child { border-top: none; }
+.fh-lane.mine { background: rgba(244,180,0,0.12); }
+.theme-dark .fh-lane.mine { background: rgba(244,180,0,0.10); }
+.fh-ln { flex: none; width: 26px; height: 26px; border-radius: 999px; border: 1.5px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.fh-nm { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fh-lane.mine .fh-nm { font-weight: 800; }
+.fh-team { color: var(--muted); font-size: 0.78rem; max-width: 30%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fh-seed { flex: none; color: var(--muted); font-size: 0.85rem; }

@@ -24,6 +24,12 @@ export const FEEDBACK_URL: string =
 // Optional tip jar (free app, no ads). Shown in About.
 export const KOFI_URL: string = import.meta.env.VITE_KOFI_URL || "https://ko-fi.com/chesler410";
 
+// AI post-meet feedback (swimmer + coach team summary) is DISABLED for now: it was costing
+// per-tap Anthropic spend and, with the current context-gathering, kept summarizing only one
+// swimmer. Kept dark behind this flag (UI hidden, Worker route untouched) so it can be switched
+// back on once it's cheaper and the per-swimmer context bug is fixed. Flip to true to restore.
+export const FEEDBACK_ENABLED = false;
+
 // Optional obfuscation token for the AI /feedback endpoint. Empty by default (the endpoint is
 // protected by the Worker's rate limits + your Anthropic spend cap). If you later set the APP_TOKEN
 // secret on the Worker, ALSO rebuild the apps with VITE_APP_TOKEN set to the same value — otherwise

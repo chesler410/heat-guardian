@@ -328,8 +328,13 @@ export interface SwimmerProgress {
   events: ProgressEvent[];
 }
 
-// For each swimmer, gather their fastest time per event (course-aware) across all meets,
-// using the actual (results/manual) time when present, otherwise the seed/entry time.
+// For each swimmer, per event (course-aware) across all meets:
+//  • best  — current best time, from seed/psych entry times AND logged/overlaid results,
+//             whichever is faster (so the column is never empty just because nothing's logged).
+//  • count — number of times ACTUALLY swum (logged results only). Seeds don't count: a new
+//             meet's seed is usually the prior best copied in, so counting them would record
+//             swims that never happened and let old meets bleed into a freshly-added one.
+//  • drop  — improvement across real swims only (needs ≥2 logged results); seeds never create it.
 export function buildProgress(
   swimmers: Swimmer[],
   meets: Meet[],
@@ -337,24 +342,26 @@ export function buildProgress(
 ): SwimmerProgress[] {
   return swimmers
     .map((sw) => {
-      const groups = new Map<string, { race: string; course: string; key: string; desc: string; times: number[] }>();
+      const groups = new Map<string, { race: string; course: string; key: string; desc: string; swims: number[]; seedBest: number }>();
       for (const m of meets)
         for (const e of m.entries) {
           if (e.relay || !matchesName(sw.name, e.name)) continue;
           const meta = eventMeta(e.desc);
           if (!meta.key) continue;
-          const override = results[resultKey(m.id, e.event, sw.name)];
-          const sec = _toSec(override || (e.seed !== "NT" ? e.seed : ""));
-          if (!isFinite(sec)) continue;
           const course = courseOf(e.desc);
           const gk = `${course}|${meta.key}`;
-          if (!groups.has(gk)) groups.set(gk, { race: meta.race, course, key: meta.key, desc: e.desc, times: [] });
-          groups.get(gk)!.times.push(sec);
+          if (!groups.has(gk)) groups.set(gk, { race: meta.race, course, key: meta.key, desc: e.desc, swims: [], seedBest: Infinity });
+          const g = groups.get(gk)!;
+          const swum = _toSec(results[resultKey(m.id, e.event, sw.name)] || "");
+          if (isFinite(swum)) g.swims.push(swum);
+          const seed = _toSec(e.seed !== "NT" ? e.seed : "");
+          if (isFinite(seed)) g.seedBest = Math.min(g.seedBest, seed);
         }
       const events: ProgressEvent[] = [...groups.values()]
         .map((g) => {
-          const best = Math.min(...g.times);
-          const worst = Math.max(...g.times);
+          const swimBest = g.swims.length ? Math.min(...g.swims) : Infinity;
+          const swimWorst = g.swims.length ? Math.max(...g.swims) : 0;
+          const best = Math.min(swimBest, g.seedBest); // current best: swum or seed, whichever faster
           return {
             key: g.key,
             race: g.race,
@@ -362,10 +369,11 @@ export function buildProgress(
             desc: g.desc,
             best: fmt(best),
             bestSec: best,
-            count: g.times.length,
-            drop: g.times.length > 1 ? +(worst - best).toFixed(2) : null,
+            count: g.swims.length, // real swims only
+            drop: g.swims.length > 1 ? +(swimWorst - swimBest).toFixed(2) : null,
           };
         })
+        .filter((ev) => isFinite(ev.bestSec))
         .sort(
           (a, b) =>
             a.course.localeCompare(b.course) ||

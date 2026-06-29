@@ -8,8 +8,8 @@ next time cut to chase, and fueling — sectioned by day.
 
 It's *not* another stats database (SwimCloud already does history). It's built for the cold pool
 deck at 6am: "what's my kid swimming, when, what do they need to beat, and when do they eat."
-Increasingly it's a **live layer** too — live results as they post, team sharing by code, and an
-optional swimmer-facing mode with encouraging AI post-meet feedback.
+Increasingly it's a **live layer** too — live results as they post, team sharing by code, and a
+deck-friendly **heat check-off** so "Up next" always reflects where the meet actually is.
 
 ## What it does
 
@@ -19,21 +19,28 @@ optional swimmer-facing mode with encouraging AI post-meet feedback.
   (saved on-device). Parents track their kids; **coaches pick a team** and see every swimmer on it;
   **swimmers** manage their own meet — pick themselves, highlight **friends**, and reflect on each
   swim ("how did it feel?")
-- **✨ AI post-meet feedback** *(swimmer mode)* — turns a swimmer's own reflections + times into
-  warm, encouraging, age-appropriate feedback. COPPA-minimized: only swim context + their notes are
-  sent (never name/team), through a server-side proxy that holds the API key
+- **⏱ Up next + heat check-off** — Home shows the soonest upcoming races (in true **event → heat
+  → lane** order); tap **✓** on a row (or **Mark done** on a card) to check a race off as swum, so
+  the list advances even when you haven't had a second to log a time
+- **🏊 Follow heats** — a full-screen **follow-along heatsheet** of the whole meet (every lane,
+  not just yours), the way people mark up the paper sheet on deck: **tap a heat to slash it off**
+  when it finishes, your swimmers' lanes are **highlighted**, and the first un-slashed heat is
+  tagged **now**. Slashing a heat also clears your swimmer from "Up next"
 - **Per event:** heat, lane, seed (best), the **next motivational cut** (+delta, ≈ per length),
   and the **🏆 Southeastern championship cut** (qualified ✓ or how much to drop)
 - **Calm two-tab layout** — **Home** and **Swimmers**, with Add-meet, theme, language, and
   About tucked behind a **⚙ Settings** gear so meet day stays uncluttered
 - **One Swimmers hub** — your **My swimmers** and your **Watch list** in one place; find a
   swimmer by **search** *or* by **browsing teams**, then add as yours or to watch
-- **Per-swimmer Progress** — best time per event across every meet (with the **improvement drop**
-  and cut level reached), folded right into Home
+- **Per-swimmer Progress** — current **best time** per event across every meet (seed or swum,
+  whichever is faster), while the **swim count and improvement drop count only times actually
+  swum** (logged/overlaid results — seed/psych times never fake a swim), plus the cut level
+  reached — folded right into Home
 - **Per-event private notes** — jot coaching feedback on any event card
 - **Relays** included (swimmer shown as a leg, with the team time)
 - **Goal & splits** — target splits to hit a goal or a specific cut (even or realistic pacing),
-  plus log actual splits and finish times on deck
+  shown as both the **per-length split and the running total**; plus log actual splits (entered
+  cumulatively, broken back out per length) and finish times on deck
 - **Arm-table view** — compact `Ev · Ht · Ln · Swim` (+ optional PB / Cut / Champ columns) to
   copy onto a swimmer's arm, sectioned by date
 - **Timed fueling & hydration** — enter the first-race time for a clock-time plan, between-races
@@ -91,7 +98,9 @@ optional swimmer-facing mode with encouraging AI post-meet feedback.
   `build_se_champs.py` (run when standards change), plus the original PyMuPDF parser.
 - `proxy/` — the Cloudflare Worker backend: a CORS fetch proxy for "paste a link", an R2-backed
   shared-meet cache (`/meet` — the share-by-code feature), and a server-side AI-feedback proxy
-  (`/feedback` — holds the Anthropic key so it never ships in the app).
+  (`/feedback` — holds the Anthropic key so it never ships in the app). **AI feedback is currently
+  disabled in the app** (`FEEDBACK_ENABLED = false` in `src/config.ts`) on cost grounds; the route
+  is left intact so it can be switched back on.
 - `docs/` — decisions, data-source research, parsing notes, roadmap.
 
 ## Develop

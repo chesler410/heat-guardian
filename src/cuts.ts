@@ -92,13 +92,14 @@ export function segInfo(desc: string): { dist: number; len: number; unit: string
   return { dist, len, unit, n };
 }
 
-// Goal pacing: cumulative target at each pool length. "even" = equal pace; "realistic"
-// = mild positive split (first half a touch faster, like a real race), summing to the goal.
+// Goal pacing per pool length. "even" = equal pace; "realistic" = mild positive split (first
+// half a touch faster, like a real race), summing to the goal. Returns BOTH the per-length
+// interval ("each" — the exact time for that length) and the running total ("cum").
 export function goalSplits(
   desc: string,
   goal: string,
   pacing: "even" | "realistic" = "even"
-): { dist: number; cum: string }[] | null {
+): { dist: number; each: string; cum: string }[] | null {
   if (!goal) return null;
   const m = eventMeta(desc);
   if (!m.course || !m.key) return null;
@@ -110,13 +111,27 @@ export function goalSplits(
   // per-length weights (sum to n). realistic: spread of ±3% from first to last length.
   const spread = 0.06;
   const w = (k: number) => (pacing === "realistic" ? 1 + spread * ((k - 1) / (n - 1) - 0.5) : 1);
-  const out: { dist: number; cum: string }[] = [];
+  const out: { dist: number; each: string; cum: string }[] = [];
   let cum = 0;
   for (let k = 1; k <= n; k++) {
-    cum += (g / n) * w(k);
-    out.push({ dist: k * len, cum: fmt(cum) });
+    const seg = (g / n) * w(k);
+    cum += seg;
+    out.push({ dist: k * len, each: fmt(seg), cum: fmt(cum) });
   }
   return out;
+}
+
+// Turn CUMULATIVE split times (how a results sheet prints them — 50/100/150…) into the exact
+// per-length interval each length took. Blank/unparseable entries pass through as "".
+export function splitDeltas(cum: string[]): string[] {
+  let prev = 0;
+  return cum.map((c) => {
+    const s = toSec(c);
+    if (isNaN(s)) return "";
+    const d = s - prev;
+    prev = s;
+    return fmt(d);
+  });
 }
 
 export function computeCut(

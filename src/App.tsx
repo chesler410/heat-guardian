@@ -29,8 +29,8 @@ import {
   SwimmerProgress,
   ImportOutcome,
 } from "./store.ts";
-import { computeCut, CutResult, goalSplits, eventMeta, segInfo } from "./cuts.ts";
-import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN } from "./config.ts";
+import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo } from "./cuts.ts";
+import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED } from "./config.ts";
 import { Geolocation } from "@capacitor/geolocation";
 import { getTheme, setTheme, Theme } from "./theme.ts";
 import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
@@ -118,6 +118,10 @@ const swimAbbr = (race: string) => {
 // nickname fix, whose stored race may still read "Butterfly").
 const raceOf = (e: Entry) => eventMeta(e.desc).race + (e.relay ? " Relay" : "");
 const heatNum = (h: string | null) => h?.match(/Heat\s+(\d+)/)?.[1] ?? "—";
+// Numeric heat for ordering: real swim order is event → heat → lane. Heats with no number
+// (TBD / not yet seeded) sort to the end so assigned heats lead.
+const heatOrd = (h: string | null) => { const m = h?.match(/Heat\s+(\d+)/); return m ? parseInt(m[1], 10) : 9999; };
+const swimOrder = (a: DE, b: DE) => a.e.event - b.e.event || heatOrd(a.e.heat) - heatOrd(b.e.heat) || a.e.lane - b.e.lane;
 const levelClass = (l?: string | null) => "lvl lvl-" + (l ? l.toLowerCase() : "none");
 const ageNum = (a: string) => parseInt(a, 10) || undefined;
 const blurOnEnter = (ev: { key: string; target: EventTarget }) => {
@@ -196,6 +200,8 @@ function EntryCard({
   setPacing,
   note,
   onNote,
+  done,
+  onToggleDone,
   swimmer,
 }: {
   d: DE;
@@ -210,6 +216,8 @@ function EntryCard({
   setPacing?: (p: "even" | "realistic") => void;
   note?: string;
   onNote?: (val: string) => void;
+  done?: boolean; // heat marked complete on deck (so "Up next" advances without a logged time)
+  onToggleDone?: () => void;
   swimmer?: boolean; // "My Meet" mode — frame the note as the swimmer's own reflection
 }) {
   const { e } = d;
@@ -222,8 +230,9 @@ function EntryCard({
   const time = result || e.seed;
   const cut = cutFor(d, result);
   const close = cut?.nextCut && cut.nextCut.needed <= 1.0;
+  const actualEach = splitDeltas(actualArr);
   return (
-    <div className={"card event" + (close ? " close" : "") + (result ? " has-result" : "")}>
+    <div className={"card event" + (close ? " close" : "") + (result ? " has-result" : "") + (done && !result ? " done" : "")}>
       <div className="ev-top">
         {showSwimmer && (
           <span className="kid-tag" style={{ background: d.color }}>
@@ -294,6 +303,11 @@ function EntryCard({
             {result ? t("edittime") : swimmer ? t("addtime_me") : t("addtime")}
           </button>
         )}
+        {!result && onToggleDone && (
+          <button className={"done-toggle" + (done ? " on" : "")} onClick={onToggleDone}>
+            {done ? t("done_undo") : t("mark_done")}
+          </button>
+        )}
       </div>
       )}
       {!e.relay && (
@@ -342,15 +356,19 @@ function EntryCard({
                   <thead>
                     <tr>
                       <th>m</th>
-                      <th>{t("splits_target")}</th>
-                      {actualArr.length > 0 && <th>{t("swam")}</th>}
+                      <th>{t("splits_each")}</th>
+                      <th>{t("splits_total")}</th>
+                      {actualArr.length > 0 && <th>{t("swam")} · {t("splits_each")}</th>}
+                      {actualArr.length > 0 && <th>{t("swam")} · {t("splits_total")}</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {splits.map((s, i) => (
                       <tr key={i}>
                         <td className="mono">{s.dist}</td>
+                        <td className="mono">{s.each}</td>
                         <td className="mono">{s.cum}</td>
+                        {actualArr.length > 0 && <td className="mono actual">{actualEach[i] || "—"}</td>}
                         {actualArr.length > 0 && <td className="mono actual">{actualArr[i] || "—"}</td>}
                       </tr>
                     ))}
@@ -707,6 +725,20 @@ export function App() {
   const [notes, setNotesState] = useState<Record<string, string>>(() => loadMap("notes"));
   const [goals, setGoalsState] = useState<Record<string, string>>(() => loadMap("goals"));
   const [asplits, setAsplitsState] = useState<Record<string, string>>(() => loadMap("actualsplits"));
+  // Heat completion: "1" = this swim has been marked done on deck. Lets "Up next" advance past
+  // races that already happened even when no time was logged for them.
+  const [done, setDoneState] = useState<Record<string, string>>(() => loadMap("done"));
+  // Heat-LEVEL completion for the follow-along heatsheet (slash the whole heat box), keyed
+  // meetId|event|heatNum. Separate from per-swim `done`; both feed "Up next" so a slashed heat
+  // also clears your swimmer from what's coming.
+  const [heatDone, setHeatDoneState] = useState<Record<string, string>>(() => loadMap("heatdone"));
+  function setHeatDone(meetId: string, event: number, heat: number, on: boolean) {
+    const next = { ...heatDone };
+    const k = `${meetId}|${event}|${heat}`;
+    if (on) next[k] = "1"; else delete next[k];
+    setHeatDoneState(next);
+    localStorage.setItem("heatdone", JSON.stringify(next));
+  }
   const [theme, setThemeState] = useState<Theme>(getTheme);
   const [lang, setLangState] = useState<Lang>(getLang);
   const [pacing, setPacing] = useStored<"even" | "realistic">("pacing", "even");
@@ -791,15 +823,15 @@ export function App() {
     saveResults(next);
   }
   function setMap(
-    kind: "goal" | "splits" | "note",
+    kind: "goal" | "splits" | "note" | "done",
     meetId: string,
     event: number,
     name: string,
     val: string
   ) {
-    const map = kind === "goal" ? goals : kind === "splits" ? asplits : notes;
-    const setter = kind === "goal" ? setGoalsState : kind === "splits" ? setAsplitsState : setNotesState;
-    const storeKey = kind === "goal" ? "goals" : kind === "splits" ? "actualsplits" : "notes";
+    const map = kind === "goal" ? goals : kind === "splits" ? asplits : kind === "note" ? notes : done;
+    const setter = kind === "goal" ? setGoalsState : kind === "splits" ? setAsplitsState : kind === "note" ? setNotesState : setDoneState;
+    const storeKey = kind === "goal" ? "goals" : kind === "splits" ? "actualsplits" : kind === "note" ? "notes" : "done";
     const next = { ...map };
     const k = resultKey(meetId, event, name);
     if (val.trim()) next[k] = val.trim();
@@ -1161,6 +1193,9 @@ export function App() {
           goals={goals}
           asplits={asplits}
           notes={notes}
+          done={done}
+          heatDone={heatDone}
+          setHeatDone={setHeatDone}
           setMap={setMap}
           pacing={pacing}
           setPacing={setPacing}
@@ -1233,9 +1268,118 @@ function buildDisplay(meets: Meet[], swimmers: Swimmer[], filter: Set<string>) {
       for (const e of m.entries)
         if (matchesName(s.name, e.name))
           items.push({ e, color: s.color, swimmer: s.name, age: s.age, gender: s.gender, meetId: m.id });
-    items.sort((a, b) => a.e.event - b.e.event);
+    items.sort(swimOrder);
     return { meet: m, items };
   });
+}
+
+// The whole meet program as Event → Heat → Lanes (every swimmer, not just yours) — the data
+// the follow-along heatsheet renders. Heats with no number (TBD) sort last via heatOrd.
+interface ProgHeat { ho: number; label: string; total: number; lanes: Entry[] }
+interface ProgEvent { event: number; race: string; heats: ProgHeat[] }
+function buildProgram(meet: Meet): ProgEvent[] {
+  const events = new Map<number, { race: string; heats: Map<number, Entry[]> }>();
+  for (const e of meet.entries) {
+    if (!events.has(e.event)) events.set(e.event, { race: e.race, heats: new Map() });
+    const ev = events.get(e.event)!;
+    const ho = heatOrd(e.heat);
+    if (!ev.heats.has(ho)) ev.heats.set(ho, []);
+    ev.heats.get(ho)!.push(e);
+  }
+  return [...events.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([event, ev]) => {
+      const heatList = [...ev.heats.entries()].sort((a, b) => a[0] - b[0]);
+      return {
+        event,
+        race: ev.race,
+        heats: heatList.map(([ho, lanes]) => ({
+          ho,
+          label: lanes[0]?.heat || "",
+          total: heatList.length,
+          lanes: [...lanes].sort((a, b) => a.lane - b.lane),
+        })),
+      };
+    });
+}
+
+// Full-screen follow-along heatsheet: the paper-deck workflow on a phone. Tap a heat box to
+// "slash" it off when it finishes; your own/watched swimmers' lanes are highlighted (the pen
+// circle); the first un-slashed heat is tagged "now". Heat completion persists + feeds Up next.
+function FollowHeats({ meet, swimmers, heatDone, setHeatDone, onClose }: {
+  meet: Meet;
+  swimmers: Swimmer[];
+  heatDone: Record<string, string>;
+  setHeatDone: (meetId: string, event: number, heat: number, on: boolean) => void;
+  onClose: () => void;
+}) {
+  const program = useMemo(() => buildProgram(meet), [meet]);
+  const nowRef = useRef<HTMLDivElement | null>(null);
+  const isDone = (event: number, ho: number) => !!heatDone[`${meet.id}|${event}|${ho}`];
+  // First incomplete heat in program order = what's swimming now.
+  let nowId: string | null = null;
+  for (const ev of program) {
+    for (const h of ev.heats) if (!isDone(ev.event, h.ho)) { nowId = `${ev.event}|${h.ho}`; break; }
+    if (nowId) break;
+  }
+  const swimmerFor = (name: string) => swimmers.find((s) => matchesName(s.name, name)) || null;
+  const jumpNow = () => nowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  useEffect(() => { nowRef.current?.scrollIntoView({ block: "center" }); }, []);
+
+  return (
+    <div className="fh-overlay">
+      <div className="fh-bar">
+        <button className="fh-close" title={t("fh_close")} onClick={onClose}>✕</button>
+        <span className="fh-title">{meet.title}</span>
+        {nowId && <button className="fh-jump" onClick={jumpNow}>⏱ {t("fh_jump_now")}</button>}
+      </div>
+      <p className="fh-hint">{t("fh_tap")}</p>
+      <div className="fh-scroll">
+        {program.length === 0 ? (
+          <p className="muted fh-empty">{t("fh_empty")}</p>
+        ) : (
+          program.map((ev) => (
+            <div className="fh-event" key={ev.event}>
+              <h3 className="fh-evhead">#{ev.event} · {ev.race}</h3>
+              {ev.heats.map((h) => {
+                const id = `${ev.event}|${h.ho}`;
+                const done = isDone(ev.event, h.ho);
+                const now = id === nowId;
+                return (
+                  <div
+                    className={"fh-heat" + (done ? " done" : "") + (now ? " now" : "")}
+                    key={id}
+                    ref={now ? nowRef : undefined}
+                  >
+                    <button className="fh-heat-head" onClick={() => setHeatDone(meet.id, ev.event, h.ho, !done)}>
+                      <span className="fh-heat-label">
+                        {h.ho >= 9999 ? t("heat_tbd") : t("heat_n", { n: h.ho }) + (h.total > 1 ? ` / ${h.total}` : "")}
+                      </span>
+                      {now && <span className="fh-now-tag">⏱ {t("fh_now")}</span>}
+                      <span className="fh-check">{done ? "✓" : "○"}</span>
+                    </button>
+                    <div className="fh-lanes">
+                      {h.lanes.map((e, i) => {
+                        const sw = swimmerFor(e.name);
+                        return (
+                          <div className={"fh-lane" + (sw ? " mine" : "")} key={i}>
+                            <span className="fh-ln" style={sw ? { background: sw.color, color: "#fff", borderColor: sw.color } : undefined}>{e.lane}</span>
+                            <span className="fh-nm">{e.relay ? e.team : displayName(e.name)}</span>
+                            {!e.relay && <span className="fh-team">{e.team}</span>}
+                            <span className="fh-seed mono">{e.seed}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 }
 
 function courseLabel(meet: Meet): string {
@@ -1288,7 +1432,8 @@ function SessionBlock(props: { head: string | null; count: number; grid: boolean
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatDone, setMap, pacing, setPacing, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
+  const [followMeet, setFollowMeet] = useState<Meet | null>(null);
   const [showSample, setShowSample] = useState(() => location.search.includes("demo"));
   const [shareMsg, showToast] = useToast();
   const [cols, setCols] = useState<{ pb: boolean; cut: boolean; champ: boolean }>(() => {
@@ -1304,6 +1449,10 @@ function Home(props: any) {
     localStorage.setItem("armcols", JSON.stringify(next));
   }
   const resultOf = (d: DE) => results[resultKey(d.meetId, d.e.event, d.swimmer)];
+  // A swim is "done" if its time is logged, it's checked off, OR its whole heat was slashed off
+  // in the heat tracker — any of those should drop it out of "Up next".
+  const doneOf = (d: DE) =>
+    !!done[resultKey(d.meetId, d.e.event, d.swimmer)] || !!heatDone[`${d.meetId}|${d.e.event}|${heatOrd(d.e.heat)}`];
   // Meet lifecycle: a meet auto-tucks into a collapsed "Past meets" archive ~3 days after its
   // last session, so between the bursty meet weekends Home stays focused on the active/upcoming
   // meet and never defaults to a stale one. Records persist — Progress spans every meet, the
@@ -1319,16 +1468,24 @@ function Home(props: any) {
     .filter((x) => x.cut?.nextCut)
     .sort((a, b) => a.cut!.nextCut!.needed - b.cut!.nextCut!.needed)
     .slice(0, 3);
-  // "Up next" — the soonest upcoming races for your swimmers (earliest event #s with no logged
-  // result yet = next in program order). The most meet-day-urgent thing: what's coming up.
+  // "Up next" — the soonest upcoming races for your swimmers (earliest event #s in program
+  // order). A race drops off once it has a logged time OR is checked off as done on deck — so
+  // the list reflects what's actually still coming, not just what you've had time to type.
   const upNext: DE[] = all
-    .filter((d: DE) => !d.e.relay && !resultOf(d))
-    .sort((a: DE, b: DE) => a.e.event - b.e.event)
+    .filter((d: DE) => !d.e.relay && !resultOf(d) && !doneOf(d))
+    .sort(swimOrder)
     .slice(0, swimmers.length > 1 ? 3 : 2);
   // Whose meet is this? With a single swimmer in focus (only one, or filtered to one), label the
   // screen with their name + team — the arm table/cards otherwise don't show whose swims these are.
   const focused: Swimmer | null =
     swimmers.length === 1 ? swimmers[0] : filter.size === 1 ? swimmers.find((s: Swimmer) => filter.has(s.id)) || null : null;
+
+  // Only show filter chips for swimmers actually entered in an active/upcoming meet. A kid you
+  // followed for a past meet stays saved (and in Progress history) but shouldn't crowd the
+  // current meet's chip bar once that meet has passed — past meets untether from "now".
+  const chipSwimmers = swimmers.filter((s: Swimmer) =>
+    meets.some((m: Meet) => !isPast(m) && m.entries.some((e: Entry) => matchesName(s.name, e.name)))
+  );
 
   // Phase 3b — AI post-meet feedback, swimmer mode only. We gather the swimmer's OWN swims (not
   // friends) that have a time or a reflection, and send COPPA-minimized context (race/seed/result/
@@ -1402,6 +1559,15 @@ function Home(props: any) {
 
   return (
     <>
+      {followMeet && (
+        <FollowHeats
+          meet={followMeet}
+          swimmers={swimmers}
+          heatDone={heatDone}
+          setHeatDone={setHeatDone}
+          onClose={() => setFollowMeet(null)}
+        />
+      )}
       {liveOn && (
         <button className="live-banner" onClick={props.goImport}>
           <span className="live-dot" /> {t("live_badge")}
@@ -1433,7 +1599,7 @@ function Home(props: any) {
               </div>
             </section>
           )}
-          {coach && teamFbSwims.length > 0 && (
+          {FEEDBACK_ENABLED && coach && teamFbSwims.length > 0 && (
             <section className="card feedback-card">
               <h2>✨ {t("fb_team_title")}</h2>
               {fb.text ? <p className="fb-text">{fb.text}</p> : <p className="muted">{t("fb_team_sub")}</p>}
@@ -1444,9 +1610,9 @@ function Home(props: any) {
               <p className="muted small">{t("fb_disclaimer")}</p>
             </section>
           )}
-          {swimmers.length > 1 && (
+          {chipSwimmers.length > 1 && (
             <div className="chips">
-              {swimmers.map((k: Swimmer) => {
+              {chipSwimmers.map((k: Swimmer) => {
                 const on = filter.size === 0 || filter.has(k.id);
                 return (
                   <button
@@ -1480,6 +1646,13 @@ function Home(props: any) {
                     <span className="un-where">
                       {hn ? t("heat_n", { n: hn }) + " · " : ""}{t("lane", { n: d.e.lane })}
                     </span>
+                    <button
+                      className="un-done"
+                      title={t("mark_done")}
+                      onClick={() => setMap("done", d.meetId, d.e.event, d.swimmer, "1")}
+                    >
+                      ✓
+                    </button>
                   </div>
                 );
               })}
@@ -1501,7 +1674,7 @@ function Home(props: any) {
               ))}
             </section>
           )}
-          {swimmer && fbSwims.length > 0 && (
+          {FEEDBACK_ENABLED && swimmer && fbSwims.length > 0 && (
             <section className="card feedback-card">
               <h2>✨ {t("fb_title")}</h2>
               {fb.text ? <p className="fb-text">{fb.text}</p> : <p className="muted">{t("fb_sub")}</p>}
@@ -1596,6 +1769,9 @@ function Home(props: any) {
                 {courseLabel(meet) && <span className="course-badge">{courseLabel(meet)}</span>}
                 {/* Per-meet "add results" — opens the import flow to overlay actual swum times.
                     Deprecate this one button if/when live electronic results land. */}
+                <button className="meet-pack mh-follow" onClick={() => setFollowMeet(meet)}>
+                  🏊 {t("follow_heats")}
+                </button>
                 <button className="meet-pack mh-results" title={t("results_tip")} onClick={() => props.goImport()}>
                   📊 {t("results_w")}
                 </button>
@@ -1655,10 +1831,12 @@ function Home(props: any) {
                             goal={goals[k]}
                             asplits={asplits[k]}
                             note={notes[k]}
+                            done={!!done[k]}
                             swimmer={swimmer}
                             onGoal={(v: string) => setMap("goal", d.meetId, d.e.event, d.swimmer, v)}
                             onSplits={(v: string) => setMap("splits", d.meetId, d.e.event, d.swimmer, v)}
                             onNote={(v: string) => setMap("note", d.meetId, d.e.event, d.swimmer, v)}
+                            onToggleDone={() => setMap("done", d.meetId, d.e.event, d.swimmer, done[k] ? "" : "1")}
                             pacing={pacing}
                             setPacing={setPacing}
                           />
@@ -2050,6 +2228,26 @@ function ImportView(props: {
   const [liveCode, setLiveCode] = useState("");
   return (
     <div>
+      {/* Front and center: a shared code is the fastest way in (no PDF hunting), so it leads. */}
+      <div className="card code-card">
+        <h2>{t("imp_have_code_h")}</h2>
+        <p className="muted">{t("imp_have_code_b")}</p>
+        <div className="code-row">
+          <input
+            className="field code-input"
+            placeholder={t("imp_code_ph")}
+            value={code}
+            maxLength={12}
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ""))}
+            onKeyDown={blurOnEnter}
+            autoFocus
+          />
+          <button className="primary" disabled={props.busy || code.trim().length < 4} onClick={() => { props.onCode(code); setCode(""); }}>
+            {t("imp_code_btn")}
+          </button>
+        </div>
+      </div>
+
       <DiscoverView
         meets={props.directory}
         onImport={(u: string) => props.onUrl(u)}
@@ -2060,7 +2258,16 @@ function ImportView(props: {
       <div className="card">
         <h2>{t("imp_title")}</h2>
         <p className="imp-note">📋 {t("imp_what")}</p>
-        <input className="field" placeholder="https://…/heatsheet.pdf" value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" autoFocus />
+        <div className="imp-types">
+          <p className="imp-types-h">{t("imp_types_h")}</p>
+          <ul>
+            <li>{t("imp_type_psych")}</li>
+            <li>{t("imp_type_heat")}</li>
+            <li>{t("imp_type_results")}</li>
+            <li>{t("imp_type_other")}</li>
+          </ul>
+        </div>
+        <input className="field" placeholder="https://…/heatsheet.pdf" value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" />
         <button className="primary" disabled={props.busy || !url.trim()} onClick={() => { props.onUrl(url); setUrl(""); }}>
           {props.busy ? t("imp_opening") : t("imp_open")}
         </button>
@@ -2069,20 +2276,6 @@ function ImportView(props: {
           <input type="file" accept="application/pdf,.sd3,.txt,.json,.heatguardian.json,.myswimmer.json,.htm,.html,text/html" multiple disabled={props.busy} onChange={(e) => props.onFiles(e.target.files)} hidden />
         </label>
         <p className="muted small">💡 {t("imp_findfile")}</p>
-        <div className="code-row">
-          <span className="code-or">{t("imp_code_or")}</span>
-          <input
-            className="field code-input"
-            placeholder={t("imp_code_ph")}
-            value={code}
-            maxLength={12}
-            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ""))}
-            onKeyDown={blurOnEnter}
-          />
-          <button className="secondary" disabled={props.busy || code.trim().length < 4} onClick={() => { props.onCode(code); setCode(""); }}>
-            {t("imp_code_btn")}
-          </button>
-        </div>
       </div>
 
       <Foldable title={<>{props.liveOn ? <span className="live-dot" /> : "⏱ "}{t("live_h")}</>} defaultOpen={props.liveOn}>
