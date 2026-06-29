@@ -30,7 +30,7 @@ import {
   ImportOutcome,
   sendReport,
 } from "./store.ts";
-import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance } from "./cuts.ts";
+import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance, fmt } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED, rateUrl } from "./config.ts";
 import { Geolocation } from "@capacitor/geolocation";
 import { getTheme, setTheme, Theme } from "./theme.ts";
@@ -294,6 +294,7 @@ function EntryCard({
   const [editing, setEditing] = useState(false);
   const [showSplits, setShowSplits] = useState(false);
   const [editNote, setEditNote] = useState(false);
+  const [showTimer, setShowTimer] = useState(false);
   // Keep blank positions so each entered split stays aligned with its length (no filter).
   const actualArr = (asplits || "").split(",").map((x) => x.trim());
   const hasActual = actualArr.some(Boolean);
@@ -309,6 +310,8 @@ function EntryCard({
   const effSplit = splitBy && splitOk(+splitBy) ? +splitBy : defSplit;
   const splitN = effSplit ? Math.round((seg?.dist ?? 0) / effSplit) : 0;
   const splitDists = seg && splitN >= 2 ? Array.from({ length: splitN }, (_, i) => (i + 1) * effSplit) : null;
+  // Distances the live stopwatch times (the per-length splits, or just the finish for a 50).
+  const timerDists = splitDists ?? (seg ? [seg.dist] : null);
   // Goal splits are for individual races only (relays have a team time, not a personal goal).
   const splits = e.relay ? null : goalSplits(e.desc, goal || "", pacing || "even", effSplit || undefined);
   const setSplitRow = (i: number, v: string) => {
@@ -336,6 +339,14 @@ function EntryCard({
   const goalP = !e.relay && !result && cut?.nextCut ? goalChance(parseTime(e.seed), cut.nextCut.needed) : null;
   return (
     <div className={"card event" + (close ? " close" : "") + (result ? " has-result" : "") + (done && !result ? " done" : "")}>
+      {showTimer && timerDists && seg && (
+        <SplitTimer
+          dists={timerDists}
+          unit={seg.unit}
+          onSave={(cum, finalTime) => { onSplits?.(cum.join(", ")); if (!result && !e.relay) onSetResult(finalTime); }}
+          onClose={() => setShowTimer(false)}
+        />
+      )}
       <div className="ev-top">
         {showSwimmer && (
           <span className="kid-tag" style={{ background: d.color }}>
@@ -494,6 +505,9 @@ function EntryCard({
                     ))}
                   </tbody>
                 </table>
+              )}
+              {timerDists && seg && (
+                <button className="timer-open" onClick={() => setShowTimer(true)}>⏱ {t("timer_live")}</button>
               )}
               {splitDists && seg && (
                 <div className="splitrows">
@@ -1658,6 +1672,72 @@ function FollowHeats({ meet, swimmers, myTeam, heatDone, setHeatsDone, onClose }
             </div>
           ))
         )}
+      </div>
+    </div>
+  );
+}
+
+// Live split stopwatch — what parents actually do on deck: tap Start at the strobe flash, then
+// tap Split each time their swimmer touches the wall. Records the cumulative time at each length
+// (lap time = the delta) and saves them straight into the swim's splits (+ the finish as the time).
+function SplitTimer({ dists, unit, onSave, onClose }: {
+  dists: number[];
+  unit: string;
+  onSave: (cumulative: string[], finalTime: string) => void;
+  onClose: () => void;
+}) {
+  const [startAt, setStartAt] = useState<number | null>(null);
+  const [running, setRunning] = useState(false);
+  const [laps, setLaps] = useState<number[]>([]); // cumulative ms at each wall touch
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    let id = 0;
+    const loop = () => { tick((t) => t + 1); id = requestAnimationFrame(loop); };
+    id = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(id);
+  }, [running]);
+  const total = dists.length;
+  const done = laps.length >= total;
+  const elapsed = startAt == null ? 0 : running ? performance.now() - startAt : (laps.length ? laps[laps.length - 1] : 0);
+  const fmtMs = (ms: number) => fmt(ms / 1000);
+  const start = () => { setStartAt(performance.now()); setLaps([]); setRunning(true); };
+  const split = () => {
+    if (startAt == null || done) return;
+    try { navigator.vibrate?.(15); } catch { /* no haptics */ }
+    setLaps((l) => { const next = [...l, performance.now() - startAt]; if (next.length >= total) setRunning(false); return next; });
+  };
+  const reset = () => { setStartAt(null); setRunning(false); setLaps([]); };
+  const save = () => { if (!laps.length) return; const cum = laps.map(fmtMs); onSave(cum, cum[cum.length - 1]); onClose(); };
+  return (
+    <div className="timer-overlay">
+      <div className="fh-bar">
+        <button className="fh-close" title={t("fh_close")} onClick={onClose}>✕</button>
+        <span className="fh-title">⏱ {t("timer_live")}</span>
+      </div>
+      <p className="fh-hint">{t("timer_tip")}</p>
+      <div className="timer-clock mono">{fmtMs(elapsed)}</div>
+      <button
+        className={"timer-big" + (done ? " done" : "")}
+        onClick={startAt == null ? start : done ? undefined : split}
+        disabled={done}
+      >
+        {startAt == null ? t("timer_start") : done ? "✓ " + t("timer_done") : t("timer_split")}
+        {startAt != null && !done && <span className="timer-next">{dists[laps.length]}{unit}</span>}
+      </button>
+      <div className="timer-laps">
+        {laps.map((ms, i) => (
+          <div className="timer-lap" key={i}>
+            <span className="mono timer-d">{dists[i]}{unit}</span>
+            <span className="mono">{fmtMs(ms - (i ? laps[i - 1] : 0))}</span>
+            <span className="mono timer-cum">{fmtMs(ms)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="timer-actions">
+        {running && laps.length > 0 && <button className="secondary" onClick={() => setLaps((l) => l.slice(0, -1))}>{t("timer_undo")}</button>}
+        {startAt != null && <button className="secondary" onClick={reset}>{t("timer_reset")}</button>}
+        {laps.length > 0 && <button className="primary" onClick={save}>{t("timer_save")}</button>}
       </div>
     </div>
   );

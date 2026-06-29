@@ -45,6 +45,10 @@ deck-friendly **heat check-off** so "Up next" always reflects where the meet act
 - **Mobile-friendly time entry** — swum time, goal, and each split are entered as separate
   **min : sec . hundredths** number fields (no hunting for `:` and `.`), and the split rows
   auto-count from the race distance, course, and split-by setting
+- **⏱ Live split stopwatch** — what parents actually do on deck: tap **Start** on the strobe flash,
+  then a big **Split** button each time their swimmer touches the wall. Records lap + cumulative
+  times per length and saves them straight into the swim's splits (+ the finish as the time),
+  with a light haptic tap on each split
 - **Age shown next to every swimmer** — cards, Up next, chips, heat-tracker lanes, and Progress
 - **Left-handed mode** — Settings → Appearance → Handedness mirrors the on-deck controls (heat
   tracker + Up next) to the left edge for one-handed lefties

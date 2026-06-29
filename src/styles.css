@@ -980,3 +980,21 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 .live-pick-title { font-weight: 800; font-size: 1.02rem; }
 .live-pick-go { color: var(--blue); font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
 .theme-dark .live-pick-go { color: #9cc2ff; }
+
+/* Live split stopwatch */
+.timer-open { width: 100%; margin: 8px 0; border: 1.5px solid var(--blue); background: rgba(11,61,145,0.06); color: var(--blue); font: inherit; font-weight: 800; padding: 9px; border-radius: 10px; cursor: pointer; }
+.theme-dark .timer-open { color: #9cc2ff; border-color: #2d5fb0; background: rgba(91,155,255,0.10); }
+.timer-overlay { position: fixed; inset: 0; z-index: 1100; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding-bottom: calc(env(safe-area-inset-bottom) + 16px); }
+.timer-overlay .fh-bar { width: 100%; }
+.timer-clock { font-size: 3.4rem; font-weight: 800; letter-spacing: 1px; margin: 14px 0 6px; font-variant-numeric: tabular-nums; }
+.timer-big { width: min(86vw, 360px); height: min(86vw, 360px); max-height: 42vh; border-radius: 50%; border: none; background: linear-gradient(160deg, var(--blue), var(--navy)); color: #fff; font-size: 2rem; font-weight: 900; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-shadow: var(--shadow-lg); -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.timer-big:active { transform: scale(0.97); }
+.timer-big.done { background: var(--close); cursor: default; }
+.timer-next { font-size: 1rem; font-weight: 700; opacity: 0.85; }
+.timer-laps { width: min(92vw, 420px); margin: 10px 0; overflow-y: auto; flex: 1; }
+.timer-lap { display: flex; justify-content: space-between; gap: 12px; padding: 5px 6px; border-top: 1px solid var(--line); font-size: 0.95rem; }
+.timer-lap:first-child { border-top: none; }
+.timer-d { color: var(--muted); min-width: 3em; }
+.timer-cum { font-weight: 800; }
+.timer-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: min(92vw, 420px); }
+.timer-actions button { flex: 1; min-width: 90px; }
