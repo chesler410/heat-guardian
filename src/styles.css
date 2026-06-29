@@ -863,7 +863,7 @@ button:active, .chip:active, .result:active, .settings-row:active, a.chip:active
 
 /* ===== Follow-along heatsheet (the slash-the-heat tracker) ===== */
 .fh-overlay { position: fixed; inset: 0; z-index: 1000; background: var(--bg); display: flex; flex-direction: column; }
-.fh-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
+.fh-bar { display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top) + 10px) 14px 10px; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); position: sticky; top: 0; z-index: 2; }
 .fh-close { flex: none; border: 1px solid var(--line); background: var(--card); color: var(--ink); width: 34px; height: 34px; border-radius: 999px; font-size: 1rem; cursor: pointer; }
 .theme-dark .fh-close { color: #cfe6ff; }
 .fh-title { flex: 1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
