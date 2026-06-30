@@ -7,8 +7,30 @@ This is the `my-swimmer-fetch` Worker. It does three things on one domain:
 | `GET /?url=<pdf>` | The original CORS fetch-helper for public heat-sheet PDFs | nothing |
 | `POST /meet` → `{code}` · `GET /meet/<code>` | **Shared meet cache** — one person parses the big PDF once, everyone pulls a tiny JSON | R2 bucket |
 | `POST /feedback` → `{feedback}` | **AI post-meet feedback** from a swimmer's own notes (key stays server-side) | Anthropic key (+ KV for rate-limit) |
+| `GET /usas/athletes?name=` · `/usas/athletes/<id>/bests` | **USA Swimming Data Hub proxy** — athlete search + best times (cached) | nothing (anonymous) |
+| `GET /usas/athletes/<id>/times` · `/usas/meets?lsc=&from=&to=` | Full time history + meet search | a held USA Swimming session (secrets below) |
 
-The fetch-helper already works with no setup. The two new routes need a one-time setup below.
+The fetch-helper already works with no setup. The other routes need a one-time setup below.
+
+### USA Swimming Data Hub proxy (`/usas/*`)
+
+Proxies USA Swimming's **public** Data Hub backend (`times-api`/`meet-api.usaswimming.org`) — the same
+data that powers data.usaswimming.org. See `usas.js`. **Anonymous** access (no key, no setup) covers
+**athlete name-search** and **best-times-per-event**. The richer endpoints — **full time history,
+meet search, per-meet results** — are session-gated upstream (return 403 to anonymous), so the Worker
+holds **one** logged-in session and reuses it for everyone (the app never sees credentials).
+
+To enable the gated routes, capture a session from a logged-in browser at data.usaswimming.org:
+1. Log in, open DevTools → **Network**, do a Meet Search (or open your swimmer's full times).
+2. Click the request to `meet-api…/Meet/SFSearch` (or `…/GetAllTimesForFilters`) → **Headers**.
+3. Copy the request-header values `Usas-Sub-Id` and `Usas-Session-Id`.
+4. Set them as secrets:
+   ```
+   npx wrangler secret put USAS_SUB   # paste Usas-Sub-Id
+   npx wrangler secret put USAS_SID   # paste Usas-Session-Id
+   ```
+Sessions expire; if the gated routes start returning 503/403, re-capture and re-put the secrets.
+Always cached server-side (edge cache) so we never hammer USA Swimming.
 
 ## One-time setup (the owner, ~10 min)
 
