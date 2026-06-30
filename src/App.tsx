@@ -33,7 +33,6 @@ import {
   usasBestTimes,
   usasSwimmerMeets,
   usasMeetTimes,
-  usasSwimmerStandards,
   usasMeets,
   usasMeetEventList,
   usasEventResults,
@@ -42,7 +41,6 @@ import {
   UsasBestTime,
   UsasSwimmerMeet,
   UsasMeetTime,
-  UsasStandard,
   UsasMeet,
   UsasMeetEvent,
   UsasEventResult,
@@ -2955,7 +2953,6 @@ function UsasProfile({ swimmer, proxy, onSetGender, onClose }: { swimmer: Swimme
   const id = swimmer.usasId || "";
   const [bests, setBests] = useState<UsasBestTime[] | null>(null);
   const [meets, setMeets] = useState<UsasSwimmerMeet[] | null>(null);
-  const [stds, setStds] = useState<UsasStandard[] | null>(null);
   const [openMeet, setOpenMeet] = useState<number | null>(null);
   const [mtimes, setMtimes] = useState<Record<number, UsasMeetTime[] | "loading">>({});
   // Standards are gender-specific; USA Swimming doesn't expose gender, so use what we know (heat-sheet
@@ -2983,11 +2980,17 @@ function UsasProfile({ swimmer, proxy, onSetGender, onClose }: { swimmer: Swimme
     .sort((a, b) => a!.need - b!.need)
     .slice(0, 5) as { ev: string; label: string; need: number }[];
 
+  // Light stats strip: meets swum, events with a time, and the best motivational cut reached.
+  const ORDER = ["B", "BB", "A", "AA", "AAA", "AAAA"];
+  const topGrade = (bests || []).reduce((m, b) => {
+    const a = cutOf(b)?.achieved;
+    return a && ORDER.indexOf(a) > ORDER.indexOf(m) ? a : m;
+  }, "");
+
   useEffect(() => {
     if (!id) return;
     usasBestTimes(id, proxy).then(setBests);
     usasSwimmerMeets(id, proxy).then(setMeets);
-    usasSwimmerStandards(id, proxy).then(setStds);
   }, [id, proxy]);
 
   async function toggleMeet(meetId: number) {
@@ -2999,11 +3002,6 @@ function UsasProfile({ swimmer, proxy, onSetGender, onClose }: { swimmer: Swimme
       setMtimes((m) => ({ ...m, [meetId]: ts }));
     }
   }
-
-  // Distinct cut names achieved (the API lists each standard met). Drop "Slower than B" — it's a
-  // bucket, not an achievement — so the medals only show real cuts.
-  const cuts = (Array.from(new Set((stds || []).map((s) => s.timeStandardType || s.standardName).filter(Boolean))) as string[])
-    .filter((c) => !/slower/i.test(c));
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -3017,9 +3015,10 @@ function UsasProfile({ swimmer, proxy, onSetGender, onClose }: { swimmer: Swimme
           <button className="remove" onClick={onClose}>✕</button>
         </div>
 
-        {cuts.length > 0 && (
-          <div className="profile-cuts">
-            {cuts.slice(0, 8).map((c) => <span className="cut-chip" key={c}>🏅 {c}</span>)}
+        {(bests || meets) && (
+          <div className="profile-stats">
+            <span>📊 {t("pf_stats", { m: meets?.length ?? "—", e: bests?.length ?? "—" })}</span>
+            {topGrade && <span className="profile-stat-top">{t("pf_stat_top")} <span className={"grade g-" + topGrade}>{topGrade}</span></span>}
           </div>
         )}
 
@@ -3054,11 +3053,14 @@ function UsasProfile({ swimmer, proxy, onSetGender, onClose }: { swimmer: Swimme
               {bests.map((b) => {
                 const c = cutOf(b);
                 return (
-                  <span className="best-cell" key={b.swimTimeRecognitionId}>
-                    <b>{b.distance} {b.strokeAbbreviation}</b> <span className="muted">{b.courseCode}</span> {b.swimTime}
-                    {c?.achieved && <span className={"grade g-" + c.achieved}>{c.achieved}</span>}
-                    {c?.champ?.met && <span className="grade g-SE">SE</span>}
-                  </span>
+                  <div className="best-cell" key={b.swimTimeRecognitionId}>
+                    <span className="best-ev"><b>{b.distance} {b.strokeAbbreviation}</b> <span className="muted">{b.courseCode}</span></span>
+                    <span className="best-val">
+                      {b.swimTime}
+                      {c?.achieved && <span className={"grade g-" + c.achieved}>{c.achieved}</span>}
+                      {c?.champ?.met && <span className="grade g-SE">SE</span>}
+                    </span>
+                  </div>
                 );
               })}
             </div>

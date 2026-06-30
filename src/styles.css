@@ -760,8 +760,12 @@ table.arm th, table.arm td { padding-right: 14px; }
 .roster-row:first-child { border-top: none; }
 .theme-dark .roster-row { border-color: #202b36; }
 .roster-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.bests-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 6px 14px; padding: 4px 0 2px; }
-.best-cell { font-size: 13px; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px; }
+.bests-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 20px; padding: 4px 0 2px; }
+.best-cell { font-size: 13px; min-width: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.best-ev { white-space: nowrap; }
+.best-val { display: inline-flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.profile-stats { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 13px; margin: 6px 0 2px; }
+.profile-stat-top { display: inline-flex; align-items: center; gap: 4px; }
 .theme-dark .usas-bests { color: inherit; }
 .kid-name-btn { background: none; border: none; text-align: left; padding: 0; font: inherit; color: inherit; cursor: pointer; flex: 1; min-width: 0; }
 
