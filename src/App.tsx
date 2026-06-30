@@ -3102,7 +3102,7 @@ function UsasProfile({ swimmer, proxy, onSetGender, onClose }: { swimmer: Swimme
           )}
         <p className="muted profile-foot">
           {t("pf_source")}{" "}
-          <a href="https://www.usaswimming.org/times/popular-resources/time-standards" target="_blank" rel="noopener noreferrer">{t("pf_standards_link")}</a>
+          <a href="https://www.usaswimming.org/times/time-standards" target="_blank" rel="noopener noreferrer">{t("pf_standards_link")}</a>
         </p>
       </div>
     </div>
