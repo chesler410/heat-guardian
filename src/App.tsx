@@ -34,11 +34,15 @@ import {
   usasSwimmerMeets,
   usasMeetTimes,
   usasSwimmerStandards,
+  usasMeets,
+  usasLscs,
   UsasAthlete,
   UsasBestTime,
   UsasSwimmerMeet,
   UsasMeetTime,
   UsasStandard,
+  UsasMeet,
+  UsasLsc,
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance, fmt } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED, rateUrl } from "./config.ts";
@@ -2435,12 +2439,50 @@ function DiscoverView(props: {
   onImport: (url: string) => void;
   onGoLive: (url: string) => void;
   suggestUrl: string;
+  proxy: string;
 }) {
   const [stateFilter, setStateFilter] = useState("");
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
   const [geoMsg, setGeoMsg] = useState("");
   const [shareMsg, showToast] = useToast();
   const states = [...new Set(props.meets.map((m) => m.state).filter(Boolean))].sort() as string[];
+
+  // --- Search ALL USA Swimming meets (live, via the Worker) — extends the curated directory's
+  // coverage from a handful of local meets to every USA Swimming meet, filtered by region (LSC). ---
+  const [umOpen, setUmOpen] = useState(false);
+  const [umq, setUmq] = useState("");
+  const [umLsc, setUmLsc] = useState("");
+  const [umResults, setUmResults] = useState<UsasMeet[] | null>(null);
+  const [umLoading, setUmLoading] = useState(false);
+  const [umErr, setUmErr] = useState(false);
+  const [lscs, setLscs] = useState<UsasLsc[]>([]);
+
+  useEffect(() => {
+    if (umOpen && lscs.length === 0) usasLscs(props.proxy).then(setLscs).catch(() => {});
+  }, [umOpen, props.proxy]);
+
+  async function runMeetSearch() {
+    if (!umq.trim() && !umLsc) return; // need at least a name or a region
+    setUmLoading(true); setUmErr(false); setUmResults(null);
+    try {
+      const r = await usasMeets({ name: umq.trim() || undefined, lsc: umLsc || undefined }, props.proxy);
+      setUmResults(r);
+    } catch { setUmErr(true); } finally { setUmLoading(false); }
+  }
+
+  const usMeetCard = (m: UsasMeet) => (
+    <div className="disc-card usas-meet" key={m.meetId}>
+      <div className="disc-date">📅 {m.meetDate}</div>
+      <div className="disc-title">{m.meetName}</div>
+      <div className="disc-loc muted">
+        {[m.meetType, m.courseCode].filter(Boolean).join(" · ")}
+        {typeof m.swims === "number" ? ` · ${t("disc_usas_counts", { teams: m.teams ?? 0, swims: m.swims })}` : ""}
+      </div>
+      <div className="disc-actions">
+        <a className="chip sm" href="https://data.usaswimming.org/datahub/usas/meetsearch" target="_blank" rel="noopener noreferrer">📊 {t("disc_usas_open")}</a>
+      </div>
+    </div>
+  );
 
   // Real device location via the Capacitor Geolocation plugin (proper native permission flow on
   // iOS/Android; navigator.geolocation on web). Clearing the state filter makes "showing all"
@@ -2547,6 +2589,31 @@ function DiscoverView(props: {
           </p>
         </>
       )}
+
+      {/* Search ALL USA Swimming meets — collapsible, so the curated list stays the default. */}
+      <div className="disc-usas">
+        <button className="inline-link" onClick={() => setUmOpen(!umOpen)}>
+          🔎 {t("disc_usas_more")} {umOpen ? "▾" : "▸"}
+        </button>
+        {umOpen && (
+          <>
+            <div className="disc-usas-form">
+              <input className="field" placeholder={t("disc_usas_ph")} value={umq}
+                onChange={(e) => setUmq(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") runMeetSearch(); }} />
+              <select className="field" value={umLsc} onChange={(e) => setUmLsc(e.target.value)}>
+                <option value="">{t("disc_usas_lsc")}</option>
+                {lscs.map((l) => <option key={l.lscCode} value={l.lscCode}>{l.lscName}</option>)}
+              </select>
+              <button className="primary" onClick={runMeetSearch} disabled={umLoading || (!umq.trim() && !umLsc)}>🔎</button>
+            </div>
+            {umLoading && <p className="muted small">{t("sw_usas_searching")}</p>}
+            {umErr && <p className="muted small">{t("sw_usas_unavail")}</p>}
+            {!umLoading && umResults && umResults.length === 0 && <p className="muted small">{t("disc_usas_none")}</p>}
+            {umResults && umResults.length > 0 && umResults.slice(0, 40).map(usMeetCard)}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -2672,6 +2739,7 @@ function ImportView(props: {
         onImport={(u: string) => props.onUrl(u)}
         onGoLive={props.onGoLive}
         suggestUrl={FEEDBACK_URL}
+        proxy={loadProxy() || DEFAULT_PROXY}
       />
 
       <div className="card">

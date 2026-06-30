@@ -261,6 +261,12 @@ const en: Dict = {
   pf_noswims: "No swims found for this meet.",
   pf_place: "Place {n}",
   pf_source: "Times pulled from USA Swimming — always double-check official results.",
+  disc_usas_more: "Search all USA Swimming meets",
+  disc_usas_ph: "Meet name",
+  disc_usas_lsc: "All regions (LSC)",
+  disc_usas_none: "No meets found.",
+  disc_usas_open: "View on USA Swimming",
+  disc_usas_counts: "{teams} teams · {swims} swims",
 };
 
 const es: Dict = {
@@ -505,6 +511,12 @@ const es: Dict = {
   pf_noswims: "No se encontraron pruebas para esta competencia.",
   pf_place: "Puesto {n}",
   pf_source: "Tiempos de USA Swimming — verifica siempre los resultados oficiales.",
+  disc_usas_more: "Buscar todas las competencias de USA Swimming",
+  disc_usas_ph: "Nombre de la competencia",
+  disc_usas_lsc: "Todas las regiones (LSC)",
+  disc_usas_none: "No se encontraron competencias.",
+  disc_usas_open: "Ver en USA Swimming",
+  disc_usas_counts: "{teams} equipos · {swims} nados",
 };
 
 const zh: Dict = {
@@ -749,6 +761,12 @@ const zh: Dict = {
   pf_noswims: "未找到本场比赛的成绩。",
   pf_place: "第 {n} 名",
   pf_source: "成绩来自 USA Swimming——请务必核对官方结果。",
+  disc_usas_more: "搜索所有 USA Swimming 比赛",
+  disc_usas_ph: "比赛名称",
+  disc_usas_lsc: "所有地区 (LSC)",
+  disc_usas_none: "未找到比赛。",
+  disc_usas_open: "在 USA Swimming 查看",
+  disc_usas_counts: "{teams} 支队伍 · {swims} 项成绩",
 };
 
 const pt: Dict = {
@@ -993,6 +1011,12 @@ const pt: Dict = {
   pf_noswims: "Nenhuma prova encontrada para esta competição.",
   pf_place: "Posição {n}",
   pf_source: "Tempos da USA Swimming — confira sempre os resultados oficiais.",
+  disc_usas_more: "Buscar todas as competições da USA Swimming",
+  disc_usas_ph: "Nome da competição",
+  disc_usas_lsc: "Todas as regiões (LSC)",
+  disc_usas_none: "Nenhuma competição encontrada.",
+  disc_usas_open: "Ver na USA Swimming",
+  disc_usas_counts: "{teams} equipes · {swims} provas",
 };
 
 const de: Dict = {
@@ -1237,6 +1261,12 @@ const de: Dict = {
   pf_noswims: "Keine Starts für diesen Wettkampf gefunden.",
   pf_place: "Platz {n}",
   pf_source: "Zeiten von USA Swimming — offizielle Ergebnisse immer prüfen.",
+  disc_usas_more: "Alle USA-Swimming-Wettkämpfe suchen",
+  disc_usas_ph: "Wettkampfname",
+  disc_usas_lsc: "Alle Regionen (LSC)",
+  disc_usas_none: "Keine Wettkämpfe gefunden.",
+  disc_usas_open: "Auf USA Swimming ansehen",
+  disc_usas_counts: "{teams} Teams · {swims} Starts",
 };
 
 const vi: Dict = {
@@ -1481,6 +1511,12 @@ const vi: Dict = {
   pf_noswims: "Không tìm thấy nội dung nào cho giải này.",
   pf_place: "Hạng {n}",
   pf_source: "Thành tích từ USA Swimming — luôn kiểm tra kết quả chính thức.",
+  disc_usas_more: "Tìm tất cả giải USA Swimming",
+  disc_usas_ph: "Tên giải",
+  disc_usas_lsc: "Tất cả khu vực (LSC)",
+  disc_usas_none: "Không tìm thấy giải nào.",
+  disc_usas_open: "Xem trên USA Swimming",
+  disc_usas_counts: "{teams} đội · {swims} lượt bơi",
 };
 
 const fr: Dict = {
@@ -1758,6 +1794,12 @@ const fr: Dict = {
   pf_noswims: "Aucune course trouvée pour cette compétition.",
   pf_place: "Place {n}",
   pf_source: "Temps issus de USA Swimming — vérifiez toujours les résultats officiels.",
+  disc_usas_more: "Rechercher toutes les compétitions USA Swimming",
+  disc_usas_ph: "Nom de la compétition",
+  disc_usas_lsc: "Toutes les régions (LSC)",
+  disc_usas_none: "Aucune compétition trouvée.",
+  disc_usas_open: "Voir sur USA Swimming",
+  disc_usas_counts: "{teams} équipes · {swims} courses",
 };
 
 const ru: Dict = {
@@ -2035,6 +2077,12 @@ const ru: Dict = {
   pf_noswims: "Заплывы для этого соревнования не найдены.",
   pf_place: "Место {n}",
   pf_source: "Результаты из USA Swimming — всегда проверяйте официальные итоги.",
+  disc_usas_more: "Искать все соревнования USA Swimming",
+  disc_usas_ph: "Название соревнования",
+  disc_usas_lsc: "Все регионы (LSC)",
+  disc_usas_none: "Соревнования не найдены.",
+  disc_usas_open: "Открыть на USA Swimming",
+  disc_usas_counts: "{teams} команд · {swims} заплывов",
 };
 
 const DICTS: Record<Lang, Dict> = { en, es, zh, pt, de, vi, fr, ru };

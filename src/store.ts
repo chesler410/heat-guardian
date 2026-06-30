@@ -293,6 +293,17 @@ export interface UsasMeet {
   swimmers?: number;
 }
 
+export interface UsasLsc {
+  orgUnitId: string;
+  lscCode: string; // "SE"
+  lscName: string; // "Southeastern Swimming"
+}
+
+// LSC list for the meet-search region filter. Session-gated upstream; [] if unavailable.
+export function usasLscs(proxy: string): Promise<UsasLsc[]> {
+  return usasGet<UsasLsc>("lscs", proxy);
+}
+
 async function usasGet<T>(path: string, proxy: string): Promise<T[]> {
   const base = backendBase(proxy);
   if (!base) return [];

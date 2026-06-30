@@ -790,6 +790,12 @@ table.arm th, table.arm td { padding-right: 14px; }
 .swim-drop.good { color: #1f9d57; }
 .swim-drop.bad { color: #c2503f; }
 .profile-foot { margin-top: 12px; font-size: 11px; }
+.disc-usas { margin-top: 12px; border-top: 1px solid var(--line, #f0f4f8); padding-top: 10px; }
+.theme-dark .disc-usas { border-color: #202b36; }
+.disc-usas-form { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.disc-usas-form .field { flex: 1; min-width: 130px; }
+.disc-usas-form .primary { flex: 0 0 auto; }
+.disc-card.usas-meet { opacity: 0.98; }
 .roster-info .result-meta { margin-left: 0; }
 .add-btns { display: flex; gap: 6px; flex-shrink: 0; }
 .add-btns .chip.sm:disabled { opacity: 0.5; cursor: default; }
