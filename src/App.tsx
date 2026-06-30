@@ -36,6 +36,8 @@ import {
   usasSwimmerStandards,
   usasMeets,
   usasLscs,
+  usasMeetEventList,
+  usasEventResults,
   UsasAthlete,
   UsasBestTime,
   UsasSwimmerMeet,
@@ -43,6 +45,8 @@ import {
   UsasStandard,
   UsasMeet,
   UsasLsc,
+  UsasMeetEvent,
+  UsasEventResult,
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance, fmt } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED, rateUrl } from "./config.ts";
@@ -2434,6 +2438,77 @@ function miBetween(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
   return Math.round(R * 2 * Math.asin(Math.sqrt(h)));
 }
 
+// In-app meet results pulled live from USA Swimming: the event list (the program), each event
+// expandable to full results (place · swimmer · club · time · cut). Opened from a meet-search card.
+function UsasMeetResults({ meetId, meetName, proxy, onClose }: { meetId: number; meetName: string; proxy: string; onClose: () => void }) {
+  const [events, setEvents] = useState<UsasMeetEvent[] | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [rows, setRows] = useState<Record<string, UsasEventResult[] | "loading">>({});
+  const evKey = (e: UsasMeetEvent) => `${e.eventId}-${e.sessionNumber}-${e.eventNumber}`;
+
+  useEffect(() => { usasMeetEventList(meetId, proxy).then(setEvents); }, [meetId, proxy]);
+
+  async function toggle(e: UsasMeetEvent) {
+    const k = evKey(e);
+    if (openKey === k) { setOpenKey(null); return; }
+    setOpenKey(k);
+    if (!rows[k]) {
+      setRows((r) => ({ ...r, [k]: "loading" }));
+      const res = await usasEventResults(meetId, e, proxy);
+      setRows((r) => ({ ...r, [k]: res }));
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal usas-profile" onClick={(e) => e.stopPropagation()}>
+        <div className="profile-head">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ margin: 0 }}>{meetName}</h2>
+            <span className="muted">{t("mr_results")}</span>
+          </div>
+          <button className="remove" onClick={onClose}>✕</button>
+        </div>
+        {events === null ? <p className="muted">{t("sw_usas_searching")}</p>
+          : events.length === 0 ? <p className="muted">{t("mr_noevents")}</p>
+          : (
+            <div className="meet-list">
+              {events.map((e) => {
+                const k = evKey(e); const rr = rows[k];
+                return (
+                  <div className="meet-item" key={k}>
+                    <button className="meet-item-row" onClick={() => toggle(e)}>
+                      <span className="meet-item-name">
+                        {e.eventNumber ? `#${e.eventNumber} ` : ""}{e.eventCode}
+                        <span className="muted"> · {[e.eventGender, e.ageGroup, e.sessionName].filter(Boolean).join(" · ")}</span>
+                      </span>
+                      <span className="muted">{openKey === k ? "▾" : "▸"}</span>
+                    </button>
+                    {openKey === k && (
+                      <div className="meet-times">
+                        {rr === "loading" || rr === undefined ? <p className="muted">{t("sw_usas_searching")}</p>
+                          : rr.length === 0 ? <p className="muted">{t("pf_noswims")}</p>
+                          : rr.map((r) => (
+                            <div className="swim-row result-row" key={r.swimTimeId}>
+                              <span className="res-place">{r.finishPosition ?? ""}</span>
+                              <span className="res-name">{r.fullName}{r.clubCode ? <span className="muted"> · {r.clubCode}</span> : null}</span>
+                              <span className="swim-time">{r.swimTime}</span>
+                              {r.timeStandard && <span className="res-std muted">{r.timeStandard}</span>}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        <p className="muted profile-foot">{t("pf_source")}</p>
+      </div>
+    </div>
+  );
+}
+
 function DiscoverView(props: {
   meets: DirMeet[];
   onImport: (url: string) => void;
@@ -2456,6 +2531,7 @@ function DiscoverView(props: {
   const [umLoading, setUmLoading] = useState(false);
   const [umErr, setUmErr] = useState(false);
   const [lscs, setLscs] = useState<UsasLsc[]>([]);
+  const [resultsMeet, setResultsMeet] = useState<UsasMeet | null>(null);
 
   useEffect(() => {
     if (umOpen && lscs.length === 0) usasLscs(props.proxy).then(setLscs).catch(() => {});
@@ -2479,6 +2555,9 @@ function DiscoverView(props: {
         {typeof m.swims === "number" ? ` · ${t("disc_usas_counts", { teams: m.teams ?? 0, swims: m.swims })}` : ""}
       </div>
       <div className="disc-actions">
+        {typeof m.swims === "number" && m.swims > 0 && (
+          <button className="chip sm" onClick={() => setResultsMeet(m)}>📋 {t("disc_usas_results")}</button>
+        )}
         <a className="chip sm" href="https://data.usaswimming.org/datahub/usas/meetsearch" target="_blank" rel="noopener noreferrer">📊 {t("disc_usas_open")}</a>
       </div>
     </div>
@@ -2557,6 +2636,9 @@ function DiscoverView(props: {
 
   return (
     <div className="card discover">
+      {resultsMeet && (
+        <UsasMeetResults meetId={resultsMeet.meetId} meetName={resultsMeet.meetName} proxy={props.proxy} onClose={() => setResultsMeet(null)} />
+      )}
       <h2>📍 {t("disc_h")}</h2>
       <p className="muted">{t("disc_intro")}</p>
       <div className="disc-filters">

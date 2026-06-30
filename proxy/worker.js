@@ -11,7 +11,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { mergeRealtime, sha256 } from "./live.js";
 import {
   searchAthletes, bestTimes, allTimes, searchMeets, listLscs,
-  swimmerMeets, meetTimes, swimmerStandards, progression, meetInfo, meetEvents,
+  swimmerMeets, meetTimes, swimmerStandards, progression, meetInfo, meetEvents, meetEventResults,
 } from "./usas.js";
 
 const MAX_PDF_BYTES = 30 * 1024 * 1024; // 30 MB
@@ -136,6 +136,13 @@ async function routeUsas(env, path, url) {
       bestTimesOnly: sp.get("bestTimesOnly") === "1",
     });
   }
+
+  // One event's results: /usas/meet/<meetId>/event?eid=&gid=&sdate=&enum=&snum=
+  const mer = /^\/usas\/meet\/([0-9]+)\/event$/.exec(path);
+  if (mer)
+    return meetEventResults(env, mer[1], {
+      eid: sp.get("eid"), gid: sp.get("gid"), sdate: sp.get("sdate"), enum: sp.get("enum"), snum: sp.get("snum"),
+    });
 
   // Meet detail by id: /usas/meet/<meetId>  and  /usas/meet/<meetId>/events
   const md = /^\/usas\/meet\/([0-9]+)(\/events)?$/.exec(path);

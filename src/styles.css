@@ -796,6 +796,11 @@ table.arm th, table.arm td { padding-right: 14px; }
 .disc-usas-form .field { flex: 1; min-width: 130px; }
 .disc-usas-form .primary { flex: 0 0 auto; }
 .disc-card.usas-meet { opacity: 0.98; }
+.result-row { gap: 8px; }
+.res-place { flex: 0 0 26px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent, #0b3d91); }
+.theme-dark .res-place { color: #9cc2ff; }
+.res-name { flex: 1; min-width: 0; }
+.res-std { flex: 0 0 auto; font-size: 11px; }
 .roster-info .result-meta { margin-left: 0; }
 .add-btns { display: flex; gap: 6px; flex-shrink: 0; }
 .add-btns .chip.sm:disabled { opacity: 0.5; cursor: default; }

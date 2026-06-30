@@ -267,6 +267,9 @@ const en: Dict = {
   disc_usas_none: "No meets found.",
   disc_usas_open: "View on USA Swimming",
   disc_usas_counts: "{teams} teams · {swims} swims",
+  disc_usas_results: "Results",
+  mr_results: "Results from USA Swimming",
+  mr_noevents: "No events found for this meet.",
 };
 
 const es: Dict = {
@@ -517,6 +520,9 @@ const es: Dict = {
   disc_usas_none: "No se encontraron competencias.",
   disc_usas_open: "Ver en USA Swimming",
   disc_usas_counts: "{teams} equipos · {swims} nados",
+  disc_usas_results: "Resultados",
+  mr_results: "Resultados de USA Swimming",
+  mr_noevents: "No se encontraron pruebas para esta competencia.",
 };
 
 const zh: Dict = {
@@ -767,6 +773,9 @@ const zh: Dict = {
   disc_usas_none: "未找到比赛。",
   disc_usas_open: "在 USA Swimming 查看",
   disc_usas_counts: "{teams} 支队伍 · {swims} 项成绩",
+  disc_usas_results: "成绩",
+  mr_results: "来自 USA Swimming 的成绩",
+  mr_noevents: "未找到本场比赛的项目。",
 };
 
 const pt: Dict = {
@@ -1017,6 +1026,9 @@ const pt: Dict = {
   disc_usas_none: "Nenhuma competição encontrada.",
   disc_usas_open: "Ver na USA Swimming",
   disc_usas_counts: "{teams} equipes · {swims} provas",
+  disc_usas_results: "Resultados",
+  mr_results: "Resultados da USA Swimming",
+  mr_noevents: "Nenhuma prova encontrada para esta competição.",
 };
 
 const de: Dict = {
@@ -1267,6 +1279,9 @@ const de: Dict = {
   disc_usas_none: "Keine Wettkämpfe gefunden.",
   disc_usas_open: "Auf USA Swimming ansehen",
   disc_usas_counts: "{teams} Teams · {swims} Starts",
+  disc_usas_results: "Ergebnisse",
+  mr_results: "Ergebnisse von USA Swimming",
+  mr_noevents: "Keine Wettkämpfe für dieses Meeting gefunden.",
 };
 
 const vi: Dict = {
@@ -1517,6 +1532,9 @@ const vi: Dict = {
   disc_usas_none: "Không tìm thấy giải nào.",
   disc_usas_open: "Xem trên USA Swimming",
   disc_usas_counts: "{teams} đội · {swims} lượt bơi",
+  disc_usas_results: "Kết quả",
+  mr_results: "Kết quả từ USA Swimming",
+  mr_noevents: "Không tìm thấy nội dung nào cho giải này.",
 };
 
 const fr: Dict = {
@@ -1800,6 +1818,9 @@ const fr: Dict = {
   disc_usas_none: "Aucune compétition trouvée.",
   disc_usas_open: "Voir sur USA Swimming",
   disc_usas_counts: "{teams} équipes · {swims} courses",
+  disc_usas_results: "Résultats",
+  mr_results: "Résultats de USA Swimming",
+  mr_noevents: "Aucune épreuve trouvée pour cette compétition.",
 };
 
 const ru: Dict = {
@@ -2083,6 +2104,9 @@ const ru: Dict = {
   disc_usas_none: "Соревнования не найдены.",
   disc_usas_open: "Открыть на USA Swimming",
   disc_usas_counts: "{teams} команд · {swims} заплывов",
+  disc_usas_results: "Результаты",
+  mr_results: "Результаты из USA Swimming",
+  mr_noevents: "Заплывы для этого соревнования не найдены.",
 };
 
 const DICTS: Record<Lang, Dict> = { en, es, zh, pt, de, vi, fr, ru };

@@ -317,6 +317,86 @@ async function usasGet<T>(path: string, proxy: string): Promise<T[]> {
   }
 }
 
+async function usasGetObj<T>(path: string, proxy: string): Promise<T | null> {
+  const base = backendBase(proxy);
+  if (!base) return null;
+  try {
+    const res = await fetch(`${base}/usas/${path}`);
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+export interface UsasMeetInfo {
+  meetId: number;
+  meetName: string;
+  meetType?: string;
+  meetDate?: string;
+  courseCode?: string;
+  teams?: number;
+  swims?: number;
+  swimmers?: number;
+}
+
+export interface UsasMeetEvent {
+  eventId: number;
+  eventCode: string; // "50 FR LCM"
+  eventGender?: string; // "Female"/"Male"/"Mixed"
+  eventCompetitionGenderTypeId?: number;
+  swimDate?: string;
+  swimDateFormatted?: string;
+  ageGroup?: string;
+  eventNumber?: number;
+  sessionNumber?: number;
+  sessionName?: string; // "Prelim"/"Final"
+  swims?: number;
+}
+
+export interface UsasEventResult {
+  swimTimeId: number;
+  fullName: string;
+  memberId: string;
+  swimTime: string;
+  finishPosition?: number;
+  timeStandard?: string;
+  clubCode?: string;
+  ageGroup?: string;
+  swimmerAge?: number;
+}
+
+// Meet summary by id. Session-gated; null if unavailable.
+export function usasMeetInfo(meetId: number | string, proxy: string): Promise<UsasMeetInfo | null> {
+  return usasGetObj<UsasMeetInfo>(`meet/${encodeURIComponent(String(meetId))}`, proxy);
+}
+
+// Event list for a meet (the program). Session-gated; [] if unavailable.
+export function usasMeetEventList(meetId: number | string, proxy: string): Promise<UsasMeetEvent[]> {
+  return usasGet<UsasMeetEvent>(`meet/${encodeURIComponent(String(meetId))}/events`, proxy);
+}
+
+// Full results for ONE event (every swimmer's place + time + cut). Session-gated; [] if unavailable.
+export async function usasEventResults(meetId: number | string, ev: UsasMeetEvent, proxy: string): Promise<UsasEventResult[]> {
+  const base = backendBase(proxy);
+  if (!base) return [];
+  const qs = new URLSearchParams({
+    eid: String(ev.eventId),
+    gid: ev.eventCompetitionGenderTypeId != null ? String(ev.eventCompetitionGenderTypeId) : "",
+    sdate: ev.swimDate || "",
+    enum: ev.eventNumber != null ? String(ev.eventNumber) : "",
+    snum: ev.sessionNumber != null ? String(ev.sessionNumber) : "",
+  });
+  try {
+    const res = await fetch(`${base}/usas/meet/${encodeURIComponent(String(meetId))}/event?${qs.toString()}`);
+    if (!res.ok) return [];
+    const j = await res.json();
+    return Array.isArray(j?.eventTimes) ? (j.eventTimes as UsasEventResult[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 // Search USA Swimming athletes by name (anonymous). Min 2 chars.
 export function searchUsasAthletes(name: string, proxy: string): Promise<UsasAthlete[]> {
   const q = name.trim();

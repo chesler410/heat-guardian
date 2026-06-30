@@ -200,6 +200,29 @@ export async function meetEvents(env, meetId) {
   });
 }
 
+// GET /usas/meet/:meetId/event?eid=&gid=&sdate=&enum=&snum=  → one event's full results
+// (eventTimes: fullName, memberId, swimTime, finishPosition, timeStandard, club, age). GATED.
+// The upstream wants the abbreviated key {EId, GenderId, SDate, ENumber, SNumber} from an SFEvent row.
+export async function meetEventResults(env, meetId, q = {}) {
+  const mid = String(meetId || "").replace(/[^0-9]/g, "");
+  if (!mid || !q.eid) return badRequest("bad meetId/event key");
+  if (!env.USAS_SUB) return needsSession("Meet results");
+  const body = {
+    EId: Number(q.eid),
+    GenderId: q.gid != null && q.gid !== "" ? Number(q.gid) : null,
+    SDate: q.sdate || null,
+    ENumber: q.enum != null && q.enum !== "" ? Number(q.enum) : null,
+    SNumber: q.snum != null && q.snum !== "" ? Number(q.snum) : null,
+  };
+  return usasFetch(env, "meet", `/swims/Meet/${mid}/Datahub/SFEvent/time`, {
+    method: "POST",
+    body,
+    auth: true,
+    cacheUrl: `https://usas-cache/meetres/${mid}/${encodeURIComponent(JSON.stringify(body))}`,
+    ttl: 21600,
+  });
+}
+
 // GET /usas/meets?name=&lsc=SE&zone=&from=6/1/2026&to=7/1/2026  → meet list (the "meets near me"
 // feed: filter by LSC ≈ region + date). The upstream filters by lscOrgUnitId, NOT the 2-letter code,
 // so we resolve code→orgUnitId from GetLscs (cached ~24h; the list is effectively static).
