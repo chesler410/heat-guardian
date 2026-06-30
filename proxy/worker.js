@@ -9,7 +9,10 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { mergeRealtime, sha256 } from "./live.js";
-import { searchAthletes, bestTimes, allTimes, searchMeets, listLscs } from "./usas.js";
+import {
+  searchAthletes, bestTimes, allTimes, searchMeets, listLscs,
+  swimmerMeets, meetTimes, swimmerStandards, progression, meetInfo, meetEvents,
+} from "./usas.js";
 
 const MAX_PDF_BYTES = 30 * 1024 * 1024; // 30 MB
 const MAX_LIVE_FILE_BYTES = 512 * 1024; // 512 KB — one event's HTML results page is tiny
@@ -111,10 +114,17 @@ async function routeUsas(env, path, url) {
   if (path === "/usas/athletes") return searchAthletes(env, sp.get("name"));
   if (path === "/usas/lscs") return listLscs(env);
 
-  const m = /^\/usas\/athletes\/([A-Za-z0-9]+)\/(bests|times)$/.exec(path);
+  // Per-swimmer meet times (place + drop): /usas/athletes/<id>/meets/<meetId>
+  const mt = /^\/usas\/athletes\/([A-Za-z0-9]+)\/meets\/([0-9]+)$/.exec(path);
+  if (mt) return meetTimes(env, mt[1], mt[2]);
+
+  const m = /^\/usas\/athletes\/([A-Za-z0-9]+)\/(bests|times|meets|standards|progression)$/.exec(path);
   if (m) {
     const [, id, kind] = m;
     if (kind === "bests") return bestTimes(env, id);
+    if (kind === "meets") return swimmerMeets(env, id);
+    if (kind === "standards") return swimmerStandards(env, id);
+    if (kind === "progression") return progression(env, id);
     return allTimes(env, id, {
       course: sp.get("course"),
       event: sp.get("event"),
@@ -126,6 +136,10 @@ async function routeUsas(env, path, url) {
       bestTimesOnly: sp.get("bestTimesOnly") === "1",
     });
   }
+
+  // Meet detail by id: /usas/meet/<meetId>  and  /usas/meet/<meetId>/events
+  const md = /^\/usas\/meet\/([0-9]+)(\/events)?$/.exec(path);
+  if (md) return md[2] ? meetEvents(env, md[1]) : meetInfo(env, md[1]);
 
   if (path === "/usas/meets")
     return searchMeets(env, {

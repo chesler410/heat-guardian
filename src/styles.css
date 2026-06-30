@@ -763,6 +763,33 @@ table.arm th, table.arm td { padding-right: 14px; }
 .bests-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 4px 12px; padding: 4px 0 2px; }
 .best-cell { font-size: 13px; white-space: nowrap; }
 .theme-dark .usas-bests { color: inherit; }
+.kid-name-btn { background: none; border: none; text-align: left; padding: 0; font: inherit; color: inherit; cursor: pointer; flex: 1; min-width: 0; }
+
+/* USA Swimming profile modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; }
+@media (min-width: 640px) { .modal-overlay { align-items: center; } }
+.modal { background: var(--card, #fff); width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 16px; }
+@media (min-width: 640px) { .modal { border-radius: 16px; } }
+.theme-dark .modal { background: #131c25; }
+.profile-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.usas-profile h3 { margin: 14px 0 4px; font-size: 15px; }
+.profile-cuts { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.cut-chip { font-size: 12px; background: var(--accent-bg, #eef4ff); color: var(--accent, #0b3d91); border-radius: 999px; padding: 2px 9px; }
+.theme-dark .cut-chip { background: #1c2c42; color: #9cc2ff; }
+.meet-list { display: flex; flex-direction: column; }
+.meet-item { border-top: 1px solid var(--line, #f0f4f8); }
+.theme-dark .meet-item { border-color: #202b36; }
+.meet-item-row { width: 100%; display: flex; justify-content: space-between; gap: 8px; align-items: center; background: none; border: none; padding: 9px 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.meet-item-name { font-weight: 600; min-width: 0; }
+.meet-times { padding: 2px 0 8px; }
+.swim-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 13px; flex-wrap: wrap; }
+.swim-ev { flex: 1; min-width: 120px; }
+.swim-time { font-variant-numeric: tabular-nums; font-weight: 600; }
+.swim-place { font-size: 12px; color: var(--muted, #6b7785); }
+.swim-drop { font-size: 12px; font-weight: 600; }
+.swim-drop.good { color: #1f9d57; }
+.swim-drop.bad { color: #c2503f; }
+.profile-foot { margin-top: 12px; font-size: 11px; }
 .roster-info .result-meta { margin-left: 0; }
 .add-btns { display: flex; gap: 6px; flex-shrink: 0; }
 .add-btns .chip.sm:disabled { opacity: 0.5; cursor: default; }

@@ -38,6 +38,7 @@ export interface Swimmer {
   gender?: "Girls" | "Boys";
   color: string;
   watch?: boolean; // true = on the watch list (follow), false/undefined = your own swimmer
+  usasId?: string; // USA Swimming memberId, when added via the Data Hub lookup → enables profile
 }
 
 export interface RosterItem {
@@ -69,8 +70,8 @@ export const loadMeets = () => load<Meet>(MEETS);
 export const saveMeets = (m: Meet[]) => localStorage.setItem(MEETS, JSON.stringify(m));
 export const loadProxy = () => localStorage.getItem(PROXY) || "";
 
-export function makeSwimmer(name: string, team: string, index: number, age?: number, gender?: "Girls" | "Boys", watch?: boolean): Swimmer {
-  return { id: uid(), name: name.trim(), team: team.trim() || undefined, age, gender, color: COLORS[index % COLORS.length], watch };
+export function makeSwimmer(name: string, team: string, index: number, age?: number, gender?: "Girls" | "Boys", watch?: boolean, usasId?: string): Swimmer {
+  return { id: uid(), name: name.trim(), team: team.trim() || undefined, age, gender, color: COLORS[index % COLORS.length], watch, usasId };
 }
 
 // Coach mode: turn a team's full roster into swimmer objects for the home/progress views.
@@ -315,6 +316,48 @@ export function searchUsasAthletes(name: string, proxy: string): Promise<UsasAth
 // Best time per event for a member (anonymous).
 export function usasBestTimes(memberId: string, proxy: string): Promise<UsasBestTime[]> {
   return usasGet<UsasBestTime>(`athletes/${encodeURIComponent(memberId)}/bests`, proxy);
+}
+
+export interface UsasSwimmerMeet {
+  meetId: number;
+  meetName: string;
+  meetType?: string;
+  seasonYear?: number;
+  meetDate?: string;
+  courseCode?: string;
+}
+
+// A swimmer's swim at a meet, with the bits the PDF never gives you cleanly: place + time drop.
+export interface UsasMeetTime {
+  swimTimeId: number;
+  eventCode: string; // "100 FL LCM"
+  sessionName?: string; // "Prelim" / "Final"
+  swimTime: string;
+  timeStandard?: string; // "Nats", "AAAA", …
+  timeDrop?: number; // seconds dropped vs previous best (negative = added)
+  finishPosition?: number; // place
+}
+
+export interface UsasStandard {
+  timeStandardTypeId?: number;
+  timeStandardType?: string; // "AAAA", "Futures", "Sectionals", …
+  standardName?: string;
+}
+
+// Best time per event for a member (anonymous).
+// Recent meets this swimmer competed in (newest first). Session-gated; [] if unavailable.
+export function usasSwimmerMeets(memberId: string, proxy: string): Promise<UsasSwimmerMeet[]> {
+  return usasGet<UsasSwimmerMeet>(`athletes/${encodeURIComponent(memberId)}/meets`, proxy);
+}
+
+// This swimmer's swims at one meet — includes finishPosition + timeDrop + Prelim/Final. Gated.
+export function usasMeetTimes(memberId: string, meetId: number | string, proxy: string): Promise<UsasMeetTime[]> {
+  return usasGet<UsasMeetTime>(`athletes/${encodeURIComponent(memberId)}/meets/${encodeURIComponent(String(meetId))}`, proxy);
+}
+
+// Time standards (cuts) this swimmer has achieved. Gated; [] if unavailable.
+export function usasSwimmerStandards(memberId: string, proxy: string): Promise<UsasStandard[]> {
+  return usasGet<UsasStandard>(`athletes/${encodeURIComponent(memberId)}/standards`, proxy);
 }
 
 // Meets filtered by LSC (≈ region) + optional date range — the "meets near me" feed.

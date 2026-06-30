@@ -126,6 +126,80 @@ export async function allTimes(env, memberId, filters = {}) {
   });
 }
 
+// GET /usas/athletes/:id/meets  → meets this swimmer competed in (newest first). GATED.
+export async function swimmerMeets(env, memberId) {
+  const id = safeId(memberId);
+  if (!id) return badRequest("bad memberId");
+  if (!env.USAS_SUB) return needsSession("Swimmer meets");
+  return usasFetch(env, "times", `/swims/TimesSearch/GetSwimmerMeets/${id}`, {
+    auth: true,
+    cacheUrl: `https://usas-cache/swmeets/${id}`,
+    ttl: 3600,
+  });
+}
+
+// GET /usas/athletes/:id/meets/:meetId  → this swimmer's swims at one meet, WITH finishPosition,
+// timeDrop, sessionName (Prelim/Final), and timeStandard. The place + drop/add view. GATED.
+export async function meetTimes(env, memberId, meetId) {
+  const id = safeId(memberId);
+  const mid = String(meetId || "").replace(/[^0-9]/g, "");
+  if (!id || !mid) return badRequest("bad memberId/meetId");
+  if (!env.USAS_SUB) return needsSession("Meet times");
+  return usasFetch(env, "times", `/swims/TimesSearch/GetSwimmerMeetTimes/${id}/${mid}`, {
+    auth: true,
+    cacheUrl: `https://usas-cache/swmeettimes/${id}/${mid}`,
+    ttl: 21600,
+  });
+}
+
+// GET /usas/athletes/:id/standards  → time standards (cuts) this swimmer has achieved. GATED.
+export async function swimmerStandards(env, memberId) {
+  const id = safeId(memberId);
+  if (!id) return badRequest("bad memberId");
+  if (!env.USAS_SUB) return needsSession("Swimmer standards");
+  return usasFetch(env, "times", `/swims/SearchFilter/GetSwimmerTimeStandards/${id}`, {
+    auth: true,
+    cacheUrl: `https://usas-cache/swstd/${id}`,
+    ttl: 21600,
+  });
+}
+
+// GET /usas/athletes/:id/progression  → top events with powerPoints + swimDate (career arc). GATED.
+export async function progression(env, memberId) {
+  const id = safeId(memberId);
+  if (!id) return badRequest("bad memberId");
+  if (!env.USAS_SUB) return needsSession("Progression");
+  return usasFetch(env, "person", `/swims/Person/DataHub/Dashboard/member/${id}/Event`, {
+    auth: true,
+    cacheUrl: `https://usas-cache/prog/${id}`,
+    ttl: 21600,
+  });
+}
+
+// GET /usas/meet/:meetId  → meet summary (name, type, date, course, counts). GATED.
+export async function meetInfo(env, meetId) {
+  const mid = String(meetId || "").replace(/[^0-9]/g, "");
+  if (!mid) return badRequest("bad meetId");
+  if (!env.USAS_SUB) return needsSession("Meet info");
+  return usasFetch(env, "meet", `/swims/Meet/${mid}/SFflat`, {
+    auth: true,
+    cacheUrl: `https://usas-cache/meetinfo/${mid}`,
+    ttl: 21600,
+  });
+}
+
+// GET /usas/meet/:meetId/events  → the meet's event list (eventId, eventCode, gender). GATED.
+export async function meetEvents(env, meetId) {
+  const mid = String(meetId || "").replace(/[^0-9]/g, "");
+  if (!mid) return badRequest("bad meetId");
+  if (!env.USAS_SUB) return needsSession("Meet events");
+  return usasFetch(env, "meet", `/swims/Meet/${mid}/SFEvent`, {
+    auth: true,
+    cacheUrl: `https://usas-cache/meetevents/${mid}`,
+    ttl: 21600,
+  });
+}
+
 // GET /usas/meets?name=&lsc=SE&zone=&from=6/1/2026&to=7/1/2026  → meet list (the "meets near me"
 // feed: filter by LSC ≈ region + date). The upstream filters by lscOrgUnitId, NOT the 2-letter code,
 // so we resolve code→orgUnitId from GetLscs (cached ~24h; the list is effectively static).

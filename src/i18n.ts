@@ -255,6 +255,12 @@ const en: Dict = {
   sw_usas_unavail: "Couldn't reach USA Swimming. Check your connection and try again.",
   sw_bests: "Best times",
   sw_bests_none: "No times on record yet.",
+  pf_open: "View profile",
+  pf_recent: "Recent meets",
+  pf_nomeets: "No meets on record yet.",
+  pf_noswims: "No swims found for this meet.",
+  pf_place: "Place {n}",
+  pf_source: "Times pulled from USA Swimming — always double-check official results.",
 };
 
 const es: Dict = {
@@ -493,6 +499,12 @@ const es: Dict = {
   sw_usas_unavail: "No se pudo conectar con USA Swimming. Revisa tu conexión e inténtalo de nuevo.",
   sw_bests: "Mejores tiempos",
   sw_bests_none: "Aún no hay tiempos registrados.",
+  pf_open: "Ver perfil",
+  pf_recent: "Competencias recientes",
+  pf_nomeets: "Aún no hay competencias registradas.",
+  pf_noswims: "No se encontraron pruebas para esta competencia.",
+  pf_place: "Puesto {n}",
+  pf_source: "Tiempos de USA Swimming — verifica siempre los resultados oficiales.",
 };
 
 const zh: Dict = {
@@ -731,6 +743,12 @@ const zh: Dict = {
   sw_usas_unavail: "无法连接 USA Swimming。请检查网络后重试。",
   sw_bests: "最好成绩",
   sw_bests_none: "暂无成绩记录。",
+  pf_open: "查看资料",
+  pf_recent: "近期比赛",
+  pf_nomeets: "暂无比赛记录。",
+  pf_noswims: "未找到本场比赛的成绩。",
+  pf_place: "第 {n} 名",
+  pf_source: "成绩来自 USA Swimming——请务必核对官方结果。",
 };
 
 const pt: Dict = {
@@ -969,6 +987,12 @@ const pt: Dict = {
   sw_usas_unavail: "Não foi possível acessar a USA Swimming. Verifique sua conexão e tente novamente.",
   sw_bests: "Melhores tempos",
   sw_bests_none: "Ainda não há tempos registrados.",
+  pf_open: "Ver perfil",
+  pf_recent: "Competições recentes",
+  pf_nomeets: "Ainda não há competições registradas.",
+  pf_noswims: "Nenhuma prova encontrada para esta competição.",
+  pf_place: "Posição {n}",
+  pf_source: "Tempos da USA Swimming — confira sempre os resultados oficiais.",
 };
 
 const de: Dict = {
@@ -1207,6 +1231,12 @@ const de: Dict = {
   sw_usas_unavail: "USA Swimming nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.",
   sw_bests: "Bestzeiten",
   sw_bests_none: "Noch keine Zeiten vorhanden.",
+  pf_open: "Profil ansehen",
+  pf_recent: "Letzte Wettkämpfe",
+  pf_nomeets: "Noch keine Wettkämpfe vorhanden.",
+  pf_noswims: "Keine Starts für diesen Wettkampf gefunden.",
+  pf_place: "Platz {n}",
+  pf_source: "Zeiten von USA Swimming — offizielle Ergebnisse immer prüfen.",
 };
 
 const vi: Dict = {
@@ -1445,6 +1475,12 @@ const vi: Dict = {
   sw_usas_unavail: "Không kết nối được USA Swimming. Kiểm tra mạng và thử lại.",
   sw_bests: "Thành tích tốt nhất",
   sw_bests_none: "Chưa có thành tích nào.",
+  pf_open: "Xem hồ sơ",
+  pf_recent: "Giải gần đây",
+  pf_nomeets: "Chưa có giải nào.",
+  pf_noswims: "Không tìm thấy nội dung nào cho giải này.",
+  pf_place: "Hạng {n}",
+  pf_source: "Thành tích từ USA Swimming — luôn kiểm tra kết quả chính thức.",
 };
 
 const fr: Dict = {
@@ -1716,6 +1752,12 @@ const fr: Dict = {
   sw_usas_unavail: "Impossible de joindre USA Swimming. Vérifiez votre connexion et réessayez.",
   sw_bests: "Meilleurs temps",
   sw_bests_none: "Aucun temps enregistré pour l'instant.",
+  pf_open: "Voir le profil",
+  pf_recent: "Compétitions récentes",
+  pf_nomeets: "Aucune compétition enregistrée pour l'instant.",
+  pf_noswims: "Aucune course trouvée pour cette compétition.",
+  pf_place: "Place {n}",
+  pf_source: "Temps issus de USA Swimming — vérifiez toujours les résultats officiels.",
 };
 
 const ru: Dict = {
@@ -1987,6 +2029,12 @@ const ru: Dict = {
   sw_usas_unavail: "Не удалось связаться с USA Swimming. Проверьте подключение и повторите попытку.",
   sw_bests: "Лучшее время",
   sw_bests_none: "Пока нет записанных результатов.",
+  pf_open: "Открыть профиль",
+  pf_recent: "Недавние соревнования",
+  pf_nomeets: "Пока нет записанных соревнований.",
+  pf_noswims: "Заплывы для этого соревнования не найдены.",
+  pf_place: "Место {n}",
+  pf_source: "Результаты из USA Swimming — всегда проверяйте официальные итоги.",
 };
 
 const DICTS: Record<Lang, Dict> = { en, es, zh, pt, de, vi, fr, ru };
