@@ -9,6 +9,10 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { mergeRealtime, sha256 } from "./live.js";
+import {
+  searchAthletes, bestTimes, allTimes, searchMeets, listLscs,
+  swimmerMeets, meetTimes, swimmerStandards, progression, meetInfo, meetEvents, meetEventResults,
+} from "./usas.js";
 
 const MAX_PDF_BYTES = 30 * 1024 * 1024; // 30 MB
 const MAX_LIVE_FILE_BYTES = 512 * 1024; // 512 KB — one event's HTML results page is tiny
@@ -73,6 +77,10 @@ export default {
       if (liveMatch && request.method === "POST") return liveIngest(env, request, liveMatch[1]);
       if (liveMatch && request.method === "GET") return liveServe(env, liveMatch[1]);
 
+      // --- USA Swimming Data Hub proxy (cached). Athlete search/times are anonymous; meet
+      //     search needs a held session (USAS_SUB secret). See usas.js. ---
+      if (path.startsWith("/usas/") && request.method === "GET") return withCors(await routeUsas(env, path, url));
+
       // --- In-app feedback report → notify the developer (webhook/email) + durable R2 log ---
       if (path === "/report" && request.method === "POST") return report(env, request);
 
@@ -88,6 +96,71 @@ export default {
 };
 
 // ---------------------------------------------------------------------------
+
+// Add our CORS headers to a Response produced by the USAS proxy (which is CORS-agnostic).
+function withCors(resp) {
+  const h = new Headers(resp.headers);
+  for (const [k, v] of Object.entries(CORS)) h.set(k, v);
+  return new Response(resp.body, { status: resp.status, headers: h });
+}
+
+// /usas/* dispatcher. All GET; query-string driven.
+//   /usas/athletes?name=Caeleb%20Dressel
+//   /usas/athletes/<memberId>/bests
+//   /usas/athletes/<memberId>/times?course=SCY&event=...
+//   /usas/meets?name=&lsc=SE&zone=&from=6/1/2026&to=7/1/2026&type=&sanctioned=1
+async function routeUsas(env, path, url) {
+  const sp = url.searchParams;
+  if (path === "/usas/athletes") return searchAthletes(env, sp.get("name"));
+  if (path === "/usas/lscs") return listLscs(env);
+
+  // Per-swimmer meet times (place + drop): /usas/athletes/<id>/meets/<meetId>
+  const mt = /^\/usas\/athletes\/([A-Za-z0-9]+)\/meets\/([0-9]+)$/.exec(path);
+  if (mt) return meetTimes(env, mt[1], mt[2]);
+
+  const m = /^\/usas\/athletes\/([A-Za-z0-9]+)\/(bests|times|meets|standards|progression)$/.exec(path);
+  if (m) {
+    const [, id, kind] = m;
+    if (kind === "bests") return bestTimes(env, id);
+    if (kind === "meets") return swimmerMeets(env, id);
+    if (kind === "standards") return swimmerStandards(env, id);
+    if (kind === "progression") return progression(env, id);
+    return allTimes(env, id, {
+      course: sp.get("course"),
+      event: sp.get("event"),
+      eventId: sp.get("eventId"),
+      gender: sp.get("gender"),
+      seasonKey: sp.get("seasonKey"),
+      startDate: sp.get("startDate"),
+      endDate: sp.get("endDate"),
+      bestTimesOnly: sp.get("bestTimesOnly") === "1",
+    });
+  }
+
+  // One event's results: /usas/meet/<meetId>/event?eid=&gid=&sdate=&enum=&snum=
+  const mer = /^\/usas\/meet\/([0-9]+)\/event$/.exec(path);
+  if (mer)
+    return meetEventResults(env, mer[1], {
+      eid: sp.get("eid"), gid: sp.get("gid"), sdate: sp.get("sdate"), enum: sp.get("enum"), snum: sp.get("snum"),
+    });
+
+  // Meet detail by id: /usas/meet/<meetId>  and  /usas/meet/<meetId>/events
+  const md = /^\/usas\/meet\/([0-9]+)(\/events)?$/.exec(path);
+  if (md) return md[2] ? meetEvents(env, md[1]) : meetInfo(env, md[1]);
+
+  if (path === "/usas/meets")
+    return searchMeets(env, {
+      name: sp.get("name"),
+      lsc: sp.get("lsc"),
+      zone: sp.get("zone"),
+      type: sp.get("type"),
+      from: sp.get("from"),
+      to: sp.get("to"),
+      sanctioned: sp.get("sanctioned") === "1",
+    });
+
+  return json({ error: "not_found", detail: "unknown /usas route" }, 404);
+}
 
 async function proxyPdf(url) {
   const target = url.searchParams.get("url");

@@ -29,6 +29,24 @@ import {
   SwimmerProgress,
   ImportOutcome,
   sendReport,
+  searchUsasAthletes,
+  usasBestTimes,
+  usasSwimmerMeets,
+  usasMeetTimes,
+  usasSwimmerStandards,
+  usasMeets,
+  usasLscs,
+  usasMeetEventList,
+  usasEventResults,
+  UsasAthlete,
+  UsasBestTime,
+  UsasSwimmerMeet,
+  UsasMeetTime,
+  UsasStandard,
+  UsasMeet,
+  UsasLsc,
+  UsasMeetEvent,
+  UsasEventResult,
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance, fmt } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED, rateUrl } from "./config.ts";
@@ -994,16 +1012,19 @@ export function App() {
     setMeets(m);
     saveMeets(m);
   }
-  function addSwimmer(name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean) {
+  function addSwimmer(name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean, usasId?: string) {
     if (!name.trim()) return;
     const existing = swimmers.find((s) => matchesName(s.name, name) && (s.team || "") === (team || ""));
     if (existing) {
       // Already on the list — flip their list (mine ↔ watch) when you tap the OTHER button,
-      // instead of silently doing nothing (the bug where "Watch" looked unresponsive).
-      if (!!existing.watch !== !!watch) persistSwimmers(swimmers.map((s) => (s.id === existing.id ? { ...s, watch } : s)));
+      // instead of silently doing nothing (the bug where "Watch" looked unresponsive). Also
+      // backfill the USA Swimming id if we now have one (enables the profile for a prior add).
+      const patch = (s: Swimmer) => ({ ...s, watch, usasId: usasId || s.usasId });
+      if (!!existing.watch !== !!watch || (usasId && !existing.usasId))
+        persistSwimmers(swimmers.map((s) => (s.id === existing.id ? patch(s) : s)));
       return;
     }
-    persistSwimmers([...swimmers, makeSwimmer(name, team, swimmers.length, age, gender, watch)]);
+    persistSwimmers([...swimmers, makeSwimmer(name, team, swimmers.length, age, gender, watch, usasId)]);
   }
   function removeSwimmer(id: string) {
     persistSwimmers(swimmers.filter((s) => s.id !== id));
@@ -1396,6 +1417,7 @@ export function App() {
           removeSwimmer={removeSwimmer}
           goImport={() => setNav("import")}
           swimmer={role === "swimmer"}
+          proxy={loadProxy() || DEFAULT_PROXY}
         />
       )}
       {gated && nav === "settings" && (
@@ -2416,17 +2438,130 @@ function miBetween(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
   return Math.round(R * 2 * Math.asin(Math.sqrt(h)));
 }
 
+// In-app meet results pulled live from USA Swimming: the event list (the program), each event
+// expandable to full results (place · swimmer · club · time · cut). Opened from a meet-search card.
+function UsasMeetResults({ meetId, meetName, proxy, onClose }: { meetId: number; meetName: string; proxy: string; onClose: () => void }) {
+  const [events, setEvents] = useState<UsasMeetEvent[] | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [rows, setRows] = useState<Record<string, UsasEventResult[] | "loading">>({});
+  const evKey = (e: UsasMeetEvent) => `${e.eventId}-${e.sessionNumber}-${e.eventNumber}`;
+
+  useEffect(() => { usasMeetEventList(meetId, proxy).then(setEvents); }, [meetId, proxy]);
+
+  async function toggle(e: UsasMeetEvent) {
+    const k = evKey(e);
+    if (openKey === k) { setOpenKey(null); return; }
+    setOpenKey(k);
+    if (!rows[k]) {
+      setRows((r) => ({ ...r, [k]: "loading" }));
+      const res = await usasEventResults(meetId, e, proxy);
+      setRows((r) => ({ ...r, [k]: res }));
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal usas-profile" onClick={(e) => e.stopPropagation()}>
+        <div className="profile-head">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ margin: 0 }}>{meetName}</h2>
+            <span className="muted">{t("mr_results")}</span>
+          </div>
+          <button className="remove" onClick={onClose}>✕</button>
+        </div>
+        {events === null ? <p className="muted">{t("sw_usas_searching")}</p>
+          : events.length === 0 ? <p className="muted">{t("mr_noevents")}</p>
+          : (
+            <div className="meet-list">
+              {events.map((e) => {
+                const k = evKey(e); const rr = rows[k];
+                return (
+                  <div className="meet-item" key={k}>
+                    <button className="meet-item-row" onClick={() => toggle(e)}>
+                      <span className="meet-item-name">
+                        {e.eventNumber ? `#${e.eventNumber} ` : ""}{e.eventCode}
+                        <span className="muted"> · {[e.eventGender, e.ageGroup, e.sessionName].filter(Boolean).join(" · ")}</span>
+                      </span>
+                      <span className="muted">{openKey === k ? "▾" : "▸"}</span>
+                    </button>
+                    {openKey === k && (
+                      <div className="meet-times">
+                        {rr === "loading" || rr === undefined ? <p className="muted">{t("sw_usas_searching")}</p>
+                          : rr.length === 0 ? <p className="muted">{t("pf_noswims")}</p>
+                          : rr.map((r) => (
+                            <div className="swim-row result-row" key={r.swimTimeId}>
+                              <span className="res-place">{r.finishPosition ?? ""}</span>
+                              <span className="res-name">{r.fullName}{r.clubCode ? <span className="muted"> · {r.clubCode}</span> : null}</span>
+                              <span className="swim-time">{r.swimTime}</span>
+                              {r.timeStandard && <span className="res-std muted">{r.timeStandard}</span>}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        <p className="muted profile-foot">{t("pf_source")}</p>
+      </div>
+    </div>
+  );
+}
+
 function DiscoverView(props: {
   meets: DirMeet[];
   onImport: (url: string) => void;
   onGoLive: (url: string) => void;
   suggestUrl: string;
+  proxy: string;
 }) {
   const [stateFilter, setStateFilter] = useState("");
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
   const [geoMsg, setGeoMsg] = useState("");
   const [shareMsg, showToast] = useToast();
   const states = [...new Set(props.meets.map((m) => m.state).filter(Boolean))].sort() as string[];
+
+  // --- Search ALL USA Swimming meets (live, via the Worker) — extends the curated directory's
+  // coverage from a handful of local meets to every USA Swimming meet, filtered by region (LSC). ---
+  const [umOpen, setUmOpen] = useState(false);
+  const [umq, setUmq] = useState("");
+  const [umLsc, setUmLsc] = useState("");
+  const [umResults, setUmResults] = useState<UsasMeet[] | null>(null);
+  const [umLoading, setUmLoading] = useState(false);
+  const [umErr, setUmErr] = useState(false);
+  const [lscs, setLscs] = useState<UsasLsc[]>([]);
+  const [resultsMeet, setResultsMeet] = useState<UsasMeet | null>(null);
+
+  useEffect(() => {
+    if (umOpen && lscs.length === 0) usasLscs(props.proxy).then(setLscs).catch(() => {});
+  }, [umOpen, props.proxy]);
+
+  async function runMeetSearch() {
+    if (!umq.trim() && !umLsc) return; // need at least a name or a region
+    setUmLoading(true); setUmErr(false); setUmResults(null);
+    try {
+      const r = await usasMeets({ name: umq.trim() || undefined, lsc: umLsc || undefined }, props.proxy);
+      setUmResults(r);
+    } catch { setUmErr(true); } finally { setUmLoading(false); }
+  }
+
+  const usMeetCard = (m: UsasMeet) => (
+    <div className="disc-card usas-meet" key={m.meetId}>
+      <div className="disc-date">📅 {m.meetDate}</div>
+      <div className="disc-title">{m.meetName}</div>
+      <div className="disc-loc muted">
+        {[m.meetType, m.courseCode].filter(Boolean).join(" · ")}
+        {typeof m.swims === "number" ? ` · ${t("disc_usas_counts", { teams: m.teams ?? 0, swims: m.swims })}` : ""}
+      </div>
+      <div className="disc-actions">
+        {typeof m.swims === "number" && m.swims > 0 && (
+          <button className="chip sm" onClick={() => setResultsMeet(m)}>📋 {t("disc_usas_results")}</button>
+        )}
+        <a className="chip sm" href="https://data.usaswimming.org/datahub/usas/meetsearch" target="_blank" rel="noopener noreferrer">📊 {t("disc_usas_open")}</a>
+      </div>
+    </div>
+  );
 
   // Real device location via the Capacitor Geolocation plugin (proper native permission flow on
   // iOS/Android; navigator.geolocation on web). Clearing the state filter makes "showing all"
@@ -2501,6 +2636,9 @@ function DiscoverView(props: {
 
   return (
     <div className="card discover">
+      {resultsMeet && (
+        <UsasMeetResults meetId={resultsMeet.meetId} meetName={resultsMeet.meetName} proxy={props.proxy} onClose={() => setResultsMeet(null)} />
+      )}
       <h2>📍 {t("disc_h")}</h2>
       <p className="muted">{t("disc_intro")}</p>
       <div className="disc-filters">
@@ -2533,6 +2671,31 @@ function DiscoverView(props: {
           </p>
         </>
       )}
+
+      {/* Search ALL USA Swimming meets — collapsible, so the curated list stays the default. */}
+      <div className="disc-usas">
+        <button className="inline-link" onClick={() => setUmOpen(!umOpen)}>
+          🔎 {t("disc_usas_more")} {umOpen ? "▾" : "▸"}
+        </button>
+        {umOpen && (
+          <>
+            <div className="disc-usas-form">
+              <input className="field" placeholder={t("disc_usas_ph")} value={umq}
+                onChange={(e) => setUmq(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") runMeetSearch(); }} />
+              <select className="field" value={umLsc} onChange={(e) => setUmLsc(e.target.value)}>
+                <option value="">{t("disc_usas_lsc")}</option>
+                {lscs.map((l) => <option key={l.lscCode} value={l.lscCode}>{l.lscName}</option>)}
+              </select>
+              <button className="primary" onClick={runMeetSearch} disabled={umLoading || (!umq.trim() && !umLsc)}>🔎</button>
+            </div>
+            {umLoading && <p className="muted small">{t("sw_usas_searching")}</p>}
+            {umErr && <p className="muted small">{t("sw_usas_unavail")}</p>}
+            {!umLoading && umResults && umResults.length === 0 && <p className="muted small">{t("disc_usas_none")}</p>}
+            {umResults && umResults.length > 0 && umResults.slice(0, 40).map(usMeetCard)}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -2658,6 +2821,7 @@ function ImportView(props: {
         onImport={(u: string) => props.onUrl(u)}
         onGoLive={props.onGoLive}
         suggestUrl={FEEDBACK_URL}
+        proxy={loadProxy() || DEFAULT_PROXY}
       />
 
       <div className="card">
@@ -2727,21 +2891,173 @@ function ImportView(props: {
 // works two ways — search by name, or browse by team (the old Teams tab, folded in: pick a
 // team to find a swimmer). Each match adds as "mine" or "watch". Replaces SwimmersView +
 // Watching + TeamsView.
+// Rich swimmer profile pulled live from USA Swimming (best times + recent meets with place &
+// time drop + cuts achieved). Opens for any swimmer added via the USA Swimming lookup (has usasId).
+function UsasProfile({ swimmer, proxy, onClose }: { swimmer: Swimmer; proxy: string; onClose: () => void }) {
+  const id = swimmer.usasId || "";
+  const [bests, setBests] = useState<UsasBestTime[] | null>(null);
+  const [meets, setMeets] = useState<UsasSwimmerMeet[] | null>(null);
+  const [stds, setStds] = useState<UsasStandard[] | null>(null);
+  const [openMeet, setOpenMeet] = useState<number | null>(null);
+  const [mtimes, setMtimes] = useState<Record<number, UsasMeetTime[] | "loading">>({});
+
+  useEffect(() => {
+    if (!id) return;
+    usasBestTimes(id, proxy).then(setBests);
+    usasSwimmerMeets(id, proxy).then(setMeets);
+    usasSwimmerStandards(id, proxy).then(setStds);
+  }, [id, proxy]);
+
+  async function toggleMeet(meetId: number) {
+    if (openMeet === meetId) { setOpenMeet(null); return; }
+    setOpenMeet(meetId);
+    if (!mtimes[meetId]) {
+      setMtimes((m) => ({ ...m, [meetId]: "loading" }));
+      const ts = await usasMeetTimes(id, meetId, proxy);
+      setMtimes((m) => ({ ...m, [meetId]: ts }));
+    }
+  }
+
+  // Distinct cut names achieved (the API lists each standard met). Drop "Slower than B" — it's a
+  // bucket, not an achievement — so the medals only show real cuts.
+  const cuts = (Array.from(new Set((stds || []).map((s) => s.timeStandardType || s.standardName).filter(Boolean))) as string[])
+    .filter((c) => !/slower/i.test(c));
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal usas-profile" onClick={(e) => e.stopPropagation()}>
+        <div className="profile-head">
+          <span className="kid-dot" style={{ background: swimmer.color }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ margin: 0 }}>{displayName(swimmer.name)}</h2>
+            <span className="muted">{[swimmer.team, swimmer.age].filter(Boolean).join(" · ")}</span>
+          </div>
+          <button className="remove" onClick={onClose}>✕</button>
+        </div>
+
+        {cuts.length > 0 && (
+          <div className="profile-cuts">
+            {cuts.slice(0, 8).map((c) => <span className="cut-chip" key={c}>🏅 {c}</span>)}
+          </div>
+        )}
+
+        <h3>{t("sw_bests")}</h3>
+        {bests === null ? <p className="muted">{t("sw_usas_searching")}</p>
+          : bests.length === 0 ? <p className="muted">{t("sw_bests_none")}</p>
+          : (
+            <div className="bests-grid">
+              {bests.map((b) => (
+                <span className="best-cell" key={b.swimTimeRecognitionId}>
+                  <b>{b.distance} {b.strokeAbbreviation}</b> <span className="muted">{b.courseCode}</span> {b.swimTime}
+                </span>
+              ))}
+            </div>
+          )}
+
+        <h3>{t("pf_recent")}</h3>
+        {meets === null ? <p className="muted">{t("sw_usas_searching")}</p>
+          : meets.length === 0 ? <p className="muted">{t("pf_nomeets")}</p>
+          : (
+            <div className="meet-list">
+              {meets.slice(0, 12).map((mt) => {
+                const rows = mtimes[mt.meetId];
+                return (
+                  <div className="meet-item" key={mt.meetId}>
+                    <button className="meet-item-row" onClick={() => toggleMeet(mt.meetId)}>
+                      <span className="meet-item-name">{mt.meetName}</span>
+                      <span className="muted">{[mt.meetDate, mt.courseCode].filter(Boolean).join(" · ")} {openMeet === mt.meetId ? "▾" : "▸"}</span>
+                    </button>
+                    {openMeet === mt.meetId && (
+                      <div className="meet-times">
+                        {rows === "loading" || rows === undefined ? <p className="muted">{t("sw_usas_searching")}</p>
+                          : rows.length === 0 ? <p className="muted">{t("pf_noswims")}</p>
+                          : rows.map((r) => (
+                            <div className="swim-row" key={r.swimTimeId}>
+                              <span className="swim-ev">{r.eventCode}{r.sessionName ? <span className="muted"> · {r.sessionName}</span> : null}</span>
+                              <span className="swim-time">{r.swimTime}</span>
+                              {typeof r.finishPosition === "number" && <span className="swim-place">{t("pf_place", { n: r.finishPosition })}</span>}
+                              {typeof r.timeDrop === "number" && r.timeDrop !== 0 && (
+                                <span className={r.timeDrop > 0 ? "swim-drop good" : "swim-drop bad"}>
+                                  {r.timeDrop > 0 ? "▼" : "▲"} {Math.abs(r.timeDrop).toFixed(2)}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        <p className="muted profile-foot">{t("pf_source")}</p>
+      </div>
+    </div>
+  );
+}
+
 function SwimmersView(props: {
   swimmers: Swimmer[];
   roster: RosterItem[];
   teams: { team: string; swimmers: RosterItem[] }[];
-  addSwimmer: (name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean) => void;
+  addSwimmer: (name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean, usasId?: string) => void;
   removeSwimmer: (id: string) => void;
   goImport: () => void;
   swimmer?: boolean; // "My Meet" mode — reframes "My swimmers/Watching" as "Me/Friends"
+  proxy: string;
 }) {
-  const [find, setFind] = useState<"search" | "teams">("search");
+  const hasRoster = props.roster.length > 0;
+  // USA Swimming lookup is the one mode that works with an empty roster (no meet import needed),
+  // so it's the default when there's nothing imported yet — that's the cold-start path.
+  const [find, setFind] = useState<"search" | "teams" | "usas">(hasRoster ? "search" : "usas");
   const [q, setQ] = useState("");
   const [openTeam, setOpenTeam] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
   const [mName, setMName] = useState("");
   const [mTeam, setMTeam] = useState("");
+
+  // --- USA Swimming athlete lookup (via the Worker's cached /usas proxy) ---
+  const [uq, setUq] = useState("");
+  const [uResults, setUResults] = useState<UsasAthlete[] | null>(null);
+  const [uLoading, setULoading] = useState(false);
+  const [uErr, setUErr] = useState(false);
+  const [uOpen, setUOpen] = useState<string | null>(null); // expanded memberId (best-times)
+  const [uBests, setUBests] = useState<Record<string, UsasBestTime[] | "loading">>({});
+  const [profile, setProfile] = useState<Swimmer | null>(null); // open USA Swimming profile
+
+  async function runUsasSearch() {
+    const query = uq.trim();
+    if (query.length < 2) return;
+    setULoading(true);
+    setUErr(false);
+    setUResults(null);
+    try {
+      const r = await searchUsasAthletes(query, props.proxy);
+      setUResults(r);
+    } catch {
+      setUErr(true);
+    } finally {
+      setULoading(false);
+    }
+  }
+
+  async function toggleBests(memberId: string) {
+    if (uOpen === memberId) { setUOpen(null); return; }
+    setUOpen(memberId);
+    if (!uBests[memberId]) {
+      setUBests((b) => ({ ...b, [memberId]: "loading" }));
+      const times = await usasBestTimes(memberId, props.proxy);
+      setUBests((b) => ({ ...b, [memberId]: times }));
+    }
+  }
+
+  // USA Swimming gives "First [Middle] Last"; the app keys swimmers as "Last, First".
+  const usasToLastFirst = (a: UsasAthlete): string => {
+    const n = (a.shortName || a.fullName || "").trim();
+    const parts = n.split(/\s+/);
+    if (parts.length < 2) return n;
+    return `${parts[parts.length - 1]}, ${parts.slice(0, -1).join(" ")}`;
+  };
 
   const ql = q.trim().toLowerCase();
   const results = ql
@@ -2757,9 +3073,15 @@ function SwimmersView(props: {
   const kidRow = (s: Swimmer) => (
     <div className="kid-row" key={s.id}>
       <span className="kid-dot" style={{ background: s.color }} />
-      <span className="kid-name">
-        {displayName(s.name)} <span className="muted">{[s.gender, s.age, s.team].filter(Boolean).join(" · ")}</span>
-      </span>
+      {s.usasId ? (
+        <button className="kid-name kid-name-btn" onClick={() => setProfile(s)} title={t("pf_open")}>
+          {displayName(s.name)} <span className="muted">{[s.gender, s.age, s.team].filter(Boolean).join(" · ")}</span> <span className="muted">📊</span>
+        </button>
+      ) : (
+        <span className="kid-name">
+          {displayName(s.name)} <span className="muted">{[s.gender, s.age, s.team].filter(Boolean).join(" · ")}</span>
+        </span>
+      )}
       <button className="remove" onClick={() => props.removeSwimmer(s.id)}>✕</button>
     </div>
   );
@@ -2784,8 +3106,52 @@ function SwimmersView(props: {
     );
   };
 
+  const usasRow = (a: UsasAthlete) => {
+    const lf = usasToLastFirst(a);
+    const st = statusOf(lf);
+    const meta = [a.clubName, a.lscCode, a.swimmerAge ? `${a.swimmerAge}` : ""].filter(Boolean).join(" · ");
+    const bests = uBests[a.memberId];
+    return (
+      <div className="roster-row usas-row" key={a.memberId} style={{ flexWrap: "wrap" }}>
+        <span className="roster-info">
+          <span className="result-name">{displayName(lf)}</span>
+          <span className="result-meta">{meta}</span>
+        </span>
+        <span className="add-btns">
+          <button className="chip sm" onClick={() => toggleBests(a.memberId)}>
+            ⏱ {t("sw_bests")} {uOpen === a.memberId ? "▾" : "▸"}
+          </button>
+          <button className="chip sm" disabled={st === "mine"} onClick={() => props.addSwimmer(lf, a.clubName || "", a.swimmerAge, undefined, false, a.memberId)}>
+            {st === "mine" ? "✓ " : "+ "}{props.swimmer ? t("sw_me") : t("sw_mine")}
+          </button>
+          <button className="chip sm" disabled={st === "watch"} onClick={() => props.addSwimmer(lf, a.clubName || "", a.swimmerAge, undefined, true, a.memberId)}>
+            {st === "watch" ? "✓ " : props.swimmer ? "👤 " : "👁 "}{props.swimmer ? t("sw_friend") : t("sw_watch")}
+          </button>
+        </span>
+        {uOpen === a.memberId && (
+          <div className="usas-bests" style={{ flexBasis: "100%", marginTop: 6 }}>
+            {bests === "loading" || bests === undefined ? (
+              <p className="muted">{t("sw_usas_searching")}</p>
+            ) : bests.length === 0 ? (
+              <p className="muted">{t("sw_bests_none")}</p>
+            ) : (
+              <div className="bests-grid">
+                {bests.map((b) => (
+                  <span className="best-cell" key={b.swimTimeRecognitionId}>
+                    <b>{b.distance} {b.strokeAbbreviation}</b> <span className="muted">{b.courseCode}</span> {b.swimTime}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div>
+      {profile && <UsasProfile swimmer={profile} proxy={props.proxy} onClose={() => setProfile(null)} />}
       <div className="card">
         <h2>{props.swimmer ? "🏊 " + t("me_h") : t("myswimmers")}</h2>
         {mine.length === 0 && <p className="muted">{props.swimmer ? t("sw_none_me") : t("sw_none")}</p>}
@@ -2801,17 +3167,30 @@ function SwimmersView(props: {
 
       <div className="card">
         <h2>{t("sw_find")}</h2>
-        {props.roster.length === 0 ? (
+        <div className="seg full">
+          <button className={find === "usas" ? "on" : ""} onClick={() => setFind("usas")}>🌐 {t("sw_byusas")}</button>
+          <button className={find === "search" ? "on" : ""} onClick={() => setFind("search")} disabled={!hasRoster}>🔎 {t("sw_bysearch")}</button>
+          <button className={find === "teams" ? "on" : ""} onClick={() => setFind("teams")} disabled={!hasRoster}>👥 {t("sw_byteam")}</button>
+        </div>
+        {find === "usas" ? (
+          <>
+            <p className="muted">{t("sw_usas_hint")}</p>
+            <form className="usas-search" style={{ display: "flex", gap: 8 }} onSubmit={(e) => { e.preventDefault(); runUsasSearch(); }}>
+              <input className="field" placeholder={t("sw_usas_ph")} value={uq} onChange={(e) => setUq(e.target.value)} autoFocus />
+              <button className="primary" type="submit" disabled={uLoading || uq.trim().length < 2}>🔎</button>
+            </form>
+            {uLoading && <p className="muted">{t("sw_usas_searching")}</p>}
+            {uErr && <p className="muted">{t("sw_usas_unavail")}</p>}
+            {!uLoading && uResults && uResults.length === 0 && <p className="muted">{t("sw_usas_none", { q: uq.trim() })}</p>}
+            {uResults && uResults.length > 0 && <div className="results">{uResults.map((a) => usasRow(a))}</div>}
+          </>
+        ) : !hasRoster ? (
           <>
             <p className="muted">{t("sw_importfirst")}</p>
             <button className="primary" onClick={props.goImport}>{t("sw_addmeet")}</button>
           </>
         ) : (
           <>
-            <div className="seg full">
-              <button className={find === "search" ? "on" : ""} onClick={() => setFind("search")}>🔎 {t("sw_bysearch")}</button>
-              <button className={find === "teams" ? "on" : ""} onClick={() => setFind("teams")}>👥 {t("sw_byteam")}</button>
-            </div>
             {find === "search" ? (
               <>
                 <input className="field" placeholder={t("sw_search")} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />

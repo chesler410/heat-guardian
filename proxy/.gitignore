@@ -1,0 +1,8 @@
+# Local-only Worker secrets for `wrangler dev` (USAS_SUB / USAS_SID, ANTHROPIC_API_KEY, etc.)
+# NEVER commit — these are live credentials. Production uses `wrangler secret put`.
+.dev.vars
+.dev.vars.*
+
+# Wrangler local state
+.wrangler/
+node_modules/

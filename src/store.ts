@@ -38,6 +38,7 @@ export interface Swimmer {
   gender?: "Girls" | "Boys";
   color: string;
   watch?: boolean; // true = on the watch list (follow), false/undefined = your own swimmer
+  usasId?: string; // USA Swimming memberId, when added via the Data Hub lookup → enables profile
 }
 
 export interface RosterItem {
@@ -69,8 +70,8 @@ export const loadMeets = () => load<Meet>(MEETS);
 export const saveMeets = (m: Meet[]) => localStorage.setItem(MEETS, JSON.stringify(m));
 export const loadProxy = () => localStorage.getItem(PROXY) || "";
 
-export function makeSwimmer(name: string, team: string, index: number, age?: number, gender?: "Girls" | "Boys", watch?: boolean): Swimmer {
-  return { id: uid(), name: name.trim(), team: team.trim() || undefined, age, gender, color: COLORS[index % COLORS.length], watch };
+export function makeSwimmer(name: string, team: string, index: number, age?: number, gender?: "Girls" | "Boys", watch?: boolean, usasId?: string): Swimmer {
+  return { id: uid(), name: name.trim(), team: team.trim() || undefined, age, gender, color: COLORS[index % COLORS.length], watch, usasId };
 }
 
 // Coach mode: turn a team's full roster into swimmer objects for the home/progress views.
@@ -254,6 +255,215 @@ export async function sendReport(text: string, ctx: string, proxy: string): Prom
   } catch {
     return false;
   }
+}
+
+// --- USA Swimming Data Hub (via the Worker's cached /usas proxy) -----------
+// The Worker fronts USA Swimming's public Data Hub. Athlete search + best times are anonymous;
+// full history + meet search use the Worker's held session (it returns {error:"needs_session"}
+// with HTTP 503 if the owner hasn't set it up). All callers degrade to [] gracefully.
+
+export interface UsasAthlete {
+  memberId: string;
+  fullName: string;
+  shortName?: string;
+  clubName?: string;
+  lscCode?: string;
+  swimmerAge?: number;
+  isNcaa?: number;
+  profilePicUrl?: string | null;
+}
+
+export interface UsasBestTime {
+  swimTimeRecognitionId: number;
+  strokeName: string;
+  strokeAbbreviation: string; // FR/BK/BR/FL/IM
+  distance: number; // yards/meters
+  courseCode: string; // SCY / SCM / LCM
+  swimTime: string; // "1:33.42"
+}
+
+export interface UsasMeet {
+  meetId: number;
+  meetName: string;
+  meetType: string;
+  meetDate: string; // "Jun 26 - 28, 2026"
+  courseCode: string;
+  teams?: number;
+  swims?: number;
+  swimmers?: number;
+}
+
+export interface UsasLsc {
+  orgUnitId: string;
+  lscCode: string; // "SE"
+  lscName: string; // "Southeastern Swimming"
+}
+
+// LSC list for the meet-search region filter. Session-gated upstream; [] if unavailable.
+export function usasLscs(proxy: string): Promise<UsasLsc[]> {
+  return usasGet<UsasLsc>("lscs", proxy);
+}
+
+async function usasGet<T>(path: string, proxy: string): Promise<T[]> {
+  const base = backendBase(proxy);
+  if (!base) return [];
+  try {
+    const res = await fetch(`${base}/usas/${path}`);
+    if (!res.ok) return []; // 503 needs_session, 4xx, etc. → degrade quietly
+    const j = await res.json();
+    return Array.isArray(j) ? (j as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function usasGetObj<T>(path: string, proxy: string): Promise<T | null> {
+  const base = backendBase(proxy);
+  if (!base) return null;
+  try {
+    const res = await fetch(`${base}/usas/${path}`);
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+export interface UsasMeetInfo {
+  meetId: number;
+  meetName: string;
+  meetType?: string;
+  meetDate?: string;
+  courseCode?: string;
+  teams?: number;
+  swims?: number;
+  swimmers?: number;
+}
+
+export interface UsasMeetEvent {
+  eventId: number;
+  eventCode: string; // "50 FR LCM"
+  eventGender?: string; // "Female"/"Male"/"Mixed"
+  eventCompetitionGenderTypeId?: number;
+  swimDate?: string;
+  swimDateFormatted?: string;
+  ageGroup?: string;
+  eventNumber?: number;
+  sessionNumber?: number;
+  sessionName?: string; // "Prelim"/"Final"
+  swims?: number;
+}
+
+export interface UsasEventResult {
+  swimTimeId: number;
+  fullName: string;
+  memberId: string;
+  swimTime: string;
+  finishPosition?: number;
+  timeStandard?: string;
+  clubCode?: string;
+  ageGroup?: string;
+  swimmerAge?: number;
+}
+
+// Meet summary by id. Session-gated; null if unavailable.
+export function usasMeetInfo(meetId: number | string, proxy: string): Promise<UsasMeetInfo | null> {
+  return usasGetObj<UsasMeetInfo>(`meet/${encodeURIComponent(String(meetId))}`, proxy);
+}
+
+// Event list for a meet (the program). Session-gated; [] if unavailable.
+export function usasMeetEventList(meetId: number | string, proxy: string): Promise<UsasMeetEvent[]> {
+  return usasGet<UsasMeetEvent>(`meet/${encodeURIComponent(String(meetId))}/events`, proxy);
+}
+
+// Full results for ONE event (every swimmer's place + time + cut). Session-gated; [] if unavailable.
+export async function usasEventResults(meetId: number | string, ev: UsasMeetEvent, proxy: string): Promise<UsasEventResult[]> {
+  const base = backendBase(proxy);
+  if (!base) return [];
+  const qs = new URLSearchParams({
+    eid: String(ev.eventId),
+    gid: ev.eventCompetitionGenderTypeId != null ? String(ev.eventCompetitionGenderTypeId) : "",
+    sdate: ev.swimDate || "",
+    enum: ev.eventNumber != null ? String(ev.eventNumber) : "",
+    snum: ev.sessionNumber != null ? String(ev.sessionNumber) : "",
+  });
+  try {
+    const res = await fetch(`${base}/usas/meet/${encodeURIComponent(String(meetId))}/event?${qs.toString()}`);
+    if (!res.ok) return [];
+    const j = await res.json();
+    return Array.isArray(j?.eventTimes) ? (j.eventTimes as UsasEventResult[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Search USA Swimming athletes by name (anonymous). Min 2 chars.
+export function searchUsasAthletes(name: string, proxy: string): Promise<UsasAthlete[]> {
+  const q = name.trim();
+  if (q.length < 2) return Promise.resolve([]);
+  return usasGet<UsasAthlete>(`athletes?name=${encodeURIComponent(q)}`, proxy);
+}
+
+// Best time per event for a member (anonymous).
+export function usasBestTimes(memberId: string, proxy: string): Promise<UsasBestTime[]> {
+  return usasGet<UsasBestTime>(`athletes/${encodeURIComponent(memberId)}/bests`, proxy);
+}
+
+export interface UsasSwimmerMeet {
+  meetId: number;
+  meetName: string;
+  meetType?: string;
+  seasonYear?: number;
+  meetDate?: string;
+  courseCode?: string;
+}
+
+// A swimmer's swim at a meet, with the bits the PDF never gives you cleanly: place + time drop.
+export interface UsasMeetTime {
+  swimTimeId: number;
+  eventCode: string; // "100 FL LCM"
+  sessionName?: string; // "Prelim" / "Final"
+  swimTime: string;
+  timeStandard?: string; // "Nats", "AAAA", …
+  timeDrop?: number; // seconds dropped vs previous best (negative = added)
+  finishPosition?: number; // place
+}
+
+export interface UsasStandard {
+  timeStandardTypeId?: number;
+  timeStandardType?: string; // "AAAA", "Futures", "Sectionals", …
+  standardName?: string;
+}
+
+// Best time per event for a member (anonymous).
+// Recent meets this swimmer competed in (newest first). Session-gated; [] if unavailable.
+export function usasSwimmerMeets(memberId: string, proxy: string): Promise<UsasSwimmerMeet[]> {
+  return usasGet<UsasSwimmerMeet>(`athletes/${encodeURIComponent(memberId)}/meets`, proxy);
+}
+
+// This swimmer's swims at one meet — includes finishPosition + timeDrop + Prelim/Final. Gated.
+export function usasMeetTimes(memberId: string, meetId: number | string, proxy: string): Promise<UsasMeetTime[]> {
+  return usasGet<UsasMeetTime>(`athletes/${encodeURIComponent(memberId)}/meets/${encodeURIComponent(String(meetId))}`, proxy);
+}
+
+// Time standards (cuts) this swimmer has achieved. Gated; [] if unavailable.
+export function usasSwimmerStandards(memberId: string, proxy: string): Promise<UsasStandard[]> {
+  return usasGet<UsasStandard>(`athletes/${encodeURIComponent(memberId)}/standards`, proxy);
+}
+
+// Meets filtered by LSC (≈ region) + optional date range — the "meets near me" feed.
+// Needs the Worker's held session; returns [] if unavailable. Dates are "M/D/YYYY".
+export function usasMeets(
+  opts: { lsc?: string; zone?: string; name?: string; from?: string; to?: string },
+  proxy: string
+): Promise<UsasMeet[]> {
+  const qs = new URLSearchParams();
+  if (opts.lsc) qs.set("lsc", opts.lsc);
+  if (opts.zone) qs.set("zone", opts.zone);
+  if (opts.name) qs.set("name", opts.name);
+  if (opts.from) qs.set("from", opts.from);
+  if (opts.to) qs.set("to", opts.to);
+  return usasGet<UsasMeet>(`meets?${qs.toString()}`, proxy);
 }
 
 export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "upload" | "url", sourceUrl?: string): Promise<ImportOutcome> {
