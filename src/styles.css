@@ -760,8 +760,8 @@ table.arm th, table.arm td { padding-right: 14px; }
 .roster-row:first-child { border-top: none; }
 .theme-dark .roster-row { border-color: #202b36; }
 .roster-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.bests-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 4px 12px; padding: 4px 0 2px; }
-.best-cell { font-size: 13px; white-space: nowrap; }
+.bests-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 6px 14px; padding: 4px 0 2px; }
+.best-cell { font-size: 13px; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px; }
 .theme-dark .usas-bests { color: inherit; }
 .kid-name-btn { background: none; border: none; text-align: left; padding: 0; font: inherit; color: inherit; cursor: pointer; flex: 1; min-width: 0; }
 
@@ -791,7 +791,7 @@ table.arm th, table.arm td { padding-right: 14px; }
 .swim-drop.bad { color: #c2503f; }
 .profile-foot { margin-top: 12px; font-size: 11px; }
 .gender-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
-.grade { display: inline-block; margin-left: 4px; font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 4px; vertical-align: middle; color: #fff; }
+.grade { display: inline-block; font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 4px; vertical-align: middle; color: #fff; }
 .g-B { background: #9aa6b2; } .g-BB { background: #6b8cae; } .g-A { background: #1f9d57; }
 .g-AA { background: #0a8a8a; } .g-AAA { background: #b3501f; } .g-AAAA { background: #b3001f; }
 .g-SE { background: #7d4bd0; }
