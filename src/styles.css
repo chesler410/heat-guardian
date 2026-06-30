@@ -790,6 +790,15 @@ table.arm th, table.arm td { padding-right: 14px; }
 .swim-drop.good { color: #1f9d57; }
 .swim-drop.bad { color: #c2503f; }
 .profile-foot { margin-top: 12px; font-size: 11px; }
+.gender-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.grade { display: inline-block; margin-left: 4px; font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 4px; vertical-align: middle; color: #fff; }
+.g-B { background: #9aa6b2; } .g-BB { background: #6b8cae; } .g-A { background: #1f9d57; }
+.g-AA { background: #0a8a8a; } .g-AAA { background: #b3501f; } .g-AAAA { background: #b3001f; }
+.g-SE { background: #7d4bd0; }
+.chase-list { display: flex; flex-direction: column; gap: 2px; }
+.chase-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 2px 0; }
+.chase-ev { font-weight: 600; }
+.chase-need { font-variant-numeric: tabular-nums; }
 .disc-search { margin-bottom: 8px; }
 .disc-card.usas-meet { opacity: 0.98; }
 .link-modal { max-width: 420px; }

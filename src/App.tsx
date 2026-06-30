@@ -47,7 +47,7 @@ import {
   UsasMeetEvent,
   UsasEventResult,
 } from "./store.ts";
-import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance, fmt } from "./cuts.ts";
+import { computeCut, cutForBest, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance, fmt } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED, rateUrl } from "./config.ts";
 import { Geolocation } from "@capacitor/geolocation";
 import { getTheme, setTheme, Theme } from "./theme.ts";
@@ -1069,6 +1069,10 @@ export function App() {
   function removeSwimmer(id: string) {
     persistSwimmers(swimmers.filter((s) => s.id !== id));
   }
+  // Set a swimmer's gender (needed to grade USA Swimming times — standards are gender-specific).
+  function setSwimmerGender(id: string, gender: "Girls" | "Boys") {
+    persistSwimmers(swimmers.map((s) => (s.id === id ? { ...s, gender } : s)));
+  }
   function toggleFilter(id: string) {
     const n = new Set(filter);
     n.has(id) ? n.delete(id) : n.add(id);
@@ -1456,6 +1460,7 @@ export function App() {
           addSwimmer={addSwimmer}
           removeSwimmer={removeSwimmer}
           mergeSwimmers={mergeSwimmers}
+          setGender={setSwimmerGender}
           goImport={() => setNav("import")}
           swimmer={role === "swimmer"}
           proxy={loadProxy() || DEFAULT_PROXY}
@@ -2946,13 +2951,37 @@ function ImportView(props: {
 // Watching + TeamsView.
 // Rich swimmer profile pulled live from USA Swimming (best times + recent meets with place &
 // time drop + cuts achieved). Opens for any swimmer added via the USA Swimming lookup (has usasId).
-function UsasProfile({ swimmer, proxy, onClose }: { swimmer: Swimmer; proxy: string; onClose: () => void }) {
+function UsasProfile({ swimmer, proxy, onSetGender, onClose }: { swimmer: Swimmer; proxy: string; onSetGender: (id: string, g: "Girls" | "Boys") => void; onClose: () => void }) {
   const id = swimmer.usasId || "";
   const [bests, setBests] = useState<UsasBestTime[] | null>(null);
   const [meets, setMeets] = useState<UsasSwimmerMeet[] | null>(null);
   const [stds, setStds] = useState<UsasStandard[] | null>(null);
   const [openMeet, setOpenMeet] = useState<number | null>(null);
   const [mtimes, setMtimes] = useState<Record<number, UsasMeetTime[] | "loading">>({});
+  // Standards are gender-specific; USA Swimming doesn't expose gender, so use what we know (heat-sheet
+  // link) or let the parent pick once (persisted). Drives the grade badges + "cuts to beat".
+  const [gender, setGenderLocal] = useState<"Girls" | "Boys" | null>(swimmer.gender ?? null);
+  const pickGender = (g: "Girls" | "Boys") => { setGenderLocal(g); onSetGender(swimmer.id, g); };
+
+  // Grade each best time + find the next cut to chase (motivational ladder or SE champ).
+  const cutOf = (b: UsasBestTime) =>
+    cutForBest({ distance: b.distance, strokeAbbr: b.strokeAbbreviation, course: b.courseCode, age: swimmer.age, gender, time: b.swimTime });
+  const closest = (bests || [])
+    .map((b) => ({ b, c: cutOf(b) }))
+    .map(({ b, c }) => {
+      if (!c) return null;
+      const champNeed = c.champ && !c.champ.met ? c.champ.needed : null;
+      // The nearer of: next motivational cut, or the SE champ cut (if not yet met).
+      const opts: { label: string; need: number }[] = [];
+      if (c.nextCut) opts.push({ label: c.nextCut.level, need: c.nextCut.needed });
+      if (champNeed != null) opts.push({ label: "SE", need: champNeed });
+      if (!opts.length) return null;
+      const best = opts.sort((x, y) => x.need - y.need)[0];
+      return { ev: `${b.distance} ${b.strokeAbbreviation} ${b.courseCode}`, ...best };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a!.need - b!.need)
+    .slice(0, 5) as { ev: string; label: string; need: number }[];
 
   useEffect(() => {
     if (!id) return;
@@ -2994,16 +3023,44 @@ function UsasProfile({ swimmer, proxy, onClose }: { swimmer: Swimmer; proxy: str
           </div>
         )}
 
+        {/* Gender is needed to grade times (standards are gender-specific). Ask once if unknown. */}
+        {!gender && bests && bests.length > 0 && (
+          <div className="gender-pick">
+            <span className="muted">{t("pf_gender_q")}</span>
+            <button className="chip sm" onClick={() => pickGender("Girls")}>{t("pf_girls")}</button>
+            <button className="chip sm" onClick={() => pickGender("Boys")}>{t("pf_boys")}</button>
+          </div>
+        )}
+
+        {gender && closest.length > 0 && (
+          <>
+            <h3>🎯 {t("pf_chase")}</h3>
+            <div className="chase-list">
+              {closest.map((c) => (
+                <div className="chase-row" key={c.ev}>
+                  <span className="chase-ev">{c.ev}</span>
+                  <span className="chase-need">−{c.need.toFixed(2)}s {t("pf_to")} <b className={"grade g-" + c.label}>{c.label}</b></span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         <h3>{t("sw_bests")}</h3>
         {bests === null ? <p className="muted">{t("sw_usas_searching")}</p>
           : bests.length === 0 ? <p className="muted">{t("sw_bests_none")}</p>
           : (
             <div className="bests-grid">
-              {bests.map((b) => (
-                <span className="best-cell" key={b.swimTimeRecognitionId}>
-                  <b>{b.distance} {b.strokeAbbreviation}</b> <span className="muted">{b.courseCode}</span> {b.swimTime}
-                </span>
-              ))}
+              {bests.map((b) => {
+                const c = cutOf(b);
+                return (
+                  <span className="best-cell" key={b.swimTimeRecognitionId}>
+                    <b>{b.distance} {b.strokeAbbreviation}</b> <span className="muted">{b.courseCode}</span> {b.swimTime}
+                    {c?.achieved && <span className={"grade g-" + c.achieved}>{c.achieved}</span>}
+                    {c?.champ?.met && <span className="grade g-SE">SE</span>}
+                  </span>
+                );
+              })}
             </div>
           )}
 
@@ -3043,7 +3100,10 @@ function UsasProfile({ swimmer, proxy, onClose }: { swimmer: Swimmer; proxy: str
               })}
             </div>
           )}
-        <p className="muted profile-foot">{t("pf_source")}</p>
+        <p className="muted profile-foot">
+          {t("pf_source")}{" "}
+          <a href="https://www.usaswimming.org/times/popular-resources/time-standards" target="_blank" rel="noopener noreferrer">{t("pf_standards_link")}</a>
+        </p>
       </div>
     </div>
   );
@@ -3056,6 +3116,7 @@ function SwimmersView(props: {
   addSwimmer: (name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean, usasId?: string) => void;
   removeSwimmer: (id: string) => void;
   mergeSwimmers: (keepId: string, dropId: string) => void;
+  setGender: (id: string, gender: "Girls" | "Boys") => void;
   goImport: () => void;
   swimmer?: boolean; // "My Meet" mode — reframes "My swimmers/Watching" as "Me/Friends"
   proxy: string;
@@ -3214,7 +3275,7 @@ function SwimmersView(props: {
 
   return (
     <div>
-      {profile && <UsasProfile swimmer={profile} proxy={props.proxy} onClose={() => setProfile(null)} />}
+      {profile && <UsasProfile swimmer={profile} proxy={props.proxy} onSetGender={props.setGender} onClose={() => setProfile(null)} />}
       {dupePairs.map(([keep, drop]) => (
         <div className="card merge-banner" key={keep.id + drop.id}>
           <p>🔗 {t("merge_banner", { a: displayName(keep.name), b: displayName(drop.name) })}</p>

@@ -183,10 +183,15 @@ export function computeCut(
   const course = m.course;
   const key = m.key;
   if (!gender || !ageGroup || !course || !key) return null;
+  return cutCore(course, gender, ageGroup, key, seed);
+}
+
+// The standards lookup itself, decoupled from heat-sheet parsing — so USA Swimming best times (which
+// already give distance/stroke/course as structured fields) can be graded the same way as seed times.
+function cutCore(course: string, gender: "Girls" | "Boys", ageGroup: string, key: string, timeStr: string): CutResult | null {
   const ladder = standards[course]?.[gender]?.[ageGroup]?.[key];
   if (!ladder) return null;
-
-  const seedSec = toSec(seed);
+  const seedSec = toSec(timeStr);
 
   // Southeastern championship qualifying cut (single time per event), if available.
   let champ: CutResult["champ"] = null;
@@ -225,4 +230,14 @@ export function computeCut(
         : null,
     champ,
   };
+}
+
+// Grade a USA Swimming best time (structured fields) against the bundled standards + SE champ cuts.
+// Returns null when we can't grade it (missing gender/age, SCM course, or an event not in the tables).
+export function cutForBest(opts: {
+  distance: number; strokeAbbr: string; course: string; age?: number | null; gender?: "Girls" | "Boys" | null; time: string;
+}): CutResult | null {
+  const { distance, strokeAbbr, course, age, gender, time } = opts;
+  if (!gender || age == null || (course !== "SCY" && course !== "LCM")) return null;
+  return cutCore(course, gender, ageToGroup(age), `${distance} ${strokeAbbr}`, time);
 }
