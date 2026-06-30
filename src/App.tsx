@@ -35,16 +35,15 @@ import {
   usasMeetTimes,
   usasSwimmerStandards,
   usasMeets,
-  usasLscs,
   usasMeetEventList,
   usasEventResults,
+  samePerson,
   UsasAthlete,
   UsasBestTime,
   UsasSwimmerMeet,
   UsasMeetTime,
   UsasStandard,
   UsasMeet,
-  UsasLsc,
   UsasMeetEvent,
   UsasEventResult,
 } from "./store.ts";
@@ -863,6 +862,7 @@ export function App() {
     return (["home", "import", "swimmers", "watching", "progress", "teams", "about"].includes(t || "") ? t : "home") as Nav;
   });
   const [swimmers, setSwimmers] = useState<Swimmer[]>(loadSwimmers);
+  const [link, setLink] = useState<{ existing: Swimmer; name: string; team: string; age?: number; gender?: "Girls" | "Boys"; watch: boolean; usasId: string } | null>(null);
   const [meets, setMeets] = useState<Meet[]>(loadMeets);
   const [role, setRoleState] = useState<Role | null>(() => (localStorage.getItem("role") as Role) || null);
   const [coachTeam, setCoachTeam] = useStored("coachTeam", "");
@@ -1024,7 +1024,47 @@ export function App() {
         persistSwimmers(swimmers.map((s) => (s.id === existing.id ? patch(s) : s)));
       return;
     }
+    // Adding from USA Swimming (has usasId): a heat-sheet swimmer may already be on the list under a
+    // slightly different name/team ("Tate M Harbaugh / TNT-SE" vs "Tate Harbaugh / TNT Swimming").
+    // Offer to LINK rather than create a duplicate — user confirms (samePerson is suggest-only).
+    if (usasId) {
+      const cand = swimmers.find((s) => !s.usasId && samePerson(s.name, name));
+      if (cand) {
+        setLink({ existing: cand, name, team, age, gender, watch: !!watch, usasId });
+        return;
+      }
+    }
     persistSwimmers([...swimmers, makeSwimmer(name, team, swimmers.length, age, gender, watch, usasId)]);
+  }
+  // Confirmed "same swimmer" link: attach the USA Swimming id (+ enrich age/team) to the existing one.
+  function confirmLink() {
+    if (!link) return;
+    persistSwimmers(swimmers.map((s) => (s.id === link.existing.id
+      ? { ...s, usasId: link.usasId, age: s.age ?? link.age, team: s.team || link.team }
+      : s)));
+    setLink(null);
+  }
+  // "Keep separate": add the USA Swimming swimmer as its own entry after all.
+  function keepSeparate() {
+    if (!link) return;
+    persistSwimmers([...swimmers, makeSwimmer(link.name, link.team, swimmers.length, link.age, link.gender, link.watch, link.usasId)]);
+    setLink(null);
+  }
+  // Merge two existing entries (e.g. a heat-sheet swimmer + their USA Swimming profile) into one,
+  // keeping the USA Swimming id and the richer fields, then dropping the duplicate.
+  function mergeSwimmers(keepId: string, dropId: string) {
+    const keep = swimmers.find((s) => s.id === keepId);
+    const drop = swimmers.find((s) => s.id === dropId);
+    if (!keep || !drop) return;
+    const merged: Swimmer = {
+      ...keep,
+      usasId: keep.usasId || drop.usasId,
+      age: keep.age ?? drop.age,
+      gender: keep.gender ?? drop.gender,
+      team: keep.team || drop.team,
+      watch: keep.watch && drop.watch, // if either is "mine" (watch=false), the merged one is mine
+    };
+    persistSwimmers(swimmers.filter((s) => s.id !== dropId).map((s) => (s.id === keepId ? merged : s)));
   }
   function removeSwimmer(id: string) {
     persistSwimmers(swimmers.filter((s) => s.id !== id));
@@ -1415,10 +1455,24 @@ export function App() {
           teams={buildTeams(meets)}
           addSwimmer={addSwimmer}
           removeSwimmer={removeSwimmer}
+          mergeSwimmers={mergeSwimmers}
           goImport={() => setNav("import")}
           swimmer={role === "swimmer"}
           proxy={loadProxy() || DEFAULT_PROXY}
         />
+      )}
+      {link && (
+        <div className="modal-overlay" onClick={keepSeparate}>
+          <div className="modal link-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{t("link_title")}</h2>
+            <p>{t("link_body", { a: displayName(link.name), b: displayName(link.existing.name) })}</p>
+            <p className="muted small">{[link.existing.team, link.existing.age].filter(Boolean).join(" · ")} ↔ {[link.team, link.age].filter(Boolean).join(" · ")}</p>
+            <div className="link-actions">
+              <button className="primary" onClick={confirmLink}>🔗 {t("link_do")}</button>
+              <button className="secondary" onClick={keepSeparate}>{t("link_keep")}</button>
+            </div>
+          </div>
+        </div>
       )}
       {gated && nav === "settings" && (
         <SettingsView
@@ -2522,29 +2576,28 @@ function DiscoverView(props: {
   const [shareMsg, showToast] = useToast();
   const states = [...new Set(props.meets.map((m) => m.state).filter(Boolean))].sort() as string[];
 
-  // --- Search ALL USA Swimming meets (live, via the Worker) — extends the curated directory's
-  // coverage from a handful of local meets to every USA Swimming meet, filtered by region (LSC). ---
-  const [umOpen, setUmOpen] = useState(false);
-  const [umq, setUmq] = useState("");
-  const [umLsc, setUmLsc] = useState("");
+  // ONE search box drives everything: it filters the curated directory live (local), and — when you
+  // type a name — also pulls matching USA Swimming meets, folded into the SAME list below. No second
+  // search step; the curated, importable meets stay first, USA Swimming extends the coverage.
+  const [query, setQuery] = useState("");
   const [umResults, setUmResults] = useState<UsasMeet[] | null>(null);
   const [umLoading, setUmLoading] = useState(false);
   const [umErr, setUmErr] = useState(false);
-  const [lscs, setLscs] = useState<UsasLsc[]>([]);
   const [resultsMeet, setResultsMeet] = useState<UsasMeet | null>(null);
 
+  // Debounced USA Swimming lookup as you type (≥3 chars), so it feels like one search.
   useEffect(() => {
-    if (umOpen && lscs.length === 0) usasLscs(props.proxy).then(setLscs).catch(() => {});
-  }, [umOpen, props.proxy]);
-
-  async function runMeetSearch() {
-    if (!umq.trim() && !umLsc) return; // need at least a name or a region
-    setUmLoading(true); setUmErr(false); setUmResults(null);
-    try {
-      const r = await usasMeets({ name: umq.trim() || undefined, lsc: umLsc || undefined }, props.proxy);
-      setUmResults(r);
-    } catch { setUmErr(true); } finally { setUmLoading(false); }
-  }
+    const q = query.trim();
+    if (q.length < 3) { setUmResults(null); setUmErr(false); return; }
+    let live = true;
+    setUmLoading(true); setUmErr(false);
+    const id = setTimeout(async () => {
+      try { const r = await usasMeets({ name: q }, props.proxy); if (live) setUmResults(r); }
+      catch { if (live) setUmErr(true); }
+      finally { if (live) setUmLoading(false); }
+    }, 450);
+    return () => { live = false; clearTimeout(id); };
+  }, [query, props.proxy]);
 
   const usMeetCard = (m: UsasMeet) => (
     <div className="disc-card usas-meet" key={m.meetId}>
@@ -2593,9 +2646,11 @@ function DiscoverView(props: {
   // passed (same past-date logic as Home's archive), so a finished meet drops off the list.
   const todayISO = new Date().toISOString().slice(0, 10);
   const RADIUS_MI = 150; // what "near you" actually means — a reasonable drive to a meet
+  const ql = query.trim().toLowerCase();
   const upcoming = props.meets
     .filter((m) => !stateFilter || m.state === stateFilter)
-    .filter((m) => (m.end || m.start || todayISO) >= todayISO);
+    .filter((m) => (m.end || m.start || todayISO) >= todayISO)
+    .filter((m) => !ql || `${m.title} ${m.city || ""} ${m.state || ""} ${m.lsc || ""}`.toLowerCase().includes(ql));
   // With a real location fix, split into genuinely-near (≤ radius) and everything else ("Farther
   // out"), nearest-first — so "near me" reflects real proximity instead of just re-sorting.
   let near: DirMeet[];
@@ -2641,6 +2696,7 @@ function DiscoverView(props: {
       )}
       <h2>📍 {t("disc_h")}</h2>
       <p className="muted">{t("disc_intro")}</p>
+      <input className="field disc-search" placeholder={t("disc_search_ph")} value={query} onChange={(e) => setQuery(e.target.value)} inputMode="search" />
       <div className="disc-filters">
         <select className="field disc-state" value={stateFilter} onChange={(e) => { setStateFilter(e.target.value); setHere(null); }}>
           <option value="">{t("disc_all_states")}</option>
@@ -2651,11 +2707,14 @@ function DiscoverView(props: {
       {geoMsg && <p className="muted small">{geoMsg}</p>}
       {shareMsg && <p className="share-toast">{shareMsg}</p>}
 
+      {/* Curated, importable directory (near-me by GPS) */}
       {near.length === 0 && far.length === 0 ? (
-        <div className="disc-empty">
-          <p className="muted">{here ? t("disc_near_none", { n: RADIUS_MI }) : t("disc_none")}</p>
-          <a className="secondary" href={props.suggestUrl} target="_blank" rel="noopener noreferrer">{t("disc_suggest")}</a>
-        </div>
+        !ql && (
+          <div className="disc-empty">
+            <p className="muted">{here ? t("disc_near_none", { n: RADIUS_MI }) : t("disc_none")}</p>
+            <a className="secondary" href={props.suggestUrl} target="_blank" rel="noopener noreferrer">{t("disc_suggest")}</a>
+          </div>
+        )
       ) : (
         <>
           {here && near.length === 0 && far.length > 0 && <p className="muted small">{t("disc_near_none", { n: RADIUS_MI })}</p>}
@@ -2666,36 +2725,30 @@ function DiscoverView(props: {
               {far.map(renderCard)}
             </>
           )}
-          <p className="feedback-foot">
-            <a href={props.suggestUrl} target="_blank" rel="noopener noreferrer">{t("disc_suggest")}</a>
-          </p>
         </>
       )}
 
-      {/* Search ALL USA Swimming meets — collapsible, so the curated list stays the default. */}
-      <div className="disc-usas">
-        <button className="inline-link" onClick={() => setUmOpen(!umOpen)}>
-          🔎 {t("disc_usas_more")} {umOpen ? "▾" : "▸"}
-        </button>
-        {umOpen && (
-          <>
-            <div className="disc-usas-form">
-              <input className="field" placeholder={t("disc_usas_ph")} value={umq}
-                onChange={(e) => setUmq(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") runMeetSearch(); }} />
-              <select className="field" value={umLsc} onChange={(e) => setUmLsc(e.target.value)}>
-                <option value="">{t("disc_usas_lsc")}</option>
-                {lscs.map((l) => <option key={l.lscCode} value={l.lscCode}>{l.lscName}</option>)}
-              </select>
-              <button className="primary" onClick={runMeetSearch} disabled={umLoading || (!umq.trim() && !umLsc)}>🔎</button>
+      {/* Same search, extended: USA Swimming meets matching the query, folded into the one list */}
+      {ql.length >= 3 && (
+        <>
+          {(near.length > 0 || far.length > 0) && (umLoading || (umResults && umResults.length > 0)) && (
+            <div className="disc-far-label">{t("disc_usas_more")}</div>
+          )}
+          {umLoading && <p className="muted small">{t("sw_usas_searching")}</p>}
+          {umErr && <p className="muted small">{t("sw_usas_unavail")}</p>}
+          {!umLoading && !umErr && umResults && umResults.length === 0 && near.length === 0 && far.length === 0 && (
+            <div className="disc-empty">
+              <p className="muted">{t("disc_usas_none")}</p>
+              <a className="secondary" href={props.suggestUrl} target="_blank" rel="noopener noreferrer">{t("disc_suggest")}</a>
             </div>
-            {umLoading && <p className="muted small">{t("sw_usas_searching")}</p>}
-            {umErr && <p className="muted small">{t("sw_usas_unavail")}</p>}
-            {!umLoading && umResults && umResults.length === 0 && <p className="muted small">{t("disc_usas_none")}</p>}
-            {umResults && umResults.length > 0 && umResults.slice(0, 40).map(usMeetCard)}
-          </>
-        )}
-      </div>
+          )}
+          {umResults && umResults.slice(0, 40).map(usMeetCard)}
+        </>
+      )}
+
+      <p className="feedback-foot">
+        <a href={props.suggestUrl} target="_blank" rel="noopener noreferrer">{t("disc_suggest")}</a>
+      </p>
     </div>
   );
 }
@@ -3002,6 +3055,7 @@ function SwimmersView(props: {
   teams: { team: string; swimmers: RosterItem[] }[];
   addSwimmer: (name: string, team: string, age?: number, gender?: "Girls" | "Boys", watch?: boolean, usasId?: string) => void;
   removeSwimmer: (id: string) => void;
+  mergeSwimmers: (keepId: string, dropId: string) => void;
   goImport: () => void;
   swimmer?: boolean; // "My Meet" mode — reframes "My swimmers/Watching" as "Me/Friends"
   proxy: string;
@@ -3069,6 +3123,15 @@ function SwimmersView(props: {
   };
   const mine = props.swimmers.filter((s) => !s.watch);
   const watch = props.swimmers.filter((s) => s.watch);
+
+  // Detect existing duplicate entries that look like the same person (e.g. a heat-sheet swimmer and
+  // their USA Swimming profile added separately). Offer to merge — keep the one with the profile.
+  const dupePairs: [Swimmer, Swimmer][] = [];
+  for (let i = 0; i < props.swimmers.length; i++)
+    for (let j = i + 1; j < props.swimmers.length; j++) {
+      const a = props.swimmers[i], b = props.swimmers[j];
+      if (samePerson(a.name, b.name)) dupePairs.push(a.usasId && !b.usasId ? [a, b] : [b, a]); // keep = has usasId
+    }
 
   const kidRow = (s: Swimmer) => (
     <div className="kid-row" key={s.id}>
@@ -3152,6 +3215,14 @@ function SwimmersView(props: {
   return (
     <div>
       {profile && <UsasProfile swimmer={profile} proxy={props.proxy} onClose={() => setProfile(null)} />}
+      {dupePairs.map(([keep, drop]) => (
+        <div className="card merge-banner" key={keep.id + drop.id}>
+          <p>🔗 {t("merge_banner", { a: displayName(keep.name), b: displayName(drop.name) })}</p>
+          <div className="link-actions">
+            <button className="primary" onClick={() => props.mergeSwimmers(keep.id, drop.id)}>{t("merge_do")}</button>
+          </div>
+        </div>
+      ))}
       <div className="card">
         <h2>{props.swimmer ? "🏊 " + t("me_h") : t("myswimmers")}</h2>
         {mine.length === 0 && <p className="muted">{props.swimmer ? t("sw_none_me") : t("sw_none")}</p>}

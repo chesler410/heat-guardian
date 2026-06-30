@@ -790,12 +790,13 @@ table.arm th, table.arm td { padding-right: 14px; }
 .swim-drop.good { color: #1f9d57; }
 .swim-drop.bad { color: #c2503f; }
 .profile-foot { margin-top: 12px; font-size: 11px; }
-.disc-usas { margin-top: 12px; border-top: 1px solid var(--line, #f0f4f8); padding-top: 10px; }
-.theme-dark .disc-usas { border-color: #202b36; }
-.disc-usas-form { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
-.disc-usas-form .field { flex: 1; min-width: 130px; }
-.disc-usas-form .primary { flex: 0 0 auto; }
+.disc-search { margin-bottom: 8px; }
 .disc-card.usas-meet { opacity: 0.98; }
+.link-modal { max-width: 420px; }
+.link-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.merge-banner { border: 1px solid var(--accent, #0b3d91); }
+.merge-banner p { margin: 0 0 8px; }
+.theme-dark .merge-banner { border-color: #355b9e; }
 .result-row { gap: 8px; }
 .res-place { flex: 0 0 26px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent, #0b3d91); }
 .theme-dark .res-place { color: #9cc2ff; }

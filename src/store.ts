@@ -120,6 +120,61 @@ export function matchesName(swimmerName: string, entryName: string): boolean {
   return k.length > 0 && k.every((t) => e.has(t));
 }
 
+// --- Fuzzy "same person?" matching, to link a heat-sheet swimmer with their USA Swimming profile.
+// Heat sheets print "Last, First M" with an LSC-suffixed team; USA Swimming gives "First Last" with a
+// club name — so exact matching misses the link. This is permissive ON PURPOSE: it only ever SUGGESTS
+// a link the user confirms, so catching nicknames / middle initials matters more than false positives.
+// (It still won't suggest siblings: same last name but a genuinely different first name won't match.)
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, "");
+// Common given-name nicknames (bidirectional groups) — prefix matching covers the rest (Kate/Katherine).
+const NICK_GROUPS = [
+  ["william", "will", "bill", "billy", "liam"], ["robert", "rob", "bob", "bobby"], ["michael", "mike", "mikey"],
+  ["james", "jim", "jimmy", "jamie"], ["joseph", "joe", "joey"], ["thomas", "tom", "tommy"], ["david", "dave"],
+  ["daniel", "dan", "danny"], ["matthew", "matt"], ["nicholas", "nick", "nicky"], ["anthony", "tony"],
+  ["christopher", "chris"], ["benjamin", "ben", "benji"], ["samuel", "sam", "sammy"], ["alexander", "alex"],
+  ["alexandra", "alex", "lexi"], ["katherine", "kate", "katie", "kathryn", "kat", "kaitlyn"], ["elizabeth", "liz", "beth", "lizzy", "eliza"],
+  ["madison", "maddie", "madeline", "maddy"], ["abigail", "abby"], ["rebecca", "becca", "becky"], ["jennifer", "jen", "jenny"],
+  ["jessica", "jess"], ["catherine", "cathy", "cat"], ["charles", "charlie", "chuck"], ["andrew", "andy", "drew"],
+  ["edward", "ed", "eddie", "ted"], ["gabriel", "gabe"], ["isabella", "izzy", "bella", "isabel"], ["amelia", "mia", "amy"],
+  ["nathaniel", "nate", "nat"], ["zachary", "zach", "zack"], ["joshua", "josh"], ["jonathan", "jon", "jonny"],
+  ["theodore", "theo", "teddy"], ["maxwell", "max"], ["olivia", "liv", "livvy"], ["sophia", "sophie"], ["victoria", "vicky", "tori"],
+];
+function nicknameLinked(a: string, b: string): boolean {
+  return NICK_GROUPS.some((g) => g.includes(a) && g.includes(b));
+}
+function lev(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (Math.abs(m - n) > 2) return 3;
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[m][n];
+}
+// Split a stored name ("Last, First M" or "First M Last") into normalized {first, last}.
+function nameParts(n: string): { first: string; last: string } {
+  if (n.includes(",")) {
+    const [last, rest] = n.split(",");
+    return { last: norm(last), first: norm((rest || "").trim().split(/\s+/)[0] || "") };
+  }
+  const t = n.trim().split(/\s+/);
+  return { first: norm(t[0] || ""), last: norm(t[t.length - 1] || "") };
+}
+const firstCompatible = (a: string, b: string): boolean =>
+  !!a && !!b && (a === b || nicknameLinked(a, b) ||
+    (Math.min(a.length, b.length) >= 3 && (a.startsWith(b) || b.startsWith(a))) ||
+    (Math.min(a.length, b.length) >= 4 && lev(a, b) <= 1));
+const lastCompatible = (a: string, b: string): boolean =>
+  !!a && !!b && (a === b || (a.length >= 5 && b.length >= 5 && lev(a, b) <= 1));
+
+// Do two stored swimmer names plausibly refer to the same person? (last must match; first compatible
+// allowing nicknames / middle-initial / minor typos). Suggest-only — always user-confirmed.
+export function samePerson(n1: string, n2: string): boolean {
+  const a = nameParts(n1), b = nameParts(n2);
+  return lastCompatible(a.last, b.last) && firstCompatible(a.first, b.first);
+}
+
 // Unique swimmers across all imported meets, for live search. Age/gender come from the
 // LATEST imported meet (swimmers age up), so process oldest→newest and let the latest win.
 export function buildRoster(meets: Meet[]): RosterItem[] {

@@ -261,7 +261,8 @@ const en: Dict = {
   pf_noswims: "No swims found for this meet.",
   pf_place: "Place {n}",
   pf_source: "Times pulled from USA Swimming — always double-check official results.",
-  disc_usas_more: "Search all USA Swimming meets",
+  disc_usas_more: "More on USA Swimming",
+  disc_search_ph: "Search meets by name",
   disc_usas_ph: "Meet name",
   disc_usas_lsc: "All regions (LSC)",
   disc_usas_none: "No meets found.",
@@ -270,6 +271,12 @@ const en: Dict = {
   disc_usas_results: "Results",
   mr_results: "Results from USA Swimming",
   mr_noevents: "No events found for this meet.",
+  link_title: "Same swimmer?",
+  link_body: "{a} looks like {b}, who you already follow. Link them into one profile?",
+  link_do: "Link them",
+  link_keep: "Keep separate",
+  merge_banner: "{a} and {b} look like the same swimmer.",
+  merge_do: "Merge",
 };
 
 const es: Dict = {
@@ -514,7 +521,8 @@ const es: Dict = {
   pf_noswims: "No se encontraron pruebas para esta competencia.",
   pf_place: "Puesto {n}",
   pf_source: "Tiempos de USA Swimming — verifica siempre los resultados oficiales.",
-  disc_usas_more: "Buscar todas las competencias de USA Swimming",
+  disc_usas_more: "Más en USA Swimming",
+  disc_search_ph: "Buscar competencias por nombre",
   disc_usas_ph: "Nombre de la competencia",
   disc_usas_lsc: "Todas las regiones (LSC)",
   disc_usas_none: "No se encontraron competencias.",
@@ -523,6 +531,12 @@ const es: Dict = {
   disc_usas_results: "Resultados",
   mr_results: "Resultados de USA Swimming",
   mr_noevents: "No se encontraron pruebas para esta competencia.",
+  link_title: "¿El mismo nadador?",
+  link_body: "{a} parece ser {b}, a quien ya sigues. ¿Vincularlos en un solo perfil?",
+  link_do: "Vincular",
+  link_keep: "Mantener separados",
+  merge_banner: "{a} y {b} parecen el mismo nadador.",
+  merge_do: "Combinar",
 };
 
 const zh: Dict = {
@@ -767,7 +781,8 @@ const zh: Dict = {
   pf_noswims: "未找到本场比赛的成绩。",
   pf_place: "第 {n} 名",
   pf_source: "成绩来自 USA Swimming——请务必核对官方结果。",
-  disc_usas_more: "搜索所有 USA Swimming 比赛",
+  disc_usas_more: "更多 USA Swimming 比赛",
+  disc_search_ph: "按名称搜索比赛",
   disc_usas_ph: "比赛名称",
   disc_usas_lsc: "所有地区 (LSC)",
   disc_usas_none: "未找到比赛。",
@@ -776,6 +791,12 @@ const zh: Dict = {
   disc_usas_results: "成绩",
   mr_results: "来自 USA Swimming 的成绩",
   mr_noevents: "未找到本场比赛的项目。",
+  link_title: "同一名运动员？",
+  link_body: "{a} 似乎就是你已关注的 {b}。合并为一个资料？",
+  link_do: "关联",
+  link_keep: "保持分开",
+  merge_banner: "{a} 和 {b} 似乎是同一名运动员。",
+  merge_do: "合并",
 };
 
 const pt: Dict = {
@@ -1020,7 +1041,8 @@ const pt: Dict = {
   pf_noswims: "Nenhuma prova encontrada para esta competição.",
   pf_place: "Posição {n}",
   pf_source: "Tempos da USA Swimming — confira sempre os resultados oficiais.",
-  disc_usas_more: "Buscar todas as competições da USA Swimming",
+  disc_usas_more: "Mais na USA Swimming",
+  disc_search_ph: "Buscar competições por nome",
   disc_usas_ph: "Nome da competição",
   disc_usas_lsc: "Todas as regiões (LSC)",
   disc_usas_none: "Nenhuma competição encontrada.",
@@ -1029,6 +1051,12 @@ const pt: Dict = {
   disc_usas_results: "Resultados",
   mr_results: "Resultados da USA Swimming",
   mr_noevents: "Nenhuma prova encontrada para esta competição.",
+  link_title: "Mesmo nadador?",
+  link_body: "{a} parece ser {b}, que você já segue. Vincular em um único perfil?",
+  link_do: "Vincular",
+  link_keep: "Manter separados",
+  merge_banner: "{a} e {b} parecem ser o mesmo nadador.",
+  merge_do: "Mesclar",
 };
 
 const de: Dict = {
@@ -1273,7 +1301,8 @@ const de: Dict = {
   pf_noswims: "Keine Starts für diesen Wettkampf gefunden.",
   pf_place: "Platz {n}",
   pf_source: "Zeiten von USA Swimming — offizielle Ergebnisse immer prüfen.",
-  disc_usas_more: "Alle USA-Swimming-Wettkämpfe suchen",
+  disc_usas_more: "Mehr von USA Swimming",
+  disc_search_ph: "Wettkämpfe nach Namen suchen",
   disc_usas_ph: "Wettkampfname",
   disc_usas_lsc: "Alle Regionen (LSC)",
   disc_usas_none: "Keine Wettkämpfe gefunden.",
@@ -1282,6 +1311,12 @@ const de: Dict = {
   disc_usas_results: "Ergebnisse",
   mr_results: "Ergebnisse von USA Swimming",
   mr_noevents: "Keine Wettkämpfe für dieses Meeting gefunden.",
+  link_title: "Gleicher Schwimmer?",
+  link_body: "{a} sieht aus wie {b}, dem du bereits folgst. Zu einem Profil verknüpfen?",
+  link_do: "Verknüpfen",
+  link_keep: "Getrennt lassen",
+  merge_banner: "{a} und {b} scheinen derselbe Schwimmer zu sein.",
+  merge_do: "Zusammenführen",
 };
 
 const vi: Dict = {
@@ -1526,7 +1561,8 @@ const vi: Dict = {
   pf_noswims: "Không tìm thấy nội dung nào cho giải này.",
   pf_place: "Hạng {n}",
   pf_source: "Thành tích từ USA Swimming — luôn kiểm tra kết quả chính thức.",
-  disc_usas_more: "Tìm tất cả giải USA Swimming",
+  disc_usas_more: "Thêm từ USA Swimming",
+  disc_search_ph: "Tìm giải theo tên",
   disc_usas_ph: "Tên giải",
   disc_usas_lsc: "Tất cả khu vực (LSC)",
   disc_usas_none: "Không tìm thấy giải nào.",
@@ -1535,6 +1571,12 @@ const vi: Dict = {
   disc_usas_results: "Kết quả",
   mr_results: "Kết quả từ USA Swimming",
   mr_noevents: "Không tìm thấy nội dung nào cho giải này.",
+  link_title: "Cùng một VĐV?",
+  link_body: "{a} có vẻ là {b} mà bạn đang theo dõi. Liên kết thành một hồ sơ?",
+  link_do: "Liên kết",
+  link_keep: "Giữ riêng",
+  merge_banner: "{a} và {b} có vẻ là cùng một VĐV.",
+  merge_do: "Gộp",
 };
 
 const fr: Dict = {
@@ -1812,7 +1854,8 @@ const fr: Dict = {
   pf_noswims: "Aucune course trouvée pour cette compétition.",
   pf_place: "Place {n}",
   pf_source: "Temps issus de USA Swimming — vérifiez toujours les résultats officiels.",
-  disc_usas_more: "Rechercher toutes les compétitions USA Swimming",
+  disc_usas_more: "Plus sur USA Swimming",
+  disc_search_ph: "Rechercher des compétitions par nom",
   disc_usas_ph: "Nom de la compétition",
   disc_usas_lsc: "Toutes les régions (LSC)",
   disc_usas_none: "Aucune compétition trouvée.",
@@ -1821,6 +1864,12 @@ const fr: Dict = {
   disc_usas_results: "Résultats",
   mr_results: "Résultats de USA Swimming",
   mr_noevents: "Aucune épreuve trouvée pour cette compétition.",
+  link_title: "Même nageur ?",
+  link_body: "{a} ressemble à {b}, que vous suivez déjà. Les lier en un seul profil ?",
+  link_do: "Lier",
+  link_keep: "Garder séparés",
+  merge_banner: "{a} et {b} semblent être le même nageur.",
+  merge_do: "Fusionner",
 };
 
 const ru: Dict = {
@@ -2098,7 +2147,8 @@ const ru: Dict = {
   pf_noswims: "Заплывы для этого соревнования не найдены.",
   pf_place: "Место {n}",
   pf_source: "Результаты из USA Swimming — всегда проверяйте официальные итоги.",
-  disc_usas_more: "Искать все соревнования USA Swimming",
+  disc_usas_more: "Больше на USA Swimming",
+  disc_search_ph: "Искать соревнования по названию",
   disc_usas_ph: "Название соревнования",
   disc_usas_lsc: "Все регионы (LSC)",
   disc_usas_none: "Соревнования не найдены.",
@@ -2107,6 +2157,12 @@ const ru: Dict = {
   disc_usas_results: "Результаты",
   mr_results: "Результаты из USA Swimming",
   mr_noevents: "Заплывы для этого соревнования не найдены.",
+  link_title: "Тот же пловец?",
+  link_body: "{a} похож(а) на {b}, за кем вы уже следите. Объединить в один профиль?",
+  link_do: "Связать",
+  link_keep: "Оставить отдельно",
+  merge_banner: "{a} и {b} похожи на одного пловца.",
+  merge_do: "Объединить",
 };
 
 const DICTS: Record<Lang, Dict> = { en, es, zh, pt, de, vi, fr, ru };
