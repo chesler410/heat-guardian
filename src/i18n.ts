@@ -247,6 +247,14 @@ const en: Dict = {
   ics_carbs: "Light carbs + water (banana, toast, granola)",
   ics_hydrate: "Hydrate + electrolytes",
   ics_warm: "Warm up / be ready",
+  sw_byusas: "USA Swimming",
+  sw_usas_ph: "Search by swimmer name",
+  sw_usas_hint: "Add any USA Swimming athlete — no meet import needed.",
+  sw_usas_searching: "Searching USA Swimming…",
+  sw_usas_none: "No athletes found for \"{q}\".",
+  sw_usas_unavail: "Couldn't reach USA Swimming. Check your connection and try again.",
+  sw_bests: "Best times",
+  sw_bests_none: "No times on record yet.",
 };
 
 const es: Dict = {
@@ -477,6 +485,14 @@ const es: Dict = {
   ics_carbs: "Carbohidratos ligeros + agua (plátano, tostada, granola)",
   ics_hydrate: "Hidratación + electrolitos",
   ics_warm: "Calentar / estar listo",
+  sw_byusas: "USA Swimming",
+  sw_usas_ph: "Buscar por nombre del nadador",
+  sw_usas_hint: "Agrega cualquier atleta de USA Swimming — sin importar una competencia.",
+  sw_usas_searching: "Buscando en USA Swimming…",
+  sw_usas_none: "No se encontraron atletas para «{q}».",
+  sw_usas_unavail: "No se pudo conectar con USA Swimming. Revisa tu conexión e inténtalo de nuevo.",
+  sw_bests: "Mejores tiempos",
+  sw_bests_none: "Aún no hay tiempos registrados.",
 };
 
 const zh: Dict = {
@@ -707,6 +723,14 @@ const zh: Dict = {
   ics_carbs: "少量碳水+水（香蕉、吐司、燕麦）",
   ics_hydrate: "补水+电解质",
   ics_warm: "热身/准备就绪",
+  sw_byusas: "USA Swimming",
+  sw_usas_ph: "按运动员姓名搜索",
+  sw_usas_hint: "无需导入比赛即可添加任何 USA Swimming 运动员。",
+  sw_usas_searching: "正在搜索 USA Swimming…",
+  sw_usas_none: "未找到与“{q}”匹配的运动员。",
+  sw_usas_unavail: "无法连接 USA Swimming。请检查网络后重试。",
+  sw_bests: "最好成绩",
+  sw_bests_none: "暂无成绩记录。",
 };
 
 const pt: Dict = {
@@ -937,6 +961,14 @@ const pt: Dict = {
   ics_carbs: "Carbo leve + água (banana, torrada, granola)",
   ics_hydrate: "Hidratação + eletrólitos",
   ics_warm: "Aquecer / ficar pronto",
+  sw_byusas: "USA Swimming",
+  sw_usas_ph: "Buscar pelo nome do nadador",
+  sw_usas_hint: "Adicione qualquer atleta da USA Swimming — sem importar uma competição.",
+  sw_usas_searching: "Buscando na USA Swimming…",
+  sw_usas_none: "Nenhum atleta encontrado para \"{q}\".",
+  sw_usas_unavail: "Não foi possível acessar a USA Swimming. Verifique sua conexão e tente novamente.",
+  sw_bests: "Melhores tempos",
+  sw_bests_none: "Ainda não há tempos registrados.",
 };
 
 const de: Dict = {
@@ -1167,6 +1199,14 @@ const de: Dict = {
   ics_carbs: "Leichte Kohlenhydrate + Wasser (Banane, Toast, Müsli)",
   ics_hydrate: "Trinken + Elektrolyte",
   ics_warm: "Aufwärmen / bereit sein",
+  sw_byusas: "USA Swimming",
+  sw_usas_ph: "Nach Schwimmernamen suchen",
+  sw_usas_hint: "Füge jeden USA-Swimming-Athleten hinzu — ohne Wettkampf-Import.",
+  sw_usas_searching: "USA Swimming wird durchsucht…",
+  sw_usas_none: "Keine Athleten für „{q}“ gefunden.",
+  sw_usas_unavail: "USA Swimming nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.",
+  sw_bests: "Bestzeiten",
+  sw_bests_none: "Noch keine Zeiten vorhanden.",
 };
 
 const vi: Dict = {
@@ -1397,6 +1437,14 @@ const vi: Dict = {
   ics_carbs: "Tinh bột nhẹ + nước (chuối, bánh mì, granola)",
   ics_hydrate: "Bù nước + điện giải",
   ics_warm: "Khởi động / sẵn sàng",
+  sw_byusas: "USA Swimming",
+  sw_usas_ph: "Tìm theo tên vận động viên",
+  sw_usas_hint: "Thêm bất kỳ vận động viên USA Swimming nào — không cần nhập giải đấu.",
+  sw_usas_searching: "Đang tìm trên USA Swimming…",
+  sw_usas_none: "Không tìm thấy vận động viên cho “{q}”.",
+  sw_usas_unavail: "Không kết nối được USA Swimming. Kiểm tra mạng và thử lại.",
+  sw_bests: "Thành tích tốt nhất",
+  sw_bests_none: "Chưa có thành tích nào.",
 };
 
 const fr: Dict = {
@@ -1660,6 +1708,14 @@ const fr: Dict = {
   ab_check_h: "Vérifiez toujours",
   ab_aff_h: "Sans affiliation",
   prep_title: "🤸 Échauffement, étirements & repas",
+  sw_byusas: "USA Swimming",
+  sw_usas_ph: "Rechercher par nom du nageur",
+  sw_usas_hint: "Ajoutez n'importe quel athlète USA Swimming — sans importer de compétition.",
+  sw_usas_searching: "Recherche sur USA Swimming…",
+  sw_usas_none: "Aucun athlète trouvé pour « {q} ».",
+  sw_usas_unavail: "Impossible de joindre USA Swimming. Vérifiez votre connexion et réessayez.",
+  sw_bests: "Meilleurs temps",
+  sw_bests_none: "Aucun temps enregistré pour l'instant.",
 };
 
 const ru: Dict = {
@@ -1923,6 +1979,14 @@ const ru: Dict = {
   ab_check_h: "Всегда проверяйте",
   ab_aff_h: "Без аффилиации",
   prep_title: "🤸 Разминка, растяжка и питание",
+  sw_byusas: "USA Swimming",
+  sw_usas_ph: "Поиск по имени пловца",
+  sw_usas_hint: "Добавьте любого спортсмена USA Swimming — без импорта соревнования.",
+  sw_usas_searching: "Поиск в USA Swimming…",
+  sw_usas_none: "Спортсмены по запросу «{q}» не найдены.",
+  sw_usas_unavail: "Не удалось связаться с USA Swimming. Проверьте подключение и повторите попытку.",
+  sw_bests: "Лучшее время",
+  sw_bests_none: "Пока нет записанных результатов.",
 };
 
 const DICTS: Record<Lang, Dict> = { en, es, zh, pt, de, vi, fr, ru };

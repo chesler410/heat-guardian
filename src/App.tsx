@@ -29,6 +29,10 @@ import {
   SwimmerProgress,
   ImportOutcome,
   sendReport,
+  searchUsasAthletes,
+  usasBestTimes,
+  UsasAthlete,
+  UsasBestTime,
 } from "./store.ts";
 import { computeCut, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance, fmt } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED, rateUrl } from "./config.ts";
@@ -1396,6 +1400,7 @@ export function App() {
           removeSwimmer={removeSwimmer}
           goImport={() => setNav("import")}
           swimmer={role === "swimmer"}
+          proxy={loadProxy() || DEFAULT_PROXY}
         />
       )}
       {gated && nav === "settings" && (
@@ -2735,13 +2740,59 @@ function SwimmersView(props: {
   removeSwimmer: (id: string) => void;
   goImport: () => void;
   swimmer?: boolean; // "My Meet" mode — reframes "My swimmers/Watching" as "Me/Friends"
+  proxy: string;
 }) {
-  const [find, setFind] = useState<"search" | "teams">("search");
+  const hasRoster = props.roster.length > 0;
+  // USA Swimming lookup is the one mode that works with an empty roster (no meet import needed),
+  // so it's the default when there's nothing imported yet — that's the cold-start path.
+  const [find, setFind] = useState<"search" | "teams" | "usas">(hasRoster ? "search" : "usas");
   const [q, setQ] = useState("");
   const [openTeam, setOpenTeam] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
   const [mName, setMName] = useState("");
   const [mTeam, setMTeam] = useState("");
+
+  // --- USA Swimming athlete lookup (via the Worker's cached /usas proxy) ---
+  const [uq, setUq] = useState("");
+  const [uResults, setUResults] = useState<UsasAthlete[] | null>(null);
+  const [uLoading, setULoading] = useState(false);
+  const [uErr, setUErr] = useState(false);
+  const [uOpen, setUOpen] = useState<string | null>(null); // expanded memberId (best-times)
+  const [uBests, setUBests] = useState<Record<string, UsasBestTime[] | "loading">>({});
+
+  async function runUsasSearch() {
+    const query = uq.trim();
+    if (query.length < 2) return;
+    setULoading(true);
+    setUErr(false);
+    setUResults(null);
+    try {
+      const r = await searchUsasAthletes(query, props.proxy);
+      setUResults(r);
+    } catch {
+      setUErr(true);
+    } finally {
+      setULoading(false);
+    }
+  }
+
+  async function toggleBests(memberId: string) {
+    if (uOpen === memberId) { setUOpen(null); return; }
+    setUOpen(memberId);
+    if (!uBests[memberId]) {
+      setUBests((b) => ({ ...b, [memberId]: "loading" }));
+      const times = await usasBestTimes(memberId, props.proxy);
+      setUBests((b) => ({ ...b, [memberId]: times }));
+    }
+  }
+
+  // USA Swimming gives "First [Middle] Last"; the app keys swimmers as "Last, First".
+  const usasToLastFirst = (a: UsasAthlete): string => {
+    const n = (a.shortName || a.fullName || "").trim();
+    const parts = n.split(/\s+/);
+    if (parts.length < 2) return n;
+    return `${parts[parts.length - 1]}, ${parts.slice(0, -1).join(" ")}`;
+  };
 
   const ql = q.trim().toLowerCase();
   const results = ql
@@ -2784,6 +2835,49 @@ function SwimmersView(props: {
     );
   };
 
+  const usasRow = (a: UsasAthlete) => {
+    const lf = usasToLastFirst(a);
+    const st = statusOf(lf);
+    const meta = [a.clubName, a.lscCode, a.swimmerAge ? `${a.swimmerAge}` : ""].filter(Boolean).join(" · ");
+    const bests = uBests[a.memberId];
+    return (
+      <div className="roster-row usas-row" key={a.memberId} style={{ flexWrap: "wrap" }}>
+        <span className="roster-info">
+          <span className="result-name">{displayName(lf)}</span>
+          <span className="result-meta">{meta}</span>
+        </span>
+        <span className="add-btns">
+          <button className="chip sm" onClick={() => toggleBests(a.memberId)}>
+            ⏱ {t("sw_bests")} {uOpen === a.memberId ? "▾" : "▸"}
+          </button>
+          <button className="chip sm" disabled={st === "mine"} onClick={() => props.addSwimmer(lf, a.clubName || "", a.swimmerAge, undefined, false)}>
+            {st === "mine" ? "✓ " : "+ "}{props.swimmer ? t("sw_me") : t("sw_mine")}
+          </button>
+          <button className="chip sm" disabled={st === "watch"} onClick={() => props.addSwimmer(lf, a.clubName || "", a.swimmerAge, undefined, true)}>
+            {st === "watch" ? "✓ " : props.swimmer ? "👤 " : "👁 "}{props.swimmer ? t("sw_friend") : t("sw_watch")}
+          </button>
+        </span>
+        {uOpen === a.memberId && (
+          <div className="usas-bests" style={{ flexBasis: "100%", marginTop: 6 }}>
+            {bests === "loading" || bests === undefined ? (
+              <p className="muted">{t("sw_usas_searching")}</p>
+            ) : bests.length === 0 ? (
+              <p className="muted">{t("sw_bests_none")}</p>
+            ) : (
+              <div className="bests-grid">
+                {bests.map((b) => (
+                  <span className="best-cell" key={b.swimTimeRecognitionId}>
+                    <b>{b.distance} {b.strokeAbbreviation}</b> <span className="muted">{b.courseCode}</span> {b.swimTime}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div>
       <div className="card">
@@ -2801,17 +2895,30 @@ function SwimmersView(props: {
 
       <div className="card">
         <h2>{t("sw_find")}</h2>
-        {props.roster.length === 0 ? (
+        <div className="seg full">
+          <button className={find === "usas" ? "on" : ""} onClick={() => setFind("usas")}>🌐 {t("sw_byusas")}</button>
+          <button className={find === "search" ? "on" : ""} onClick={() => setFind("search")} disabled={!hasRoster}>🔎 {t("sw_bysearch")}</button>
+          <button className={find === "teams" ? "on" : ""} onClick={() => setFind("teams")} disabled={!hasRoster}>👥 {t("sw_byteam")}</button>
+        </div>
+        {find === "usas" ? (
+          <>
+            <p className="muted">{t("sw_usas_hint")}</p>
+            <form className="usas-search" style={{ display: "flex", gap: 8 }} onSubmit={(e) => { e.preventDefault(); runUsasSearch(); }}>
+              <input className="field" placeholder={t("sw_usas_ph")} value={uq} onChange={(e) => setUq(e.target.value)} autoFocus />
+              <button className="primary" type="submit" disabled={uLoading || uq.trim().length < 2}>🔎</button>
+            </form>
+            {uLoading && <p className="muted">{t("sw_usas_searching")}</p>}
+            {uErr && <p className="muted">{t("sw_usas_unavail")}</p>}
+            {!uLoading && uResults && uResults.length === 0 && <p className="muted">{t("sw_usas_none", { q: uq.trim() })}</p>}
+            {uResults && uResults.length > 0 && <div className="results">{uResults.map((a) => usasRow(a))}</div>}
+          </>
+        ) : !hasRoster ? (
           <>
             <p className="muted">{t("sw_importfirst")}</p>
             <button className="primary" onClick={props.goImport}>{t("sw_addmeet")}</button>
           </>
         ) : (
           <>
-            <div className="seg full">
-              <button className={find === "search" ? "on" : ""} onClick={() => setFind("search")}>🔎 {t("sw_bysearch")}</button>
-              <button className={find === "teams" ? "on" : ""} onClick={() => setFind("teams")}>👥 {t("sw_byteam")}</button>
-            </div>
             {find === "search" ? (
               <>
                 <input className="field" placeholder={t("sw_search")} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />

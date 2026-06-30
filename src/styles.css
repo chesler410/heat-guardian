@@ -760,6 +760,9 @@ table.arm th, table.arm td { padding-right: 14px; }
 .roster-row:first-child { border-top: none; }
 .theme-dark .roster-row { border-color: #202b36; }
 .roster-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.bests-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 4px 12px; padding: 4px 0 2px; }
+.best-cell { font-size: 13px; white-space: nowrap; }
+.theme-dark .usas-bests { color: inherit; }
 .roster-info .result-meta { margin-left: 0; }
 .add-btns { display: flex; gap: 6px; flex-shrink: 0; }
 .add-btns .chip.sm:disabled { opacity: 0.5; cursor: default; }

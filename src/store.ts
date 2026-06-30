@@ -256,6 +256,82 @@ export async function sendReport(text: string, ctx: string, proxy: string): Prom
   }
 }
 
+// --- USA Swimming Data Hub (via the Worker's cached /usas proxy) -----------
+// The Worker fronts USA Swimming's public Data Hub. Athlete search + best times are anonymous;
+// full history + meet search use the Worker's held session (it returns {error:"needs_session"}
+// with HTTP 503 if the owner hasn't set it up). All callers degrade to [] gracefully.
+
+export interface UsasAthlete {
+  memberId: string;
+  fullName: string;
+  shortName?: string;
+  clubName?: string;
+  lscCode?: string;
+  swimmerAge?: number;
+  isNcaa?: number;
+  profilePicUrl?: string | null;
+}
+
+export interface UsasBestTime {
+  swimTimeRecognitionId: number;
+  strokeName: string;
+  strokeAbbreviation: string; // FR/BK/BR/FL/IM
+  distance: number; // yards/meters
+  courseCode: string; // SCY / SCM / LCM
+  swimTime: string; // "1:33.42"
+}
+
+export interface UsasMeet {
+  meetId: number;
+  meetName: string;
+  meetType: string;
+  meetDate: string; // "Jun 26 - 28, 2026"
+  courseCode: string;
+  teams?: number;
+  swims?: number;
+  swimmers?: number;
+}
+
+async function usasGet<T>(path: string, proxy: string): Promise<T[]> {
+  const base = backendBase(proxy);
+  if (!base) return [];
+  try {
+    const res = await fetch(`${base}/usas/${path}`);
+    if (!res.ok) return []; // 503 needs_session, 4xx, etc. → degrade quietly
+    const j = await res.json();
+    return Array.isArray(j) ? (j as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Search USA Swimming athletes by name (anonymous). Min 2 chars.
+export function searchUsasAthletes(name: string, proxy: string): Promise<UsasAthlete[]> {
+  const q = name.trim();
+  if (q.length < 2) return Promise.resolve([]);
+  return usasGet<UsasAthlete>(`athletes?name=${encodeURIComponent(q)}`, proxy);
+}
+
+// Best time per event for a member (anonymous).
+export function usasBestTimes(memberId: string, proxy: string): Promise<UsasBestTime[]> {
+  return usasGet<UsasBestTime>(`athletes/${encodeURIComponent(memberId)}/bests`, proxy);
+}
+
+// Meets filtered by LSC (≈ region) + optional date range — the "meets near me" feed.
+// Needs the Worker's held session; returns [] if unavailable. Dates are "M/D/YYYY".
+export function usasMeets(
+  opts: { lsc?: string; zone?: string; name?: string; from?: string; to?: string },
+  proxy: string
+): Promise<UsasMeet[]> {
+  const qs = new URLSearchParams();
+  if (opts.lsc) qs.set("lsc", opts.lsc);
+  if (opts.zone) qs.set("zone", opts.zone);
+  if (opts.name) qs.set("name", opts.name);
+  if (opts.from) qs.set("from", opts.from);
+  if (opts.to) qs.set("to", opts.to);
+  return usasGet<UsasMeet>(`meets?${qs.toString()}`, proxy);
+}
+
 export async function importBuffer(buf: ArrayBuffer, fallback: string, source: "upload" | "url", sourceUrl?: string): Promise<ImportOutcome> {
   // SD3 / SDIF and meet packs are plain text (not a PDF). Detect and parse into a meet.
   if (!isPdf(buf)) {
