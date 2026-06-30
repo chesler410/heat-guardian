@@ -3609,6 +3609,9 @@ function About() {
         <li>{t("ab_step4")}</li>
       </ol>
 
+      <h3>🌐 {t("ab_usas_h")}</h3>
+      <p>{t("ab_usas_b")}</p>
+
       <h3>{t("ab_auto_h")}</h3>
       <p>{t("ab_auto_b")}</p>
 
