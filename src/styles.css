@@ -804,6 +804,9 @@ table.arm th, table.arm td { padding-right: 14px; }
 .chase-ev { font-weight: 600; }
 .chase-need { font-variant-numeric: tabular-nums; }
 .official-badge { display: inline-block; margin-left: 5px; color: #1f9d57; font-weight: 700; font-size: 12px; }
+.tip-tiers { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.tip-btn { display: inline-block; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--accent, #0b3d91); color: var(--accent, #0b3d91); background: none; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
+.theme-dark .tip-btn { border-color: #355b9e; color: #9cc2ff; }
 .disc-search { margin-bottom: 8px; }
 .disc-card.usas-meet { opacity: 0.98; }
 .link-modal { max-width: 420px; }

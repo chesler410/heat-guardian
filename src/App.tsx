@@ -50,6 +50,7 @@ import {
 } from "./store.ts";
 import { computeCut, cutForBest, CutResult, goalSplits, splitDeltas, eventMeta, segInfo, goalChance, fmt } from "./cuts.ts";
 import { DEFAULT_PROXY, FEEDBACK_URL, KOFI_URL, IS_NATIVE, APP_TOKEN, FEEDBACK_ENABLED, rateUrl } from "./config.ts";
+import { TIP_TIERS, tipsConfigured, startTip } from "./tips.ts";
 import { Geolocation } from "@capacitor/geolocation";
 import { getTheme, setTheme, Theme } from "./theme.ts";
 import { t, getLang, setLang, LANGS, Lang } from "./i18n.ts";
@@ -3627,13 +3628,28 @@ function About() {
         </a>
       )}
 
-      {!IS_NATIVE && (
+      {(tipsConfigured() || !IS_NATIVE) && (
         <>
-          <h3>{t("kofi_h")}</h3>
-          <p className="muted">{t("kofi_b")}</p>
-          <a className="secondary kofi-btn" href={KOFI_URL} target="_blank" rel="noopener noreferrer">
-            ☕ {t("kofi_btn")}
-          </a>
+          <h3>💙 {t("tip_h")}</h3>
+          <p className="muted">{t("tip_b")}</p>
+          <div className="tip-tiers">
+            {TIP_TIERS.map((ti) =>
+              IS_NATIVE ? (
+                <button key={ti.id} className="tip-btn" onClick={() => startTip(ti.id)}>
+                  {ti.emoji} {t(ti.key)} · {ti.price}
+                </button>
+              ) : (
+                <a key={ti.id} className="tip-btn" href={KOFI_URL} target="_blank" rel="noopener noreferrer">
+                  {ti.emoji} {t(ti.key)} · {ti.price}
+                </a>
+              )
+            )}
+          </div>
+          {!IS_NATIVE && (
+            <a className="secondary kofi-btn" href={KOFI_URL} target="_blank" rel="noopener noreferrer">
+              ☕ {t("tip_custom")}
+            </a>
+          )}
         </>
       )}
 
