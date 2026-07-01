@@ -11,6 +11,9 @@ import {
   loadProxy,
   loadResults,
   saveResults,
+  loadOfficial,
+  saveOfficial,
+  syncOfficialResults,
   resultKey,
   makeSwimmer,
   matchesName,
@@ -270,6 +273,7 @@ function EntryCard({
   d,
   showSwimmer,
   result,
+  official,
   onSetResult,
   goal,
   asplits,
@@ -289,6 +293,7 @@ function EntryCard({
   d: DE;
   showSwimmer: boolean;
   result?: string;
+  official?: boolean;
   onSetResult: (val: string) => void;
   goal?: string;
   asplits?: string;
@@ -380,6 +385,7 @@ function EntryCard({
         ) : (
           <span className={!e.relay && result ? "swam-val" : undefined}>
             {e.relay ? t("team_label") : result ? t("swam") : t("seed")} <strong>{time}</strong>
+            {official && result && <span className="official-badge" title={t("off_badge")}>✓</span>}
           </span>
         )}
         {dropped != null && <span className="dropped-badge">▼ {dropped.toFixed(2)} {t("dropped")}</span>}
@@ -876,6 +882,7 @@ export function App() {
   const [shareCode, setShareCode] = useState(""); // a meet just shared → show its code persistently
   const [copied, setCopied] = useState(false);
   const [results, setResultsState] = useState<Record<string, string>>(loadResults);
+  const [official, setOfficialState] = useState<Record<string, true>>(loadOfficial);
   const [notes, setNotesState] = useState<Record<string, string>>(() => loadMap("notes"));
   const [goals, setGoalsState] = useState<Record<string, string>>(() => loadMap("goals"));
   const [asplits, setAsplitsState] = useState<Record<string, string>>(() => loadMap("actualsplits"));
@@ -984,6 +991,33 @@ export function App() {
     setResultsState(next);
     saveResults(next);
   }
+
+  // Official-results backfill: once meets post on USA Swimming (hours–days after), poll and overwrite
+  // linked swimmers' parsed times with the official ones. Standard poll: on Home + every 5 min. Cheap
+  // — the Worker edge-caches meet search + per-swimmer times, so repeats are mostly cache hits.
+  useEffect(() => {
+    if (nav !== "home" || !meets.length || !swimmers.some((s) => s.usasId)) return;
+    let live = true;
+    const run = async () => {
+      const proxy = loadProxy() || DEFAULT_PROXY;
+      const todayISO = new Date().toISOString().slice(0, 10);
+      let r = results, o = official, total = 0;
+      // Only meets that have already happened (results won't exist for future meets).
+      const past = meets.filter((m) => !m.start || m.start <= todayISO);
+      for (const m of past) {
+        const res = await syncOfficialResults(m, swimmers, r, o, proxy);
+        r = res.results; o = res.official; total += res.count;
+      }
+      if (!live || total === 0) return;
+      setResultsState(r); saveResults(r);
+      setOfficialState(o); saveOfficial(o);
+      setMsg(t("off_synced", { n: total }));
+    };
+    run();
+    const id = setInterval(run, 5 * 60 * 1000);
+    return () => { live = false; clearInterval(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nav, meets, swimmers]);
   function setMap(
     kind: "goal" | "splits" | "note" | "done",
     meetId: string,
@@ -1398,6 +1432,7 @@ export function App() {
           removeMeet={(id: string) => persistMeets(meets.filter((m) => m.id !== id))}
           onShareMeet={onShareMeet}
           results={results}
+          official={official}
           setResult={setResult}
           goals={goals}
           asplits={asplits}
@@ -1908,7 +1943,7 @@ function SessionBlock(props: { head: string | null; count: number; grid: boolean
 }
 
 function Home(props: any) {
-  const { swimmers, meets, view, pickView, filter, toggleFilter, results, setResult, goals, asplits, notes, done, heatDone, setHeatsDone, setMap, pacing, setPacing, splitBy, setSplitBy, probSnap, myTeam, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
+  const { swimmers, meets, view, pickView, filter, toggleFilter, results, official = {}, setResult, goals, asplits, notes, done, heatDone, setHeatsDone, setMap, pacing, setPacing, splitBy, setSplitBy, probSnap, myTeam, liveOn, liveStatus, coach, coachTeam, progress, swimmer } = props;
   // Next-goal probability shows only when the parent opted in AND not in coach mode (it would
   // clutter a coach's already-full team view, and coaches don't need the per-kid encouragement).
   const showProb = probSnap === "1" && !coach;
@@ -2308,6 +2343,7 @@ function Home(props: any) {
                             d={d}
                             showSwimmer={swimmers.length > 1}
                             result={resultOf(d)}
+                            official={!!official[k]}
                             onSetResult={(v: string) => setResult(d.meetId, d.e.event, d.swimmer, v)}
                             goal={goals[k]}
                             asplits={asplits[k]}

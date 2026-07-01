@@ -501,6 +501,92 @@ export function usasMeetTimes(memberId: string, meetId: number | string, proxy: 
   return usasGet<UsasMeetTime>(`athletes/${encodeURIComponent(memberId)}/meets/${encodeURIComponent(String(meetId))}`, proxy);
 }
 
+// --- Official-results backfill -------------------------------------------------------------------
+// USA Swimming's posted times are the system of record; the PDF parse is best-effort. Once a meet
+// posts (hours–days after), this reconciles the uploaded meet to its USA Swimming meetId and
+// overwrites linked swimmers' parsed results with the official times (gaining accuracy). Post-meet
+// only — never touches live/manual times during a meet, and only for swimmers with a usasId.
+
+const OFFICIAL = "officialResults";
+export function loadOfficial(): Record<string, true> {
+  try { return JSON.parse(localStorage.getItem(OFFICIAL) || "{}"); } catch { return {}; }
+}
+export function saveOfficial(o: Record<string, true>) { localStorage.setItem(OFFICIAL, JSON.stringify(o)); }
+
+const _sec = (t: string) => {
+  const s = String(t || "").replace(/[^0-9:.]/g, "");
+  return s.includes(":") ? (+s.split(":")[0]) * 60 + parseFloat(s.split(":")[1] || "0") : parseFloat(s) || 0;
+};
+// "100 FL LCM" → { key: "100 FL", course: "LCM" }
+function parseEventCode(code: string): { key: string; course: string } | null {
+  const m = /^(\d+)\s+([A-Za-z]{2})\s+(SCY|SCM|LCM)$/.exec(String(code).trim());
+  return m ? { key: `${m[1]} ${m[2].toUpperCase()}`, course: m[3] } : null;
+}
+const normMeet = (s: string) => String(s || "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+
+// Match an uploaded meet to its USA Swimming meetId by name (+ same-year boost). Returns null unless
+// a confident match — so we never paste the wrong meet's times. Cheap: usasMeets is edge-cached.
+async function reconcileMeet(meet: Meet, proxy: string): Promise<number | null> {
+  const target = normMeet(meet.title);
+  if (target.length < 4) return null;
+  const year = (meet.start || "").slice(0, 4);
+  let cands = await usasMeets({ name: meet.title }, proxy);
+  if (!cands.length) {
+    const core = meet.title.replace(/^\s*\d{4}\s+/, "").replace(/\b[A-Z]{2,4}\b/g, " ").replace(/\s+/g, " ").trim();
+    if (core && core !== meet.title) cands = await usasMeets({ name: core }, proxy);
+  }
+  const tgt = new Set(target.split(" "));
+  let best: { id: number; score: number } | null = null;
+  for (const c of cands) {
+    const cn = normMeet(c.meetName);
+    const ct = cn.split(" ");
+    let score = ct.filter((t) => tgt.has(t)).length / Math.max(tgt.size, ct.length);
+    if (year && c.meetDate && c.meetDate.includes(year)) score += 0.2;
+    if (cn === target) score = 1.5;
+    if (!best || score > best.score) best = { id: c.meetId, score };
+  }
+  return best && best.score >= 0.6 ? best.id : null;
+}
+
+// Reconcile a meet and overwrite linked swimmers' results with official USA Swimming times.
+// Returns updated results + official-key map + how many times changed.
+export async function syncOfficialResults(
+  meet: Meet, swimmers: Swimmer[], results: Record<string, string>, official: Record<string, true>, proxy: string
+): Promise<{ results: Record<string, string>; official: Record<string, true>; count: number; reconciled: boolean }> {
+  const linked = swimmers.filter((s) => s.usasId);
+  if (!linked.length) return { results, official, count: 0, reconciled: false };
+  const meetId = await reconcileMeet(meet, proxy);
+  if (!meetId) return { results, official, count: 0, reconciled: false };
+  const nextR = { ...results };
+  const nextO = { ...official };
+  let count = 0;
+  for (const sw of linked) {
+    const times = await usasMeetTimes(sw.usasId!, meetId, proxy);
+    // One time per event: prefer the Final session, else the fastest swim.
+    const byEvent = new Map<string, UsasMeetTime>();
+    for (const t of times) {
+      const cur = byEvent.get(t.eventCode);
+      const isFinal = t.sessionName === "Final", curFinal = cur?.sessionName === "Final";
+      if (!cur || (isFinal && !curFinal) || (isFinal === curFinal && _sec(t.swimTime) < _sec(cur.swimTime)))
+        byEvent.set(t.eventCode, t);
+    }
+    for (const t of byEvent.values()) {
+      const pe = parseEventCode(t.eventCode);
+      if (!pe) continue;
+      for (const e of meet.entries) {
+        if (e.relay || !matchesName(sw.name, e.name)) continue;
+        const em = eventMeta(e.desc);
+        if (em.key === pe.key && em.course === pe.course) {
+          const rk = resultKey(meet.id, e.event, sw.name);
+          if (nextR[rk] !== t.swimTime) { nextR[rk] = t.swimTime; count++; }
+          nextO[rk] = true;
+        }
+      }
+    }
+  }
+  return { results: nextR, official: nextO, count, reconciled: true };
+}
+
 // Time standards (cuts) this swimmer has achieved. Gated; [] if unavailable.
 export function usasSwimmerStandards(memberId: string, proxy: string): Promise<UsasStandard[]> {
   return usasGet<UsasStandard>(`athletes/${encodeURIComponent(memberId)}/standards`, proxy);
